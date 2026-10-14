@@ -2,33 +2,7 @@
 
 **Responsable:** Diego García
 
-## 1. Gantt de la PC2
-
-| Tarea | Inicio | Fin | Depende de |
-|---|---|---|---|
-| Stakeholders | 13/10 14:00 | 13/10 18:00 | — |
-| PACT | 13/10 18:00 | 13/10 22:00 | Stakeholders |
-| Entrega del PACT al Int. 2 | 13/10 22:00 | 13/10 22:00 | PACT |
-| Sistemas similares y Gantt | 13/10 22:00 | 14/10 00:00 | — |
-| RF y RNF | 13/10 18:00 | 14/10 00:00 | PACT (borrador) |
-| Alcance y criterios de usabilidad | 13/10 21:00 | 14/10 00:00 | RF/RNF |
-| IDs acordados con Int. 3 | 14/10 00:00 | 14/10 00:00 | Alcance y criterios, HU |
-| Historias de usuario | 13/10 18:00 | 14/10 00:00 | RF/RNF (IDs) |
-| Entrega de HU con IDs | 14/10 00:00 | 14/10 00:00 | Historias de usuario |
-| Bocetos 3 alternativas | 13/10 14:00 | 13/10 22:00 | — |
-| Repositorio | 14/10 07:00 | 14/10 10:00 | Todos los documentos |
-| Apoyo en comparación de alternativas | 14/10 08:30 | 14/10 10:00 | Bocetos |
-| Matriz de trazabilidad | 14/10 07:00 | 14/10 10:00 | HU con IDs |
-| Diagrama C4 | 14/10 07:00 | 14/10 10:00 | RF/RNF |
-| Comparación de alternativas | 14/10 07:00 | 14/10 10:00 | Bocetos, criterios de usabilidad |
-| Prototipo y simulación | 13/10 22:00 | 14/10 10:00 | Alternativa elegida |
-| Video | 14/10 10:00 | 14/10 12:00 | Todos los entregables |
-| Revisión cruzada y zip | 14/10 12:00 | 14/10 13:30 | Video |
-| Entrega (límite 14:30) | 14/10 13:30 | 14/10 13:30 | Revisión cruzada y zip |
-
----
-
-## 2. Gantt general del proyecto (tentativo)
+## 1. Gantt general del proyecto (tentativo)
 
 | Fase | Inicio estimado | Duración | Entregable |
 |---|---|---|---|
