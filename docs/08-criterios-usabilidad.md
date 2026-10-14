@@ -1,4 +1,4 @@
-# 07 · Criterios de usabilidad medibles
+# 08 · Criterios de usabilidad medibles
 
 **Responsable:** Jarem Villalobos
 
