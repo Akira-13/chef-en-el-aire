@@ -42,7 +42,7 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 | Diagrama de Gantt | [docs/04-gantt.md](docs/04-gantt.md) |
 | Requerimientos y alcance | `docs/05-requerimientos.md` *(pendiente)* |
 | Criterios de usabilidad | `docs/06-criterios-usabilidad.md` *(pendiente)* |
-| Historias de usuario | `docs/07-historias-usuario.md` *(pendiente)* |
+| Historias de usuario | [docs/07-historias-usuario.md](docs/07-historias-usuario.md) |
 | Matriz de trazabilidad | `docs/08-matriz-trazabilidad.md` *(pendiente)* |
 | Alternativas de diseño | `docs/09-alternativas-diseno.md` *(pendiente)* |
 | Arquitectura (C4) | [docs/arquitectura/](docs/arquitectura/) |
@@ -58,13 +58,67 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 Diagrama C4: ver [docs/arquitectura/](docs/arquitectura/).
 
 ### Capa de abstracción del LLM
-*(A cargo del Integrante 3.)*
+
+La interfaz nunca llama a un proveedor de LLM directamente. Todo pasa por el **Gateway LLM**, que expone tres operaciones (`adaptarReceta`, `responderDuda` y `explicarPaso`) y por dentro usa una interfaz única, `ProveedorLLM`, con un adaptador por proveedor:
+
+```
+ServicioAsistente → ConstructorDePrompts → SelectorDeProveedor → ProveedorLLM
+                                                                  ├── AdaptadorRemoto (Claude u otro)
+                                                                  └── AdaptadorOllama (local)
+                  ← ValidadorDeAlergenos ← ParserDeReceta ←───────┘
+```
+
+- **Cambiar de proveedor** es cambiar la configuración, sin tocar la interfaz de usuario (RF-09):
+  ```json
+  { "llm": { "principal": "remoto", "alterno": "ollama", "tiempo_limite_ms": 8000 } }
+  ```
+- **Añadir un proveedor** es escribir un adaptador nuevo que implemente `ProveedorLLM` (RNF-14).
+- **Respaldo:** si el principal falla o supera el tiempo límite, se usa el alterno; si ambos fallan, la receta sigue sin adaptar y se avisa al usuario (RF-10).
+- **Seguridad:** toda respuesta se convierte al formato JSON de [`datos/recetas.json`](datos/recetas.json) y pasa por un **validador local de alérgenos** que no depende del LLM. Si encuentra un alérgeno del perfil, bloquea la receta y pide confirmación explícita (RF-07, RNF-06).
 
 ### Modelo del perfil de usuario persistente
-*(A cargo del Integrante 3. Ejemplo de datos en [`datos/perfiles.json`](datos/perfiles.json).)*
+
+El perfil se guarda en el dispositivo (IndexedDB) para funcionar sin conexión y se sincroniza con el servidor cuando hay red. Su estructura es la de [`datos/perfiles.json`](datos/perfiles.json):
+
+| Bloque | Contenido | Quién lo escribe |
+|---|---|---|
+| `id`, `nombre`, `edad`, `nivel_habilidad` | Datos básicos | Usuario |
+| `explicito` | Alergias y su severidad, restricciones de comensales, dieta | Usuario o cuidador |
+| `accesibilidad` | Canal de entrada preferido y activos, canales de salida, gestos habilitados, sensibilidad, tiempo de sostener el gesto, fuente, contraste, TTS, verbosidad, subtítulos, tipo de alerta | Usuario o cuidador |
+| `aprendido` | Gustos, rechazos, sustituciones aceptadas, hábitos (por ejemplo `salta_lectura_completa`) | Sistema, con el uso |
+| `emocional` | Tono del asistente, tipo de celebración, música ambiente | Usuario y sistema |
+| `despensa` | Ingredientes disponibles | Usuario (voz o texto) |
+| `historial` | Recetas hechas, fecha, valoración y sustituciones usadas | Sistema |
+| `salas` | Salas a las que pertenece | Sistema |
+
+- **Separación explícito / aprendido:** lo que el usuario declara nunca se sobrescribe con lo que el sistema infiere. Las restricciones de `explicito` siempre tienen prioridad.
+- **Aprendizaje continuo (RF-29):** calificaciones, sustituciones aceptadas o rechazadas, pasos repetidos y emociones declaradas actualizan `aprendido`, `emocional` e `historial`.
+- **Transparencia (RF-30):** la pantalla "lo que aprendí de ti" muestra el bloque `aprendido` y permite corregir o borrar cada dato.
+- **Privacidad (RNF-11):** el perfil se exporta o se borra en 2 pasos como máximo; el video de la cámara no se guarda ni se envía.
 
 ### Estructura de salas multiusuario
-*(A cargo del Integrante 3. Ejemplo en `salas_ejemplo` dentro de [`datos/perfiles.json`](datos/perfiles.json).)*
+
+Una sala es un estado compartido que mantiene el **servidor de salas** (WebSocket). Su estructura es la de `salas_ejemplo` en [`datos/perfiles.json`](datos/perfiles.json):
+
+```json
+{
+  "id": "SALA-7K2P",
+  "codigo": "7K2P",
+  "receta_id": "REC-004",
+  "modo": "sincronizado",
+  "anfitrion": "USR-002",
+  "participantes": [
+    { "usuario": "USR-002", "paso_actual": 3, "conectado": true },
+    { "usuario": "invitado-mama-diego", "paso_actual": 2, "conectado": true }
+  ]
+}
+```
+
+- **`codigo`:** 4 caracteres fáciles de dictar; sirve para unirse por voz o texto (RF-33).
+- **`modo`:** `sincronizado` ("juntos": el paso del anfitrión manda) o `libre` ("a mi ritmo": cada uno avanza solo) (RF-34).
+- **`participantes`:** cada uno con su `paso_actual` y si está `conectado`; la interfaz los muestra como avatares con su número de paso (RF-35). Máximo 4 participantes.
+- **Eventos:** `unirse`, `salir`, `cambiar_paso`, `compartir_receta`, `compartir_logro` y `resincronizar`. Al reconectar, el cliente pide `resincronizar` y recibe el estado completo de la sala (RF-36, RF-37).
+- **Metas (RNF-09):** cambio de paso visible a los demás en ≤ 1 s (percentil 95) y resincronización en ≤ 5 s.
 
 ---
 
@@ -72,7 +126,7 @@ Diagrama C4: ver [docs/arquitectura/](docs/arquitectura/).
 
 | Archivo | Contenido |
 |---|---|
-| [`datos/recetas.json`](datos/recetas.json) | 7 recetas (mayormente peruanas) con ingredientes, alérgenos, sustitutos, pasos con temporizador y mensaje de celebración |
+| [`datos/recetas.json`](datos/recetas.json) | 10 recetas (mayormente peruanas) con ingredientes, alérgenos, sustitutos, pasos con temporizador y mensaje de celebración |
 | [`datos/perfiles.json`](datos/perfiles.json) | 4 perfiles de prueba, incluyendo usuarios con discapacidad motriz, visual, auditiva y del habla; y una sala de ejemplo |
 
 ---
