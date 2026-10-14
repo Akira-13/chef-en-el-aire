@@ -1,8 +1,18 @@
 # 🍳 Chef en el Aire: cocina manos libres
 
+
 Proyecto del curso **CC451 · Interacción Humano-Computador**, entrega **PC2**.
 
 **Chef en el Aire** es una aplicación web progresiva (PWA) que permite seguir una receta sin tocar la pantalla: el usuario avanza los pasos con **gestos en el aire** o con **la voz**, ve cada paso en una **superposición grande con temporizadores**, y un **asistente con LLM** adapta la receta a sus alergias, a su despensa y a su nivel de habilidad. También permite **cocinar a distancia con otra persona** con los pasos sincronizados.
+
+---
+
+## Miembros - Grupo 4
+
+- Aarón Alberca (bxcowo)
+- Amir Canto (amirmiir)
+- Diego García (Akira-13)
+- Jarem Villalobos (therake77)
 
 ---
 
