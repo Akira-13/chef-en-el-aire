@@ -1,4 +1,4 @@
-# 🍳 Chef en el Aire: cocina manos libres
+# Chef en el Aire: cocina manos libres
 
 
 Proyecto del curso **CC451 · Interacción Humano-Computador**, entrega **PC2**.
@@ -54,11 +54,11 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 | Criterios de usabilidad | `docs/06-criterios-usabilidad.md` *(pendiente)* |
 | Historias de usuario | [docs/07-historias-usuario.md](docs/07-historias-usuario.md) |
 | Matriz de trazabilidad | `docs/08-matriz-trazabilidad.md` *(pendiente)* |
-| Alternativas de diseño | `docs/09-alternativas-diseno.md` *(pendiente)* |
+| Alternativas de diseño | [docs/09-alternativas-diseno.md](docs/09-alternativas-diseno.md) |
 | Arquitectura (C4) | [docs/arquitectura/](docs/arquitectura/) |
 | Diseño, bocetos y prototipo | [diseno/](diseno/) |
 
-- **Prototipo en Figma:** [enlace pendiente]
+- **Prototipo navegable (Penpot, open source):** enlace pendiente — ver capturas y detalle en [diseno/](diseno/).
 - **Video de la PC2:** [enlace pendiente]
 
 ---

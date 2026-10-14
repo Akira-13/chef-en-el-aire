@@ -12,15 +12,15 @@ Quién usa el sistema y con qué sistemas externos se relaciona.
 
 ```mermaid
 flowchart TB
-    cocinero["👤 Cocinero<br/><small>Novato, experimentado, con alergias,<br/>con discapacidad motriz, visual,<br/>auditiva o del habla, adulto mayor</small>"]
-    remoto["👤 Co-cocinero remoto<br/><small>Se une a una sala con un código</small>"]
-    cuidador["👤 Cuidador<br/><small>Configura el perfil de otra persona</small>"]
+    cocinero["Cocinero<br/><small>Novato, experimentado, con alergias,<br/>con discapacidad motriz, visual,<br/>auditiva o del habla, adulto mayor</small>"]
+    remoto["Co-cocinero remoto<br/><small>Se une a una sala con un código</small>"]
+    cuidador["Cuidador<br/><small>Configura el perfil de otra persona</small>"]
 
-    sistema["🍳 Chef en el Aire<br/><small>PWA de cocina manos libres:<br/>voz, gestos, LLM, salas</small>"]
+    sistema["Chef en el Aire<br/><small>PWA de cocina manos libres:<br/>voz, gestos, LLM, salas</small>"]
 
-    llmRemoto["☁️ Proveedor LLM remoto<br/><small>Claude u otro, vía API</small>"]
-    llmLocal["🖥️ LLM local<br/><small>Ollama</small>"]
-    navegador["🌐 APIs del navegador<br/><small>Cámara + MediaPipe Hands,<br/>Web Speech (voz y TTS),<br/>notificaciones</small>"]
+    llmRemoto["Proveedor LLM remoto<br/><small>Claude u otro, vía API</small>"]
+    llmLocal["LLM local<br/><small>Ollama</small>"]
+    navegador["APIs del navegador<br/><small>Cámara + MediaPipe Hands,<br/>Web Speech (voz y TTS),<br/>notificaciones</small>"]
 
     cocinero -- "Sigue y adapta recetas<br/>por voz, gesto o toque" --> sistema
     remoto -- "Cocina en la misma sala" --> sistema
@@ -38,25 +38,25 @@ Piezas desplegables y cómo se comunican.
 
 ```mermaid
 flowchart TB
-    usuario["👤 Usuario"]
+    usuario["Usuario"]
 
     subgraph dispositivo["Dispositivo del usuario (navegador)"]
-        pwa["📱 PWA · Interfaz<br/><small>HTML/JS · modo cocina, perfiles,<br/>salas, ayuda contextual</small>"]
-        sw["⚙️ Service worker<br/><small>Caché offline de la app,<br/>receta en curso y perfil</small>"]
-        gestos["✋ Motor de gestos<br/><small>MediaPipe Hands en el navegador;<br/>el video no sale del equipo</small>"]
-        voz["🎙️ Motor de voz<br/><small>Web Speech: palabra de activación,<br/>comandos y TTS</small>"]
-        local[("💾 Almacenamiento local<br/><small>IndexedDB: perfil, despensa,<br/>historial, temporizadores</small>")]
+        pwa["PWA · Interfaz<br/><small>HTML/JS · modo cocina, perfiles,<br/>salas, ayuda contextual</small>"]
+        sw["Service worker<br/><small>Caché offline de la app,<br/>receta en curso y perfil</small>"]
+        gestos["Motor de gestos<br/><small>MediaPipe Hands en el navegador;<br/>el video no sale del equipo</small>"]
+        voz["Motor de voz<br/><small>Web Speech: palabra de activación,<br/>comandos y TTS</small>"]
+        local[("Almacenamiento local<br/><small>IndexedDB: perfil, despensa,<br/>historial, temporizadores</small>")]
     end
 
     subgraph servidor["Servidor"]
-        api["🧩 API de la aplicación<br/><small>REST: recetas, perfiles,<br/>sincronización</small>"]
-        gateway["🔀 Gateway LLM<br/><small>Capa de abstracción + validador<br/>local de alérgenos</small>"]
-        salas["👥 Servidor de salas<br/><small>WebSocket: estado de salas<br/>y participantes</small>"]
-        bd[("🗄️ Base de datos<br/><small>Recetas (JSON), perfiles,<br/>salas activas</small>")]
+        api["API de la aplicación<br/><small>REST: recetas, perfiles,<br/>sincronización</small>"]
+        gateway["Gateway LLM<br/><small>Capa de abstracción + validador<br/>local de alérgenos</small>"]
+        salas["Servidor de salas<br/><small>WebSocket: estado de salas<br/>y participantes</small>"]
+        bd[("Base de datos<br/><small>Recetas (JSON), perfiles,<br/>salas activas</small>")]
     end
 
-    llmRemoto["☁️ LLM remoto"]
-    llmLocal["🖥️ Ollama"]
+    llmRemoto["LLM remoto"]
+    llmLocal["Ollama"]
 
     usuario --> pwa
     gestos -- "eventos de gesto" --> pwa
@@ -104,8 +104,8 @@ flowchart LR
         validador["ValidadorDeAlergenos<br/><small>reglas locales, sin LLM</small>"]
     end
 
-    llmRemoto["☁️ LLM remoto"]
-    llmLocal["🖥️ Ollama"]
+    llmRemoto["LLM remoto"]
+    llmLocal["Ollama"]
 
     api --> servicio
     servicio --> prompts
