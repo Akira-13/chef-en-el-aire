@@ -1,0 +1,194 @@
+{
+  "version": "0.1",
+  "descripcion": "Recetario simulado para pruebas. Datos de ejemplo, no son recetas profesionales verificadas.",
+  "categorias_alergenos": ["leche", "gluten", "huevo", "mani", "frutos_secos", "soya", "pescado", "mariscos"],
+  "recetas": [
+    {
+      "id": "REC-001",
+      "nombre": "Ají de gallina",
+      "descripcion": "Pollo deshilachado en crema de ají amarillo.",
+      "porciones": 4,
+      "dificultad": "intermedio",
+      "tiempo_total_min": 70,
+      "etiquetas": ["peruana", "almuerzo", "pollo"],
+      "alergenos": ["leche", "gluten", "frutos_secos", "huevo"],
+      "ingredientes": [
+        { "id": "ING-001", "nombre": "pechuga de pollo", "cantidad": 500, "unidad": "g", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-002", "nombre": "pasta de ají amarillo", "cantidad": 4, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-003", "nombre": "cebolla roja", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-004", "nombre": "ajo molido", "cantidad": 1, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-005", "nombre": "pan de molde", "cantidad": 4, "unidad": "rebanadas", "alergenos": ["gluten"], "sustitutos": [{ "nombre": "pan sin gluten", "cantidad": 4, "unidad": "rebanadas", "motivo": "gluten" }] },
+        { "id": "ING-006", "nombre": "leche evaporada", "cantidad": 400, "unidad": "ml", "alergenos": ["leche"], "sustitutos": [{ "nombre": "caldo de pollo + 2 cda de maicena", "cantidad": 400, "unidad": "ml", "motivo": "leche" }] },
+        { "id": "ING-007", "nombre": "pecanas picadas", "cantidad": 50, "unidad": "g", "alergenos": ["frutos_secos"], "sustitutos": [{ "nombre": "omitir", "cantidad": 0, "unidad": "g", "motivo": "frutos_secos" }] },
+        { "id": "ING-008", "nombre": "queso parmesano rallado", "cantidad": 30, "unidad": "g", "alergenos": ["leche"], "sustitutos": [{ "nombre": "levadura nutricional", "cantidad": 2, "unidad": "cda", "motivo": "leche" }] },
+        { "id": "ING-009", "nombre": "huevo duro", "cantidad": 2, "unidad": "unidad", "alergenos": ["huevo"], "sustitutos": [{ "nombre": "omitir", "cantidad": 0, "unidad": "unidad", "motivo": "huevo" }] },
+        { "id": "ING-010", "nombre": "papa amarilla sancochada", "cantidad": 4, "unidad": "unidad", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Sancocha la pechuga en agua con sal a fuego medio.", "texto_corto": "Sancochar pollo", "temporizador_seg": 1500, "nombre_temporizador": "pollo", "pista_listo": "El pollo está blanco por dentro y se deshilacha con un tenedor." },
+        { "n": 2, "texto": "Remoja el pan en la leche evaporada y lícualo hasta obtener una crema.", "texto_corto": "Licuar pan con leche", "temporizador_seg": null },
+        { "n": 3, "texto": "Deshilacha el pollo y guarda una taza del caldo.", "texto_corto": "Deshilachar pollo", "temporizador_seg": null },
+        { "n": 4, "texto": "Sofríe la cebolla picada, el ajo y el ají amarillo a fuego medio-bajo.", "texto_corto": "Hacer el aderezo", "temporizador_seg": 480, "nombre_temporizador": "aderezo", "pista_listo": "La cebolla está transparente y el aderezo suelta aceite." },
+        { "n": 5, "texto": "Agrega la crema de pan y una taza de caldo; cocina removiendo.", "texto_corto": "Agregar crema", "temporizador_seg": 600, "nombre_temporizador": "crema", "pista_listo": "La crema espesa y cubre la cuchara." },
+        { "n": 6, "texto": "Incorpora el pollo, el queso y las pecanas; cocina 5 minutos más.", "texto_corto": "Incorporar pollo", "temporizador_seg": 300, "nombre_temporizador": "final" },
+        { "n": 7, "texto": "Sirve sobre papa amarilla con huevo duro y aceituna.", "texto_corto": "Servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Tu ají de gallina está listo! Eso es cocina de casa."
+    },
+    {
+      "id": "REC-002",
+      "nombre": "Lomo saltado",
+      "descripcion": "Salteado de carne con cebolla, tomate y papas fritas.",
+      "porciones": 2,
+      "dificultad": "intermedio",
+      "tiempo_total_min": 35,
+      "etiquetas": ["peruana", "almuerzo", "carne", "rápida"],
+      "alergenos": ["soya", "gluten"],
+      "ingredientes": [
+        { "id": "ING-011", "nombre": "lomo fino en tiras", "cantidad": 400, "unidad": "g", "alergenos": [], "sustitutos": [{ "nombre": "champiñones en láminas", "cantidad": 400, "unidad": "g", "motivo": "vegetariano" }] },
+        { "id": "ING-012", "nombre": "cebolla roja en gajos", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-013", "nombre": "tomate en gajos", "cantidad": 2, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-014", "nombre": "sillao", "cantidad": 2, "unidad": "cda", "alergenos": ["soya", "gluten"], "sustitutos": [{ "nombre": "tamari sin gluten", "cantidad": 2, "unidad": "cda", "motivo": "gluten" }, { "nombre": "aminos de coco", "cantidad": 2, "unidad": "cda", "motivo": "soya" }] },
+        { "id": "ING-015", "nombre": "vinagre tinto", "cantidad": 1, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-016", "nombre": "papas en bastones", "cantidad": 3, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-017", "nombre": "culantro picado", "cantidad": 2, "unidad": "cda", "alergenos": [], "sustitutos": [{ "nombre": "perejil", "cantidad": 2, "unidad": "cda", "motivo": "gusto" }] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Fríe las papas en aceite caliente hasta que doren.", "texto_corto": "Freír papas", "temporizador_seg": 720, "nombre_temporizador": "papas", "pista_listo": "Doradas por fuera y suaves por dentro.", "advertencia": "Aceite caliente: mantén distancia." },
+        { "n": 2, "texto": "Saltea la carne a fuego muy alto en una sartén amplia, en dos tandas.", "texto_corto": "Saltear carne", "temporizador_seg": 180, "nombre_temporizador": "carne" },
+        { "n": 3, "texto": "Agrega la cebolla y luego el tomate; saltea sin que se deshagan.", "texto_corto": "Cebolla y tomate", "temporizador_seg": 120, "nombre_temporizador": "verduras" },
+        { "n": 4, "texto": "Añade el sillao y el vinagre por el borde de la sartén.", "texto_corto": "Sillao y vinagre", "temporizador_seg": 60, "nombre_temporizador": "salsa" },
+        { "n": 5, "texto": "Apaga, mezcla con las papas y el culantro. Sirve con arroz.", "texto_corto": "Mezclar y servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Lomo saltado al punto! Ese fuego alto valió la pena."
+    },
+    {
+      "id": "REC-003",
+      "nombre": "Causa limeña de pollo",
+      "descripcion": "Capas de papa amarilla con ají y relleno de pollo.",
+      "porciones": 4,
+      "dificultad": "basico",
+      "tiempo_total_min": 50,
+      "etiquetas": ["peruana", "entrada", "fría"],
+      "alergenos": ["huevo"],
+      "ingredientes": [
+        { "id": "ING-018", "nombre": "papa amarilla", "cantidad": 1, "unidad": "kg", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-019", "nombre": "pasta de ají amarillo", "cantidad": 3, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-020", "nombre": "jugo de limón", "cantidad": 3, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-021", "nombre": "aceite vegetal", "cantidad": 4, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-022", "nombre": "pollo deshilachado", "cantidad": 300, "unidad": "g", "alergenos": [], "sustitutos": [{ "nombre": "atún en agua", "cantidad": 2, "unidad": "latas", "motivo": "gusto" }] },
+        { "id": "ING-023", "nombre": "mayonesa", "cantidad": 4, "unidad": "cda", "alergenos": ["huevo"], "sustitutos": [{ "nombre": "palta machacada con limón", "cantidad": 1, "unidad": "unidad", "motivo": "huevo" }] },
+        { "id": "ING-024", "nombre": "palta", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Sancocha las papas con cáscara.", "texto_corto": "Sancochar papas", "temporizador_seg": 1500, "nombre_temporizador": "papas", "pista_listo": "Un cuchillo entra sin resistencia." },
+        { "n": 2, "texto": "Pela y prensa las papas aún tibias.", "texto_corto": "Prensar papas", "temporizador_seg": null },
+        { "n": 3, "texto": "Mezcla la papa con ají, limón, aceite y sal hasta obtener una masa suave.", "texto_corto": "Hacer la masa", "temporizador_seg": null },
+        { "n": 4, "texto": "Mezcla el pollo con la mayonesa.", "texto_corto": "Preparar relleno", "temporizador_seg": null },
+        { "n": 5, "texto": "Arma capas: masa, relleno, palta en láminas, masa.", "texto_corto": "Armar capas", "temporizador_seg": null },
+        { "n": 6, "texto": "Refrigera antes de servir.", "texto_corto": "Refrigerar", "temporizador_seg": 1200, "nombre_temporizador": "refrigerar" }
+      ],
+      "celebracion": "¡Causa lista! Se ve tan bien como sabe."
+    },
+    {
+      "id": "REC-004",
+      "nombre": "Tortilla de verduras",
+      "descripcion": "Tortilla sencilla de huevo con espinaca y tomate.",
+      "porciones": 2,
+      "dificultad": "basico",
+      "tiempo_total_min": 20,
+      "etiquetas": ["desayuno", "rápida", "vegetariana"],
+      "alergenos": ["huevo"],
+      "ingredientes": [
+        { "id": "ING-025", "nombre": "huevos", "cantidad": 4, "unidad": "unidad", "alergenos": ["huevo"], "sustitutos": [{ "nombre": "harina de garbanzo + 200 ml de agua", "cantidad": 100, "unidad": "g", "motivo": "huevo" }] },
+        { "id": "ING-026", "nombre": "espinaca picada", "cantidad": 1, "unidad": "taza", "alergenos": [], "sustitutos": [{ "nombre": "acelga", "cantidad": 1, "unidad": "taza", "motivo": "despensa" }] },
+        { "id": "ING-027", "nombre": "tomate picado", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-028", "nombre": "cebolla picada", "cantidad": 0.5, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-029", "nombre": "sal y pimienta", "cantidad": 1, "unidad": "pizca", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Bate los huevos con sal y pimienta.", "texto_corto": "Batir huevos", "temporizador_seg": null },
+        { "n": 2, "texto": "Sofríe la cebolla en una sartén con un poco de aceite.", "texto_corto": "Sofreír cebolla", "temporizador_seg": 180, "nombre_temporizador": "cebolla", "pista_listo": "La cebolla está transparente." },
+        { "n": 3, "texto": "Agrega la espinaca y el tomate hasta que la espinaca se marchite.", "texto_corto": "Agregar verduras", "temporizador_seg": 120, "nombre_temporizador": "verduras" },
+        { "n": 4, "texto": "Vierte los huevos y cocina a fuego bajo con tapa.", "texto_corto": "Cuajar tortilla", "temporizador_seg": 300, "nombre_temporizador": "tortilla", "pista_listo": "Los bordes se despegan y el centro ya no tiembla." },
+        { "n": 5, "texto": "Dobla la tortilla y sirve.", "texto_corto": "Servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Primera tortilla perfecta! Buen comienzo del día."
+    },
+    {
+      "id": "REC-005",
+      "nombre": "Tallarines en salsa de tomate",
+      "descripcion": "Pasta con salsa casera de tomate y albahaca.",
+      "porciones": 4,
+      "dificultad": "basico",
+      "tiempo_total_min": 30,
+      "etiquetas": ["pasta", "vegetariana", "económica"],
+      "alergenos": ["gluten", "leche"],
+      "ingredientes": [
+        { "id": "ING-030", "nombre": "tallarines", "cantidad": 400, "unidad": "g", "alergenos": ["gluten"], "sustitutos": [{ "nombre": "pasta de arroz", "cantidad": 400, "unidad": "g", "motivo": "gluten" }] },
+        { "id": "ING-031", "nombre": "tomates maduros", "cantidad": 5, "unidad": "unidad", "alergenos": [], "sustitutos": [{ "nombre": "tomate en lata triturado", "cantidad": 800, "unidad": "g", "motivo": "despensa" }] },
+        { "id": "ING-032", "nombre": "ajo", "cantidad": 3, "unidad": "dientes", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-033", "nombre": "albahaca fresca", "cantidad": 10, "unidad": "hojas", "alergenos": [], "sustitutos": [{ "nombre": "orégano seco", "cantidad": 1, "unidad": "cdta", "motivo": "despensa" }] },
+        { "id": "ING-034", "nombre": "queso parmesano", "cantidad": 40, "unidad": "g", "alergenos": ["leche"], "sustitutos": [{ "nombre": "levadura nutricional", "cantidad": 3, "unidad": "cda", "motivo": "leche" }] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Pon a hervir abundante agua con sal.", "texto_corto": "Hervir agua", "temporizador_seg": 480, "nombre_temporizador": "agua" },
+        { "n": 2, "texto": "Sofríe el ajo y agrega los tomates picados; cocina a fuego medio.", "texto_corto": "Hacer salsa", "temporizador_seg": 900, "nombre_temporizador": "salsa", "pista_listo": "El tomate se deshace y la salsa espesa." },
+        { "n": 3, "texto": "Cocina los tallarines en el agua hirviendo.", "texto_corto": "Cocinar pasta", "temporizador_seg": 600, "nombre_temporizador": "pasta", "pista_listo": "Al morderlos están suaves con un centro ligeramente firme." },
+        { "n": 4, "texto": "Escurre y mezcla con la salsa y la albahaca.", "texto_corto": "Mezclar", "temporizador_seg": null, "advertencia": "Vapor caliente al escurrir." },
+        { "n": 5, "texto": "Sirve con queso rallado.", "texto_corto": "Servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Pasta lista! Salsa casera, nada de sobre."
+    },
+    {
+      "id": "REC-006",
+      "nombre": "Ensalada de quinua",
+      "descripcion": "Quinua con verduras frescas y vinagreta de limón.",
+      "porciones": 3,
+      "dificultad": "basico",
+      "tiempo_total_min": 30,
+      "etiquetas": ["peruana", "vegana", "sin gluten", "saludable"],
+      "alergenos": [],
+      "ingredientes": [
+        { "id": "ING-035", "nombre": "quinua lavada", "cantidad": 1, "unidad": "taza", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-036", "nombre": "pepino en cubos", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-037", "nombre": "tomate en cubos", "cantidad": 2, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-038", "nombre": "choclo desgranado", "cantidad": 1, "unidad": "taza", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-039", "nombre": "palta en cubos", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-040", "nombre": "jugo de limón", "cantidad": 2, "unidad": "unidad", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Cocina la quinua en dos tazas de agua a fuego bajo con tapa.", "texto_corto": "Cocinar quinua", "temporizador_seg": 900, "nombre_temporizador": "quinua", "pista_listo": "Se ve el germen en espiral y no queda agua." },
+        { "n": 2, "texto": "Deja enfriar la quinua extendida en un plato.", "texto_corto": "Enfriar", "temporizador_seg": 600, "nombre_temporizador": "enfriar" },
+        { "n": 3, "texto": "Mezcla con las verduras y el choclo.", "texto_corto": "Mezclar verduras", "temporizador_seg": null },
+        { "n": 4, "texto": "Aliña con limón, aceite y sal; agrega la palta al final.", "texto_corto": "Aliñar", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Ensalada lista! Fresca, colorida y 100 % peruana."
+    },
+    {
+      "id": "REC-007",
+      "nombre": "Arroz con leche",
+      "descripcion": "Postre tradicional de arroz cocido en leche con canela.",
+      "porciones": 6,
+      "dificultad": "basico",
+      "tiempo_total_min": 45,
+      "etiquetas": ["peruana", "postre", "dulce"],
+      "alergenos": ["leche"],
+      "ingredientes": [
+        { "id": "ING-041", "nombre": "arroz", "cantidad": 1, "unidad": "taza", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-042", "nombre": "leche evaporada", "cantidad": 400, "unidad": "ml", "alergenos": ["leche"], "sustitutos": [{ "nombre": "bebida de coco", "cantidad": 400, "unidad": "ml", "motivo": "leche" }] },
+        { "id": "ING-043", "nombre": "leche condensada", "cantidad": 395, "unidad": "g", "alergenos": ["leche"], "sustitutos": [{ "nombre": "leche condensada de coco", "cantidad": 320, "unidad": "g", "motivo": "leche" }] },
+        { "id": "ING-044", "nombre": "canela en rama", "cantidad": 2, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-045", "nombre": "clavo de olor", "cantidad": 3, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-046", "nombre": "cáscara de naranja", "cantidad": 1, "unidad": "tira", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Hierve tres tazas de agua con canela, clavo y cáscara de naranja.", "texto_corto": "Hervir especias", "temporizador_seg": 300, "nombre_temporizador": "especias" },
+        { "n": 2, "texto": "Agrega el arroz y cocina a fuego bajo hasta que esté suave.", "texto_corto": "Cocinar arroz", "temporizador_seg": 1200, "nombre_temporizador": "arroz", "pista_listo": "El grano se aplasta fácilmente entre los dedos (cuando esté tibio)." },
+        { "n": 3, "texto": "Añade la leche evaporada y la condensada, removiendo sin parar.", "texto_corto": "Agregar leches", "temporizador_seg": 600, "nombre_temporizador": "espesar", "pista_listo": "Cremoso, como un pudín ligero." },
+        { "n": 4, "texto": "Retira las especias, sirve y espolvorea canela molida.", "texto_corto": "Servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Arroz con leche como el de la abuela! Te lo ganaste."
+    }
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "version": "0.1",
+  "descripcion": "Perfiles de prueba (datos ficticios). Los campos 'aprendido' simulan lo que el sistema infiere con el uso; 'explicito' es lo que el usuario configuró.",
+  "perfiles": [
+    {
+      "id": "USR-001",
+      "nombre": "Rosa",
+      "edad": 58,
+      "nivel_habilidad": "avanzado",
+      "explicito": {
+        "alergias": [],
+        "restricciones_comensales": [{ "comensal": "esposo", "restriccion": "leche", "motivo": "intolerancia a la lactosa" }],
+        "dieta": "omnivora"
+      },
+      "accesibilidad": {
+        "condicion": "artritis en manos (motriz leve)",
+        "canal_entrada_preferido": "voz",
+        "canales_entrada_activos": ["voz", "gestos"],
+        "canales_salida": ["visual", "audio"],
+        "gestos_habilitados": ["palma_abierta_pausar", "deslizar_siguiente", "deslizar_anterior"],
+        "sensibilidad_gestos": "alta_tolerancia",
+        "tiempo_sostener_gesto_ms": 400,
+        "tamano_fuente": "grande",
+        "alto_contraste": false,
+        "tts_activo": true,
+        "verbosidad": "breve",
+        "subtitulos": false,
+        "alerta_temporizador": { "sonido": true, "visual_pantalla_completa": true }
+      },
+      "aprendido": {
+        "le_gusta": ["comida criolla", "guisos"],
+        "no_le_gusta": ["picante extremo"],
+        "sustituciones_aceptadas": [{ "original": "leche evaporada", "sustituto": "caldo de pollo + 2 cda de maicena" }],
+        "salta_lectura_completa": true
+      },
+      "emocional": { "tono_asistente": "cordial y directo", "celebracion": "breve", "musica_ambiente": "criolla" },
+      "despensa": ["papa amarilla", "ají amarillo", "cebolla roja", "ajo", "pollo", "arroz", "pan de molde"],
+      "historial": [
+        { "receta_id": "REC-001", "fecha": "2026-10-05", "valoracion": 5, "sustituciones": ["ING-006"] },
+        { "receta_id": "REC-007", "fecha": "2026-10-10", "valoracion": 4, "sustituciones": ["ING-042", "ING-043"] }
+      ],
+      "salas": []
+    },
+    {
+      "id": "USR-002",
+      "nombre": "Diego",
+      "edad": 22,
+      "nivel_habilidad": "novato",
+      "explicito": {
+        "alergias": ["mani"],
+        "severidad_alergia": "alta",
+        "restricciones_comensales": [],
+        "dieta": "omnivora"
+      },
+      "accesibilidad": {
+        "condicion": null,
+        "canal_entrada_preferido": "gestos",
+        "canales_entrada_activos": ["voz", "gestos", "tactil"],
+        "canales_salida": ["visual", "audio"],
+        "gestos_habilitados": ["palma_abierta_pausar", "deslizar_siguiente", "deslizar_anterior", "pulgar_arriba_confirmar", "mano_alzada_ayuda"],
+        "sensibilidad_gestos": "normal",
+        "tiempo_sostener_gesto_ms": 300,
+        "tamano_fuente": "normal",
+        "alto_contraste": false,
+        "tts_activo": true,
+        "verbosidad": "detallada",
+        "subtitulos": true,
+        "alerta_temporizador": { "sonido": true, "visual_pantalla_completa": true }
+      },
+      "aprendido": {
+        "le_gusta": ["pasta", "comida rápida de preparar"],
+        "no_le_gusta": ["hígado"],
+        "pide_explicacion_frecuente": ["sofreír", "a punto", "fuego medio-bajo"],
+        "sustituciones_aceptadas": []
+      },
+      "emocional": { "tono_asistente": "animado y paciente", "celebracion": "completa", "musica_ambiente": "pop" },
+      "despensa": ["huevos", "tallarines", "tomate", "cebolla", "arroz"],
+      "historial": [
+        { "receta_id": "REC-004", "fecha": "2026-10-08", "valoracion": 5, "sustituciones": [] },
+        { "receta_id": "REC-005", "fecha": "2026-10-11", "valoracion": 4, "sustituciones": [] }
+      ],
+      "salas": ["SALA-7K2P"]
+    },
+    {
+      "id": "USR-003",
+      "nombre": "Carmen",
+      "edad": 34,
+      "nivel_habilidad": "intermedio",
+      "explicito": {
+        "alergias": [],
+        "restricciones_comensales": [{ "comensal": "hijo", "restriccion": "mariscos", "motivo": "alergia" }],
+        "dieta": "omnivora"
+      },
+      "accesibilidad": {
+        "condicion": "baja visión (retinopatía)",
+        "canal_entrada_preferido": "voz",
+        "canales_entrada_activos": ["voz", "gestos"],
+        "canales_salida": ["audio", "visual"],
+        "gestos_habilitados": ["palma_abierta_pausar", "deslizar_siguiente"],
+        "requiere_gesto_activacion": true,
+        "confirmacion_sonora_gestos": true,
+        "sensibilidad_gestos": "normal",
+        "tiempo_sostener_gesto_ms": 300,
+        "tamano_fuente": "extragrande",
+        "alto_contraste": true,
+        "tts_activo": true,
+        "lectura_automatica_pasos": true,
+        "verbosidad": "detallada",
+        "sonido_distinto_por_temporizador": true,
+        "compatible_lector_pantalla": true,
+        "alerta_temporizador": { "sonido": true, "visual_pantalla_completa": true }
+      },
+      "aprendido": {
+        "le_gusta": ["sopas", "arroz con pollo"],
+        "no_le_gusta": [],
+        "consulta_frecuente": ["¿cuánto falta?"],
+        "sustituciones_aceptadas": []
+      },
+      "emocional": { "tono_asistente": "calmado", "celebracion": "sonora", "musica_ambiente": "ninguna" },
+      "despensa": ["arroz", "pollo", "papa", "quinua", "limón"],
+      "historial": [
+        { "receta_id": "REC-006", "fecha": "2026-10-09", "valoracion": 4, "sustituciones": [] }
+      ],
+      "salas": []
+    },
+    {
+      "id": "USR-004",
+      "nombre": "Javier",
+      "edad": 29,
+      "nivel_habilidad": "intermedio",
+      "explicito": {
+        "alergias": [],
+        "restricciones_comensales": [],
+        "dieta": "vegetariana"
+      },
+      "accesibilidad": {
+        "condicion": "sordera; habla poco inteligible para reconocimiento de voz",
+        "canal_entrada_preferido": "gestos",
+        "canales_entrada_activos": ["gestos", "tactil"],
+        "voz_desactivada": true,
+        "canales_salida": ["visual"],
+        "gestos_habilitados": ["palma_abierta_pausar", "deslizar_siguiente", "deslizar_anterior", "pulgar_arriba_confirmar", "mano_alzada_ayuda"],
+        "requiere_gesto_activacion": true,
+        "sensibilidad_gestos": "normal",
+        "tiempo_sostener_gesto_ms": 300,
+        "tamano_fuente": "grande",
+        "alto_contraste": true,
+        "tts_activo": false,
+        "subtitulos": true,
+        "verbosidad": "breve",
+        "alerta_temporizador": { "sonido": false, "visual_pantalla_completa": true, "parpadeo": true, "persistente_hasta_confirmar": true }
+      },
+      "aprendido": {
+        "le_gusta": ["pasta", "comida italiana", "ensaladas"],
+        "no_le_gusta": ["comida muy grasosa"],
+        "sustituciones_aceptadas": [{ "original": "lomo fino en tiras", "sustituto": "champiñones en láminas" }]
+      },
+      "emocional": { "tono_asistente": "amigable", "celebracion": "solo_visual", "musica_ambiente": "ninguna" },
+      "despensa": ["tallarines", "tomate", "ajo", "champiñones", "quinua"],
+      "historial": [
+        { "receta_id": "REC-002", "fecha": "2026-10-07", "valoracion": 5, "sustituciones": ["ING-011"] }
+      ],
+      "salas": []
+    }
+  ],
+  "salas_ejemplo": [
+    {
+      "id": "SALA-7K2P",
+      "codigo": "7K2P",
+      "receta_id": "REC-004",
+      "modo": "sincronizado",
+      "anfitrion": "USR-002",
+      "participantes": [
+        { "usuario": "USR-002", "paso_actual": 3, "conectado": true },
+        { "usuario": "invitado-mama-diego", "paso_actual": 2, "conectado": true }
+      ]
+    }
+  ]
+}
