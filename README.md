@@ -33,15 +33,6 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 
 ---
 
-## Integrantes
-
--  Diego García 
--  Jarem Villalobos 
--  Aarón Flores 
--  Amir Canto 
-
----
-
 ## Documentación
 
 | Documento | Enlace |
@@ -59,7 +50,7 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 | Diseño, bocetos y prototipo | [diseno/](diseno/) |
 
 - **Prototipo en Figma:** [enlace pendiente]
-- **Video de la PC2:** [enlace pendiente]
+- **Video de la PC2:** [Enlace](https://drive.google.com/file/d/1gzogmhDqzjGPIxW2cg_0yGTsGrCo4aZh/view?usp=sharing)
 
 ---
 
