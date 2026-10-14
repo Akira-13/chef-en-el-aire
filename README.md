@@ -43,15 +43,17 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 | Análisis PACT | [docs/02-pact.md](docs/02-pact.md) |
 | Sistemas similares | [docs/03-sistemas-similares.md](docs/03-sistemas-similares.md) |
 | Diagrama de Gantt | [docs/04-gantt.md](docs/04-gantt.md) |
-| Requerimientos y alcance | `docs/05-requerimientos.md` *(pendiente)* |
-| Criterios de usabilidad | `docs/06-criterios-usabilidad.md` *(pendiente)* |
+| Requerimientos funcionales y no funcionales | [docs/05-requerimientos.md](docs/05-requerimientos.md) |
+| Alcance del proyecto | [docs/06-alcance.md](docs/06-alcance.md) |
 | Historias de usuario | [docs/07-historias-usuario.md](docs/07-historias-usuario.md) |
-| Matriz de trazabilidad | `docs/08-matriz-trazabilidad.md` *(pendiente)* |
+| Criterios de usabilidad | [docs/08-criterios-usabilidad.md](docs/08-criterios-usabilidad.md) |
 | Alternativas de diseño | [docs/09-alternativas-diseno.md](docs/09-alternativas-diseno.md) |
+| Matriz de trazabilidad | [docs/10-matriz-trazabilidad.md](docs/10-matriz-trazabilidad.md) |
 | Arquitectura (C4) | [docs/arquitectura/](docs/arquitectura/) |
 | Diseño, bocetos y prototipo | [diseno/](diseno/) |
 
 
+- **Bocetos y capturas del prototipo:** [diseno/](diseno/) (Alternativa C elegida, ver [justificación](docs/09-alternativas-diseno.md)).
 - **Prototipo navegable (Penpot, open source):** https://design.penpot.app/#/view?file-id=0f3fb038-01f9-8046-8008-ca0fa6808f77&page-id=0332d66e-5395-8036-8008-ca139c0df3e4&section=interactions&index=0&share-id=d49650cf-fd53-4bb7-9b92-525b267a88e5
 
 ---
@@ -145,11 +147,12 @@ chef-en-el-aire/
 │   ├── recetas.json
 │   └── perfiles.json
 ├── docs/
-│   ├── 01-stakeholders.md … 09-alternativas-diseno.md
+│   ├── 01-stakeholders.md … 10-matriz-trazabilidad.md
 │   └── arquitectura/        # Diagrama C4
 └── diseno/
-    ├── bocetos/             # 3 alternativas
-    └── prototipo/           # Enlace y exportaciones de Figma, diagrama de interacciones
+    ├── README.md
+    ├── bocetos/             # 3 alternativas (A voz, B gestos, C tablero cálido: elegida)
+    └── prototipo/           # 6 pantallas (Penpot) y diagrama de interacciones
 ```
 
 ---

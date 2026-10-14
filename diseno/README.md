@@ -2,7 +2,7 @@
 
 Aporte del Integrante 4. Ver la justificación completa en [`docs/09-alternativas-diseno.md`](../docs/09-alternativas-diseno.md).
 
-**Prototipo en Penpot:** enlace pendiente (pegar aquí el link de "Compartir" del archivo en `design.penpot.app`).
+**Prototipo en Penpot:** [abrir prototipo navegable](https://design.penpot.app/#/view?file-id=0f3fb038-01f9-8046-8008-ca0fa6808f77&page-id=0332d66e-5395-8036-8008-ca139c0df3e4&section=interactions&index=0&share-id=d49650cf-fd53-4bb7-9b92-525b267a88e5)
 
 ## Contenido
 
@@ -18,7 +18,3 @@ Aporte del Integrante 4. Ver la justificación completa en [`docs/09-alternativa
   5. `5-perfil.png` — accesibilidad y "lo que aprendí de ti" (transparencia del perfil).
   6. `6-celebracion.png` — cierre emocional (nivel reflexivo de Norman).
   - `diagrama-interacciones.png` — mapa de navegación entre las 6 pantallas.
-
-## Cómo se construyó
-
-El prototipo se generó con IA conectada directamente a Penpot (open source) vía su servidor MCP — ver la nota de herramientas en [`reparto-PC2-CC451.md`](../reparto-PC2-CC451.md). Las capturas en este repo son una referencia estática; el archivo real en Penpot tiene las interacciones de navegación cableadas (click → pantalla destino) para la simulación del flujo.

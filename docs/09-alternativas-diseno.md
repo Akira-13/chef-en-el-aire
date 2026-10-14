@@ -3,7 +3,7 @@
 **Proyecto:** Chef en el Aire, cocina manos libres
 **Responsable:** Integrante 4 (Diseño e interacción)
 **Base:** [Historias de usuario](07-historias-usuario.md) (HU-01 a HU-37), especialmente las de modo cocina (E3), voz (E4), gestos (E5), accesibilidad (E6), multiusuario (E8) y diseño emocional (E9).
-**Herramienta:** [Penpot](https://penpot.app) (open source), vía su servidor MCP oficial — ver nota de herramientas en [`reparto-PC2-CC451.md`](../reparto-PC2-CC451.md).
+**Herramienta:** [Penpot](https://penpot.app) (open source).
 
 Las tres alternativas muestran la misma pantalla crítica — **modo cocina, un paso con temporizador activo** (HU-09 a HU-13) — porque es donde más tensionan los requisitos obligatorios (voz, gestos, legibilidad a distancia, diseño emocional) y donde mejor se nota la diferencia entre enfoques. Bocetos exportados en [`diseno/bocetos/`](../diseno/bocetos/).
 

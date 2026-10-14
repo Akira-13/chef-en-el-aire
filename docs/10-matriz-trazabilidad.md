@@ -1,4 +1,4 @@
-# 09 · Matriz de trazabilidad
+# 10 · Matriz de trazabilidad
 
 **Proyecto:** Chef en el Aire, cocina manos libres  
 **Responsable:** Jarem Villalobos
