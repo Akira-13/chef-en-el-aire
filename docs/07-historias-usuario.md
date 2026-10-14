@@ -90,7 +90,7 @@
 
 > **Como** Diego, alérgico al maní con severidad alta, **quiero** que el sistema verifique la receta adaptada con reglas propias, **para** que un error del LLM nunca me haga comer maní.
 
-- **CA-06.1** · **Dado** que el LLM sugiere "salsa de maní" en una adaptación del lomo saltado (REC-002), **cuando** la receta pasa por el validador local, **entonces** queda bloqueada y se muestra una advertencia con el ingrediente y el alérgeno.
+- **CA-06.1** · **Dado** que Diego pide adaptar la "Ocopa arequipeña" (REC-008) y el LLM devuelve una versión que conserva el "maní tostado", **cuando** la receta pasa por el validador local, **entonces** queda bloqueada y se muestra una advertencia con el ingrediente y el alérgeno.
 - **CA-06.2** · **Dado** que la receta está bloqueada, **cuando** el usuario quiere continuar, **entonces** debe confirmarlo explícitamente (voz "confirmo" o botón dedicado), no con un gesto genérico.
 - **CA-06.3 (RNF-06)** · **Dado** el conjunto de prueba de 10 recetas × 4 perfiles, **cuando** se ejecuta el validador sobre todas las adaptaciones, **entonces** se obtiene **100 % de detección (0 falsos negativos)**.
 
@@ -449,5 +449,5 @@ Ninguno: los 44 RF y los 18 RNF tienen al menos una historia, y cada RNF tiene u
 
 ### Observaciones para la matriz (Integrante 2)
 
-- **RF-04 y RNF-06** mencionan 10 recetas de ejemplo, pero [`datos/recetas.json`](../datos/recetas.json) tiene 7 por ahora. Hay que completar el recetario o ajustar la cifra del requerimiento.
+- **RF-04 y RNF-06:** [`datos/recetas.json`](../datos/recetas.json) tiene las 10 recetas de ejemplo que piden. Se agregaron la ocopa (REC-008, con maní, para probar el perfil de Diego), el ceviche (REC-009, con pescado) y el arroz chaufa (REC-010, con soya y de nivel avanzado), para que el conjunto de prueba de alérgenos cubra más categorías.
 - **RF-34:** "juntos" y "a mi ritmo" se corresponden con los valores `sincronizado` y `libre` del campo `modo` de la sala.

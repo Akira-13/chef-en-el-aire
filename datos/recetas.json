@@ -189,6 +189,88 @@
         { "n": 4, "texto": "Retira las especias, sirve y espolvorea canela molida.", "texto_corto": "Servir", "temporizador_seg": null }
       ],
       "celebracion": "¡Arroz con leche como el de la abuela! Te lo ganaste."
+    },
+    {
+      "id": "REC-008",
+      "nombre": "Ocopa arequipeña",
+      "descripcion": "Papas en crema de huacatay, ají mirasol y maní.",
+      "porciones": 4,
+      "dificultad": "basico",
+      "tiempo_total_min": 40,
+      "etiquetas": ["peruana", "entrada", "arequipeña"],
+      "alergenos": ["mani", "leche", "gluten", "huevo"],
+      "ingredientes": [
+        { "id": "ING-047", "nombre": "papa amarilla", "cantidad": 6, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-048", "nombre": "ají mirasol sin venas", "cantidad": 3, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-049", "nombre": "hojas de huacatay", "cantidad": 1, "unidad": "taza", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-050", "nombre": "maní tostado", "cantidad": 0.5, "unidad": "taza", "alergenos": ["mani"], "sustitutos": [{ "nombre": "semillas de girasol tostadas", "cantidad": 0.5, "unidad": "taza", "motivo": "mani" }] },
+        { "id": "ING-051", "nombre": "queso fresco", "cantidad": 150, "unidad": "g", "alergenos": ["leche"], "sustitutos": [{ "nombre": "tofu firme", "cantidad": 150, "unidad": "g", "motivo": "leche" }] },
+        { "id": "ING-052", "nombre": "galletas de soda", "cantidad": 4, "unidad": "unidad", "alergenos": ["gluten"], "sustitutos": [{ "nombre": "galletas de arroz", "cantidad": 4, "unidad": "unidad", "motivo": "gluten" }] },
+        { "id": "ING-053", "nombre": "leche evaporada", "cantidad": 0.5, "unidad": "taza", "alergenos": ["leche"], "sustitutos": [{ "nombre": "bebida de avena sin gluten", "cantidad": 0.5, "unidad": "taza", "motivo": "leche" }] },
+        { "id": "ING-054", "nombre": "huevo duro", "cantidad": 2, "unidad": "unidad", "alergenos": ["huevo"], "sustitutos": [{ "nombre": "omitir", "cantidad": 0, "unidad": "unidad", "motivo": "huevo" }] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Sancocha las papas con cáscara en agua con sal.", "texto_corto": "Sancochar papas", "temporizador_seg": 1500, "nombre_temporizador": "papas", "pista_listo": "Un cuchillo entra sin resistencia hasta el centro." },
+        { "n": 2, "texto": "Dora el ají mirasol en un poco de aceite a fuego medio.", "texto_corto": "Dorar ají", "temporizador_seg": 300, "nombre_temporizador": "ají", "pista_listo": "El ají se ve brillante y suelta su aroma." },
+        { "n": 3, "texto": "Licúa el ají dorado con el huacatay, el maní, el queso, las galletas y la leche.", "texto_corto": "Licuar crema", "temporizador_seg": null, "pista_listo": "La crema es espesa, verde y cubre el dorso de una cuchara." },
+        { "n": 4, "texto": "Pela las papas, córtalas en rodajas y báñalas con la crema.", "texto_corto": "Bañar papas", "temporizador_seg": null },
+        { "n": 5, "texto": "Decora con huevo duro y aceituna.", "texto_corto": "Decorar", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Ocopa lista! Un clásico de Arequipa en tu mesa."
+    },
+    {
+      "id": "REC-009",
+      "nombre": "Ceviche de pescado",
+      "descripcion": "Pescado fresco marinado en limón con cebolla, ají limo y camote.",
+      "porciones": 3,
+      "dificultad": "intermedio",
+      "tiempo_total_min": 30,
+      "etiquetas": ["peruana", "almuerzo", "pescado", "fría"],
+      "alergenos": ["pescado"],
+      "ingredientes": [
+        { "id": "ING-055", "nombre": "filete de pescado blanco en cubos", "cantidad": 500, "unidad": "g", "alergenos": ["pescado"], "sustitutos": [{ "nombre": "champiñones y palmito en cubos", "cantidad": 500, "unidad": "g", "motivo": "pescado" }] },
+        { "id": "ING-056", "nombre": "jugo de limón", "cantidad": 12, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-057", "nombre": "cebolla roja en pluma", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-058", "nombre": "ají limo picado", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [{ "nombre": "omitir", "cantidad": 0, "unidad": "unidad", "motivo": "picante" }] },
+        { "id": "ING-059", "nombre": "culantro picado", "cantidad": 2, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-060", "nombre": "camote sancochado", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-061", "nombre": "choclo sancochado", "cantidad": 1, "unidad": "unidad", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Sancocha el camote y el choclo; resérvalos.", "texto_corto": "Sancochar acompañamientos", "temporizador_seg": 1200, "nombre_temporizador": "camote", "pista_listo": "El camote se atraviesa fácil con un tenedor." },
+        { "n": 2, "texto": "Sazona el pescado con sal y ají limo en un bol frío.", "texto_corto": "Sazonar pescado", "temporizador_seg": null },
+        { "n": 3, "texto": "Agrega el jugo de limón recién exprimido y mezcla.", "texto_corto": "Marinar", "temporizador_seg": 180, "nombre_temporizador": "marinado", "pista_listo": "El pescado está blanco por fuera y aún brillante por dentro." },
+        { "n": 4, "texto": "Añade la cebolla y el culantro, prueba la sal.", "texto_corto": "Agregar cebolla", "temporizador_seg": null },
+        { "n": 5, "texto": "Sirve de inmediato con camote y choclo.", "texto_corto": "Servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Ceviche al punto! Sírvelo ya, que el limón no espera."
+    },
+    {
+      "id": "REC-010",
+      "nombre": "Arroz chaufa de pollo",
+      "descripcion": "Arroz salteado al wok con pollo, huevo, cebollita china y sillao.",
+      "porciones": 3,
+      "dificultad": "avanzado",
+      "tiempo_total_min": 30,
+      "etiquetas": ["peruana", "chifa", "almuerzo", "pollo", "rápida"],
+      "alergenos": ["huevo", "soya", "gluten"],
+      "ingredientes": [
+        { "id": "ING-062", "nombre": "arroz cocido del día anterior", "cantidad": 3, "unidad": "taza", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-063", "nombre": "pechuga de pollo en cubos", "cantidad": 300, "unidad": "g", "alergenos": [], "sustitutos": [{ "nombre": "tofu firme en cubos", "cantidad": 300, "unidad": "g", "motivo": "vegetariano" }] },
+        { "id": "ING-064", "nombre": "huevo", "cantidad": 3, "unidad": "unidad", "alergenos": ["huevo"], "sustitutos": [{ "nombre": "omitir", "cantidad": 0, "unidad": "unidad", "motivo": "huevo" }] },
+        { "id": "ING-065", "nombre": "sillao", "cantidad": 3, "unidad": "cda", "alergenos": ["soya", "gluten"], "sustitutos": [{ "nombre": "aminoácidos de coco", "cantidad": 3, "unidad": "cda", "motivo": "soya" }] },
+        { "id": "ING-066", "nombre": "cebollita china picada", "cantidad": 4, "unidad": "tallo", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-067", "nombre": "kion rallado", "cantidad": 1, "unidad": "cda", "alergenos": [], "sustitutos": [] },
+        { "id": "ING-068", "nombre": "aceite de ajonjolí", "cantidad": 1, "unidad": "cdta", "alergenos": [], "sustitutos": [] }
+      ],
+      "pasos": [
+        { "n": 1, "texto": "Bate los huevos y haz una tortilla delgada; córtala en tiras.", "texto_corto": "Tortilla en tiras", "temporizador_seg": 120, "nombre_temporizador": "tortilla", "pista_listo": "Los bordes se despegan solos de la sartén." },
+        { "n": 2, "texto": "Saltea el pollo a fuego alto con el kion hasta dorarlo.", "texto_corto": "Saltear pollo", "temporizador_seg": 360, "nombre_temporizador": "pollo", "pista_listo": "El pollo está dorado por fuera y blanco por dentro." },
+        { "n": 3, "texto": "Agrega el arroz frío y saltea sin parar a fuego máximo.", "texto_corto": "Saltear arroz", "temporizador_seg": 240, "nombre_temporizador": "wok", "pista_listo": "Los granos están sueltos y empiezan a sonar al saltar." },
+        { "n": 4, "texto": "Añade el sillao por el borde del wok y mezcla.", "texto_corto": "Agregar sillao", "temporizador_seg": null },
+        { "n": 5, "texto": "Incorpora la tortilla, la cebollita china y el aceite de ajonjolí; sirve.", "texto_corto": "Terminar y servir", "temporizador_seg": null }
+      ],
+      "celebracion": "¡Chaufa con sabor a chifa de barrio! Dominaste el wok."
     }
   ]
 }
