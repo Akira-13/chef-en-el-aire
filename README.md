@@ -126,7 +126,7 @@ Una sala es un estado compartido que mantiene el **servidor de salas** (WebSocke
 
 | Archivo | Contenido |
 |---|---|
-| [`datos/recetas.json`](datos/recetas.json) | 7 recetas (mayormente peruanas) con ingredientes, alérgenos, sustitutos, pasos con temporizador y mensaje de celebración |
+| [`datos/recetas.json`](datos/recetas.json) | 10 recetas (mayormente peruanas) con ingredientes, alérgenos, sustitutos, pasos con temporizador y mensaje de celebración |
 | [`datos/perfiles.json`](datos/perfiles.json) | 4 perfiles de prueba, incluyendo usuarios con discapacidad motriz, visual, auditiva y del habla; y una sala de ejemplo |
 
 ---
