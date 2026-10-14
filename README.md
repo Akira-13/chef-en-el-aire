@@ -53,8 +53,6 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 
 
 - **Prototipo navegable (Penpot, open source):** https://design.penpot.app/#/view?file-id=0f3fb038-01f9-8046-8008-ca0fa6808f77&page-id=0332d66e-5395-8036-8008-ca139c0df3e4&section=interactions&index=0&share-id=d49650cf-fd53-4bb7-9b92-525b267a88e5
-- **Video de la PC2:** [enlace pendiente]
-
 
 ---
 
