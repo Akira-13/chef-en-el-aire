@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 *.log
 mcp.txt
+dist/
+dev-dist/
+coverage/
+*.local
