@@ -143,6 +143,9 @@ chef-en-el-aire/
 ├── README.md
 ├── LICENSE
 ├── INSTALACION.md
+├── app/                     # PWA (Vite + React + TypeScript)
+├── server/                  # API de recetas y Gateway LLM (Node + Express)
+├── shared/                  # Tipos, contratos y lógica compartida
 ├── datos/
 │   ├── recetas.json
 │   └── perfiles.json
@@ -159,7 +162,7 @@ chef-en-el-aire/
 
 ## Instalación
 
-Ver [INSTALACION.md](INSTALACION.md). Estado actual: **en desarrollo**.
+Ver [INSTALACION.md](INSTALACION.md). En resumen: `npm install` y `npm run dev`.
 
 ## Licencia
 
