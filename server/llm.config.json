@@ -1,0 +1,7 @@
+{
+  "llm": {
+    "principal": "remoto",
+    "alterno": "ollama",
+    "tiempo_limite_ms": 8000
+  }
+}

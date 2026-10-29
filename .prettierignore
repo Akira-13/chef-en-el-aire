@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+package-lock.json
+datos/
+docs/
+diseno/
+*.md
+app/public/models/
+app/public/wasm/

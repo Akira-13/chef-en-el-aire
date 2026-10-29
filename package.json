@@ -1,0 +1,32 @@
+{
+  "name": "chef-en-el-aire",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "app"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,app -c blue,magenta \"npm run dev -w @chef/server\" \"npm run dev -w @chef/app\"",
+    "build": "npm run build -w @chef/app",
+    "start": "npm run start -w @chef/server",
+    "demo": "npm run build && npm run start",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "concurrently": "^10.0.6",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,164 @@
+/* ---------- Button ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+  padding: 10px 20px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-md);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms ease;
+}
+
+.button:active {
+  transform: scale(0.97);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.secondary {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.large {
+  min-height: 56px;
+  font-size: var(--text-lg);
+}
+
+.block {
+  width: 100%;
+}
+
+/* ---------- IconButton ---------- */
+.iconButton {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-size, 48px);
+  height: var(--icon-size, 48px);
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  border: none;
+  border-radius: 50%;
+  font-size: calc(var(--icon-size, 48px) * 0.45);
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.iconButton.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+/* ---------- Card ---------- */
+.card {
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-cream);
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Chip ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  background: var(--color-chip);
+  color: var(--color-text);
+}
+
+.have {
+  background: var(--color-have);
+  color: #ffffff;
+}
+
+.missing {
+  background: var(--color-missing);
+  color: #ffffff;
+}
+
+.substitute {
+  background: var(--color-substitute);
+  color: #ffffff;
+}
+
+.timer {
+  background: var(--color-timer);
+  color: #ffffff;
+}
+
+/* ---------- Screen ---------- */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.bgCream {
+  background: var(--color-cream);
+}
+
+.bgCork {
+  background: var(--color-cork);
+  color: var(--color-on-dark);
+}
+
+.bgPrimary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.screenHeader,
+.screenMain,
+.screenFooter {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 12px var(--gutter);
+}
+
+.screenHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+.screenMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.screenFooter {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
