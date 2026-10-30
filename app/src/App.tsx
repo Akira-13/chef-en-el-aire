@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router';
+import { TimerHost } from './cooking/TimerHost';
 import { InputLayer } from './input';
 import { OutputLayer } from './output/OutputLayer';
 import { ProfileScreen } from './profile/ProfileScreen';
@@ -20,6 +21,7 @@ export function App() {
         <Route path="/perfil" element={<ProfileScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <TimerHost />
       <InputLayer />
       <OutputLayer />
     </>
