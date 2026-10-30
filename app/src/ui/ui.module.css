@@ -37,7 +37,13 @@
 
 .ghost {
   background: transparent;
-  color: var(--color-text);
+  color: inherit;
+}
+
+.timer,
+.chip.timer {
+  background: var(--color-timer);
+  color: #ffffff;
 }
 
 .large {
@@ -65,6 +71,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--shadow-card);
+  transition: transform 120ms ease;
 }
 
 .iconButton.primary {
@@ -72,12 +79,36 @@
   color: var(--color-on-primary);
 }
 
+.iconButton:active {
+  transform: scale(0.94);
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* ---------- Card ---------- */
 .card {
+  position: relative;
   padding: 20px;
   border-radius: var(--radius-card);
   background: var(--color-cream);
+  color: var(--color-text);
   box-shadow: var(--shadow-card);
+}
+
+.pinned::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  border-radius: 50%;
+  background: var(--color-primary-deco);
+  box-shadow: 0 2px 4px rgb(43 33 24 / 0.35);
 }
 
 /* ---------- Chip ---------- */
@@ -109,11 +140,6 @@
   color: #ffffff;
 }
 
-.timer {
-  background: var(--color-timer);
-  color: #ffffff;
-}
-
 /* ---------- Screen ---------- */
 .screen {
   display: flex;
@@ -126,13 +152,26 @@
 }
 
 .bgCork {
+  --color-focus: var(--color-on-dark);
   background: var(--color-cork);
   color: var(--color-on-dark);
 }
 
 .bgPrimary {
+  --color-focus: var(--color-on-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+.fixed {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fixed .screenMain {
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .screenHeader,
@@ -157,6 +196,10 @@
   flex: 1;
   flex-direction: column;
   gap: 16px;
+}
+
+.screenMain:focus {
+  outline: none;
 }
 
 .screenFooter {

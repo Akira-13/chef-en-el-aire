@@ -1,16 +1,18 @@
 // Componentes básicos de la interfaz. Todos respetan objetivos táctiles ≥ 44 px (RNF-08) y
 // usan los tokens de theme/tokens.css.
 
-import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { useEffect, useRef } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode, Ref } from 'react';
 import styles from './ui.module.css';
 
-function cx(...names: (string | false | undefined)[]): string {
+export function cx(...names: (string | false | undefined)[]): string {
   return names.filter(Boolean).join(' ');
 }
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'timer';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: 'md' | 'lg';
   block?: boolean;
@@ -65,8 +67,13 @@ export function IconButton({
   );
 }
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cx(styles.card, className)} {...props} />;
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** Tarjeta "clavada" al tablero, con su chincheta. */
+  pinned?: boolean;
+}
+
+export function Card({ pinned = false, className, ...props }: CardProps) {
+  return <div className={cx(styles.card, pinned && styles.pinned, className)} {...props} />;
 }
 
 export type ChipTone = 'neutral' | 'have' | 'missing' | 'substitute' | 'timer';
@@ -82,10 +89,14 @@ export function Chip({ tone = 'neutral', className, ...props }: ChipProps) {
 }
 
 export interface ScreenProps {
+  /** Título de la pestaña y del historial del navegador (WCAG 2.4.2). */
+  title?: string;
   header?: ReactNode;
   footer?: ReactNode;
   /** Fondo crema, de corcho (modo cocina) o primario (celebración). */
   background?: 'cream' | 'cork' | 'primary';
+  /** Ocupa justo la pantalla: el pie queda siempre a la vista y solo se desplaza el contenido. */
+  fixed?: boolean;
   children: ReactNode;
 }
 
@@ -95,11 +106,33 @@ const SCREEN_BACKGROUNDS = {
   primary: styles.bgPrimary,
 };
 
-export function Screen({ header, footer, background = 'cream', children }: ScreenProps) {
+const APP_NAME = 'Chef en el Aire';
+
+export function Screen({
+  title,
+  header,
+  footer,
+  background = 'cream',
+  fixed = false,
+  children,
+}: ScreenProps) {
+  const main = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    document.title = title ? `${title} · ${APP_NAME}` : APP_NAME;
+  }, [title]);
+
+  // Al entrar a una pantalla, el foco pasa a su contenido para el teclado y el lector (RNF-08).
+  useEffect(() => {
+    main.current?.focus({ preventScroll: true });
+  }, []);
+
   return (
-    <div className={cx(styles.screen, SCREEN_BACKGROUNDS[background])}>
+    <div className={cx(styles.screen, SCREEN_BACKGROUNDS[background], fixed && styles.fixed)}>
       {header && <header className={styles.screenHeader}>{header}</header>}
-      <main className={styles.screenMain}>{children}</main>
+      <main ref={main} tabIndex={-1} className={styles.screenMain}>
+        {children}
+      </main>
       {footer && <footer className={styles.screenFooter}>{footer}</footer>}
     </div>
   );
