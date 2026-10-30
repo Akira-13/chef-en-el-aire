@@ -56,7 +56,9 @@ a {
   *,
   *::before,
   *::after {
+    /* Una sola iteración: una animación infinita a esta duración sería un parpadeo. */
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }
