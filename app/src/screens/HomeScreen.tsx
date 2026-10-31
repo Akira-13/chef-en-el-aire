@@ -8,7 +8,8 @@ import { enterScreen } from '../core/commandContext';
 import { useRecipes } from '../core/recipes';
 import { useProfile } from '../core/services';
 import { searchRecipes, suggestRecipes } from '../personalization';
-import { IconButton, Screen } from '../ui';
+import { useInstallPrompt } from '../pwa/install';
+import { Button, IconButton, Screen } from '../ui';
 import { DIFFICULTY_LABELS, recipeArt } from '../ui/labels';
 import styles from './screens.module.css';
 
@@ -35,6 +36,7 @@ export function HomeScreen() {
   const profile = useProfile();
   const { status, recipes } = useRecipes();
   const inProgressId = useCookingSession((session) => session.recipeId);
+  const install = useInstallPrompt();
   const [query, setQuery] = useState('');
 
   useEffect(() => enterScreen('home'), []);
@@ -102,6 +104,12 @@ export function HomeScreen() {
           <RecipeCard key={recipe.id} recipe={recipe} />
         ))}
       </ul>
+
+      {install && (
+        <Button variant="secondary" block onClick={install}>
+          📲 Instalar la app
+        </Button>
+      )}
     </Screen>
   );
 }

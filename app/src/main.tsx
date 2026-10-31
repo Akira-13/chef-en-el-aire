@@ -8,8 +8,12 @@ import './theme/tokens.css';
 import './theme/global.css';
 import { App } from './App';
 import { startKeyboardInput } from './core/keyboard';
+import { startInstallListener } from './pwa/install';
+import { primeRecipesCache } from './pwa/primeRecipesCache';
 
 startKeyboardInput();
+startInstallListener();
+if (import.meta.env.PROD) void primeRecipesCache();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Falta el elemento #root en index.html');
