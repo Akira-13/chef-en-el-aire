@@ -5,10 +5,12 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import type { Step } from '@chef/shared';
 import { AssistantPanel } from '../assistant/AssistantPanel';
-import { estimatedReadingMs, substitutedIngredients } from '../cooking/progress';
+import { encouragement, estimatedReadingMs, substitutedIngredients } from '../cooking/progress';
 import { clearCookingSession } from '../cooking/session';
+import { stepIngredients } from '../cooking/stepIngredients';
 import { TimerBar } from '../cooking/TimerBar';
 import {
+  describeTimers,
   findStepTimer,
   findTimer,
   formatSpokenDuration,
@@ -131,11 +133,18 @@ export function CookingScreen() {
       case 'next':
         noteSkippedReading();
         output.stop();
+        output.cue('navigate');
         nav.next();
         break;
       case 'previous':
-        output.stop();
-        nav.previous();
+        if (nav.previous()) {
+          output.stop();
+          output.cue('navigate');
+        } else {
+          // Distinto al éxito y sin reproche (CA-31.2).
+          output.cue('error');
+          output.announce({ text: 'Ya estás en el primer paso.', kind: 'info' });
+        }
         break;
       case 'repeat':
         if (recipe && step) {
@@ -145,17 +154,29 @@ export function CookingScreen() {
             stepNumber: step.number,
           });
         }
+        output.cue('navigate');
         nav.repeat();
         break;
       case 'pause':
         output.stop();
+        output.cue('success');
         nav.setPaused(true);
         break;
       case 'resume':
+        output.cue('success');
         nav.setPaused(false);
         break;
       case 'startTimer':
         handleStartTimer(command.name);
+        break;
+      case 'whereAmI':
+        if (step) {
+          // CA-19.1: paso, texto y temporizadores, para ubicarse sin mirar la pantalla.
+          output.announce({
+            text: `Paso ${step.number} de ${nav.total}. ${step.text} ${describeTimers()}`,
+            kind: 'info',
+          });
+        }
         break;
       default:
         break;
@@ -172,6 +193,9 @@ export function CookingScreen() {
       </Screen>
     );
   }
+
+  const ingredients = stepIngredients(step, recipe.ingredients);
+  const cheer = encouragement(nav.index, nav.total);
 
   return (
     <Screen
@@ -233,6 +257,7 @@ export function CookingScreen() {
           </span>
           <span className={styles.stepCount}>
             Paso {step.number} de {nav.total}
+            {cheer && <span className={styles.cheer}>{cheer} 🎉</span>}
           </span>
           <span className={styles.recipeArt} aria-hidden="true">
             {recipeArt(recipe.id)}
@@ -242,6 +267,18 @@ export function CookingScreen() {
         {step.warning && <p className={styles.warning}>⚠️ {step.warning}</p>}
         {step.readyCue && <p className={styles.readyCue}>✨ {step.readyCue}</p>}
         <StepTimerControl step={step} />
+        {ingredients.length > 0 && (
+          <ul className={styles.stepIngredients} aria-label="Ingredientes de este paso">
+            {ingredients.map((ingredient) => (
+              <li key={ingredient.id}>
+                <Chip>
+                  {ingredient.quantity > 0 && `${ingredient.quantity} ${ingredient.unit} `}
+                  {ingredient.name}
+                </Chip>
+              </li>
+            ))}
+          </ul>
+        )}
         {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
         {nav.paused && (
           <p role="status" className={styles.paused}>

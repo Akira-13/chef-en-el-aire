@@ -22,6 +22,13 @@ export function substitutedIngredients(original: Recipe | undefined, cooked: Rec
     .map((ingredient) => ingredient.id);
 }
 
+/** Frase de ánimo según el avance; al principio no hace falta interrumpir (RF-39). */
+export function encouragement(stepIndex: number, totalSteps: number): string | null {
+  if (totalSteps > 1 && stepIndex === totalSteps - 1) return '¡Último paso!';
+  if (stepIndex >= Math.floor(totalSteps / 2)) return '¡Vas muy bien!';
+  return null;
+}
+
 export interface CelebrationPlan {
   /** Duración de la animación; nunca pasa de 5 s (RNF-16). */
   durationMs: number;

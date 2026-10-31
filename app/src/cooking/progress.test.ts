@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Ingredient, Recipe } from '@chef/shared';
-import { celebrationPlan, estimatedReadingMs, substitutedIngredients } from './progress';
+import {
+  celebrationPlan,
+  encouragement,
+  estimatedReadingMs,
+  substitutedIngredients,
+} from './progress';
 
 function recipe(ingredients: Pick<Ingredient, 'id' | 'name'>[]): Recipe {
   return { ingredients } as Recipe;
@@ -44,6 +49,15 @@ describe('celebrationPlan', () => {
     expect(celebrationPlan('solo_visual', true).sound).toBe(false);
     expect(celebrationPlan('completa', false).sound).toBe(false);
     expect(celebrationPlan('sonora', true).sound).toBe(true);
+  });
+});
+
+describe('encouragement', () => {
+  it('anima desde la mitad de la receta y avisa del último paso', () => {
+    expect(encouragement(0, 7)).toBeNull();
+    expect(encouragement(2, 7)).toBeNull();
+    expect(encouragement(3, 7)).toBe('¡Vas muy bien!');
+    expect(encouragement(6, 7)).toBe('¡Último paso!');
   });
 });
 
