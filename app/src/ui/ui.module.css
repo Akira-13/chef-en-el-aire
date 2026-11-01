@@ -144,7 +144,23 @@
 .screen {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--offline-height));
+}
+
+.offlineBanner {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--offline-height);
+  background: var(--color-text);
+  color: var(--color-cream);
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 .bgCream {
@@ -164,7 +180,7 @@
 }
 
 .fixed {
-  height: 100dvh;
+  height: calc(100dvh - var(--offline-height));
   min-height: 0;
   overflow: hidden;
 }

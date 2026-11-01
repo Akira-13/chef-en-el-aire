@@ -8,11 +8,13 @@ import { CookingScreen } from './screens/CookingScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { RecipeScreen } from './screens/RecipeScreen';
 import { useThemeFromProfile } from './theme/useThemeFromProfile';
+import { OfflineBanner } from './ui/OfflineBanner';
 
 export function App() {
   useThemeFromProfile();
   return (
     <>
+      <OfflineBanner />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/receta/:recipeId" element={<RecipeScreen />} />

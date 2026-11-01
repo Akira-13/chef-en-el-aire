@@ -11,6 +11,7 @@ html {
 
 body {
   margin: 0;
+  padding-top: var(--offline-height);
   min-height: 100dvh;
   font-family: var(--font-family);
   line-height: 1.4;
