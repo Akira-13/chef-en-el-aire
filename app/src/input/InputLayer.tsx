@@ -1,7 +1,7 @@
 // Arranca y detiene los canales de entrada (voz y gestos) según el perfil y la pantalla
 // actual, y publica lo reconocido en el bus de comandos. Se monta una sola vez.
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { COMMAND_LABELS, type Command, type ScreenId } from '@chef/shared';
 import { commandBus, useCommands } from '../core/commandBus';
 import { getCommandContext, useCommandContext } from '../core/commandContext';
@@ -9,14 +9,22 @@ import { metrics } from '../core/metrics';
 import { output, profileService, useProfile } from '../core/services';
 import { showGestureNotice } from '../output';
 import { setChannels, useChannelStore } from './channelStore';
-import { createGestureInterpreter, SWIPE_THRESHOLD } from './gestures/interpretGestures';
-import { startVoice, type VoiceErrorKind } from './voice/recognizer';
+import { reportFallback } from './fallback';
+import {
+  createGestureInterpreter,
+  createHandWatcher,
+  SENSITIVITY,
+} from './gestures/interpretGestures';
+import { GESTURE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
+import { HelpPanel } from './HelpPanel';
+import { createConfirmation } from './voice/confirmation';
+import { DEFAULT_SILENCE_MS, startVoice } from './voice/recognizer';
 
 // Voz y cámara compiten por batería: solo corren donde se cocina.
 const VOICE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
-const GESTURE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
 
 const WAKE_TIMEOUT_MS = 5000;
+const DEFAULT_LOCK_SECONDS = 30;
 
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -27,22 +35,19 @@ function gestureLabel(command: Command): string {
   return capitalize(COMMAND_LABELS[command.type]);
 }
 
-const VOICE_ERRORS: Record<VoiceErrorKind, string> = {
-  unsupported: 'Este navegador no reconoce la voz. Usa gestos o toca la pantalla.',
-  'not-allowed': 'No tengo permiso para usar el micrófono. Usa gestos o toca la pantalla.',
-  network: 'La voz necesita internet. Mientras tanto, usa gestos o toca la pantalla.',
-  other: 'La voz tuvo un problema. Puedes usar gestos o tocar la pantalla.',
-};
-
 export function InputLayer() {
   const profile = useProfile();
   const screen = useCommandContext((s) => s.screen);
   const voiceEnabled = useChannelStore((s) => s.voiceEnabled);
   const cameraUserOff = useChannelStore((s) => s.cameraUserOff);
+  const online = useChannelStore((s) => s.online);
+  const [confirmation] = useState(createConfirmation);
+  const lockTimer = useRef<number | undefined>(undefined);
   const prefs = profile.accessibility;
 
-  const voiceAllowed = prefs.activeInputs.includes('voz') && !prefs.voiceDisabled;
-  const voiceRuns = voiceAllowed && voiceEnabled && VOICE_SCREENS.includes(screen);
+  const voiceAllowed = isVoiceAllowed(prefs);
+  const voiceWanted = voiceAllowed && voiceEnabled && VOICE_SCREENS.includes(screen);
+  const voiceRuns = voiceWanted && online;
   const gesturesAllowed = prefs.activeInputs.includes('gestos');
   const gesturesRun = gesturesAllowed && !cameraUserOff && GESTURE_SCREENS.includes(screen);
 
@@ -57,54 +62,93 @@ export function InputLayer() {
       .catch(() => {});
   }, [voiceAllowed]);
 
+  useEffect(() => {
+    const update = () => setChannels({ online: navigator.onLine });
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+      window.clearTimeout(lockTimer.current);
+      confirmation.dispose();
+    };
+  }, [confirmation]);
+
   useCommands(({ command }) => {
     if (command.type === 'cameraOff') setChannels({ cameraUserOff: true });
     if (command.type === 'cameraOn') setChannels({ cameraUserOff: false });
+    if (command.type === 'lockGestures') lockGestures(command.seconds ?? DEFAULT_LOCK_SECONDS);
   });
 
-  // ---------- Voz (RF-18) ----------
+  // "Bloquea gestos": se reactivan solos y se avisa (CA-17.2).
+  function lockGestures(seconds: number): void {
+    setChannels({ gesturesLockedUntil: Date.now() + seconds * 1000 });
+    output.announce({ text: `Gestos bloqueados por ${seconds} segundos.`, kind: 'info' });
+    window.clearTimeout(lockTimer.current);
+    lockTimer.current = window.setTimeout(() => {
+      setChannels({ gesturesLockedUntil: 0 });
+      output.cue('success');
+      output.announce({ text: 'Los gestos están activos de nuevo.', kind: 'info' });
+    }, seconds * 1000);
+  }
+
+  // ---------- Voz (RF-18, RF-19) ----------
+  const silenceMs = prefs.voiceTimeoutMs ?? DEFAULT_SILENCE_MS;
+  useEffect(() => {
+    if (!voiceWanted || online) return;
+    setChannels({ voice: 'error' });
+    reportFallback('offline', performance.now());
+  }, [voiceWanted, online]);
+
   useEffect(() => {
     if (!voiceRuns) return;
+    const startedAt = performance.now();
     setChannels({ voice: 'on' });
     let wakeTimer: number | undefined;
-    const stop = startVoice({
-      onCommand(command, extra) {
-        window.clearTimeout(wakeTimer);
-        setChannels({ wakeArmed: false });
-        metrics.start('voice.commandToRender');
-        commandBus.emit(command, 'voice', extra);
-        // Hasta el siguiente cuadro (RNF-01).
-        requestAnimationFrame(() =>
-          metrics.end('voice.commandToRender', '', { command: command.type }),
-        );
+    const stop = startVoice(
+      {
+        onCommand(command, extra, text) {
+          window.clearTimeout(wakeTimer);
+          setChannels({ wakeArmed: false });
+          confirmation.command(command, extra, text);
+        },
+        onPhrase: (transcript) => confirmation.phrase(transcript),
+        onWake() {
+          setChannels({ wakeArmed: true });
+          output.cue('navigate');
+          window.clearTimeout(wakeTimer);
+          wakeTimer = window.setTimeout(() => setChannels({ wakeArmed: false }), WAKE_TIMEOUT_MS);
+        },
+        onError(kind) {
+          if (kind === 'other') return;
+          setChannels({ voice: 'error' });
+          reportFallback(kind, startedAt);
+        },
       },
-      onWake() {
-        setChannels({ wakeArmed: true });
-        output.cue('navigate');
-        window.clearTimeout(wakeTimer);
-        wakeTimer = window.setTimeout(() => setChannels({ wakeArmed: false }), WAKE_TIMEOUT_MS);
-      },
-      onError(kind) {
-        if (kind === 'other') return;
-        setChannels({ voice: 'error' });
-        output.cue('error');
-        output.announce({ text: VOICE_ERRORS[kind], kind: 'error' });
-      },
-    });
+      { silenceMs },
+    );
     return () => {
       stop();
       window.clearTimeout(wakeTimer);
       setChannels({ voice: 'off', wakeArmed: false });
     };
-  }, [voiceRuns]);
+  }, [voiceRuns, silenceMs, confirmation]);
 
-  // ---------- Gestos (RF-20, RF-21) ----------
-  const swipeThreshold = SWIPE_THRESHOLD[prefs.gestureSensitivity] ?? SWIPE_THRESHOLD.normal;
+  // ---------- Gestos (RF-20 a RF-23) ----------
+  const sensitivity = SENSITIVITY[prefs.gestureSensitivity] ?? SENSITIVITY.normal;
   useEffect(() => {
     if (!gesturesRun) return;
     let stop: (() => void) | undefined;
     let cancelled = false;
-    const interpreter = createGestureInterpreter({ swipeThreshold });
+    const startedAt = performance.now();
+    const interpreter = createGestureInterpreter({
+      ...sensitivity,
+      onActivate() {
+        showGestureNotice('Gestos activos');
+        output.cue('gesture');
+      },
+    });
+    const handWatcher = createHandWatcher();
     setChannels({ camera: 'starting' });
 
     // MediaPipe pesa: se carga solo cuando hace falta la cámara.
@@ -113,7 +157,15 @@ export function InputLayer() {
       stop = startGestures({
         onFrame(frame, t) {
           const detectedAt = performance.now();
-          if (useChannelStore.getState().camera !== 'on') setChannels({ camera: 'on' });
+          const channels = useChannelStore.getState();
+          if (channels.camera !== 'on') setChannels({ camera: 'on' });
+          if (Date.now() < channels.gesturesLockedUntil) {
+            interpreter.reset();
+            return;
+          }
+          if (handWatcher.update(frame, t)) {
+            output.announce({ text: 'No veo bien tu mano.', kind: 'info' });
+          }
           const command = interpreter.update(
             frame,
             t,
@@ -121,6 +173,11 @@ export function InputLayer() {
             profileService.getProfile().accessibility,
           );
           if (!command) return;
+          if (confirmation.gesture(command)) {
+            showGestureNotice('Gesto: Sí');
+            output.cue('gesture');
+            return;
+          }
           commandBus.emit(command, 'gesture');
           metrics.record('gesture.toAction', performance.now() - detectedAt, 'ms', {
             command: command.type,
@@ -133,14 +190,7 @@ export function InputLayer() {
         },
         onError(kind) {
           setChannels({ camera: 'error' });
-          output.cue('error');
-          output.announce({
-            text:
-              kind === 'camera'
-                ? 'No puedo usar la cámara. Usa la voz o toca la pantalla.'
-                : 'No pude cargar los gestos. Usa la voz o toca la pantalla.',
-            kind: 'error',
-          });
+          reportFallback(kind, startedAt);
         },
       });
     });
@@ -150,7 +200,7 @@ export function InputLayer() {
       stop?.();
       setChannels({ camera: 'off' });
     };
-  }, [gesturesRun, swipeThreshold]);
+  }, [gesturesRun, sensitivity, confirmation]);
 
-  return null;
+  return <HelpPanel />;
 }

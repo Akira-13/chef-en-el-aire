@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { AccessibilityPrefs, Command, CommandContext } from '@chef/shared';
 import {
   createGestureInterpreter,
+  createHandWatcher,
+  SENSITIVITY,
   USER_LEFT_IS_POSITIVE_X,
   type GestureFrame,
 } from './interpretGestures';
 
-type Prefs = Pick<AccessibilityPrefs, 'enabledGestures' | 'gestureHoldMs'>;
+type Prefs = Pick<
+  AccessibilityPrefs,
+  'enabledGestures' | 'gestureHoldMs' | 'requiresActivationGesture'
+>;
 
 const ALL: Prefs = {
   enabledGestures: [
@@ -105,5 +110,48 @@ describe('interpretación de gestos (CA-15.1, CA-15.2)', () => {
 
   it('sin mano visible no hace nada', () => {
     expect(run([{ category: null, wristX: null }])).toEqual([]);
+  });
+});
+
+describe('gesto de activación y movilidad (CA-17.1, CA-18.1, CA-18.2)', () => {
+  const ACTIVATION: Prefs = { ...ALL, requiresActivationGesture: true };
+  const swipe = move(userLeft[0]!, userLeft[1]!, 6);
+
+  it('sin el índice levantado no acepta gestos', () => {
+    expect(run(swipe, { prefs: ACTIVATION })).toEqual([]);
+    expect(run(hold('Open_Palm', 8), { prefs: ACTIVATION })).toEqual([]);
+  });
+
+  it('tras el índice levantado acepta gestos durante 5 s', () => {
+    let activations = 0;
+    const interpreter = createGestureInterpreter({ onActivate: () => activations++ });
+    expect(run(hold('Pointing_Up', 8), { prefs: ACTIVATION }, interpreter)).toEqual([]);
+    expect(activations).toBe(1);
+    expect(run(swipe, { prefs: ACTIVATION, start: 1500 }, interpreter)).toEqual([{ type: 'next' }]);
+    expect(run(swipe, { prefs: ACTIVATION, start: 7000 }, interpreter)).toEqual([]);
+  });
+
+  it('con alta tolerancia basta un movimiento corto y lento', () => {
+    const [from, to] = userLeft as [number, number];
+    const short = move(from, from + (to - from) * 0.3, 10);
+    expect(run(short)).toEqual([]);
+    expect(run(short, {}, createGestureInterpreter(SENSITIVITY.alta_tolerancia))).toEqual([
+      { type: 'next' },
+    ]);
+  });
+
+  it('avisa si la mano no se ve bien por 3 s, como máximo cada 30 s', () => {
+    const watcher = createHandWatcher();
+    const unclear: GestureFrame = { category: null, wristX: 0.5 };
+    const warnings = (from: number, to: number) => {
+      let count = 0;
+      for (let t = from; t <= to; t += 100) if (watcher.update(unclear, t)) count++;
+      return count;
+    };
+    expect(warnings(0, 2900)).toBe(0);
+    expect(warnings(3000, 20000)).toBe(1);
+    expect(warnings(20100, 40000)).toBe(1);
+    expect(watcher.update({ category: null, wristX: null }, 40100)).toBe(false);
+    expect(watcher.update({ category: 'None', wristX: 0.5 }, 40200)).toBe(false);
   });
 });

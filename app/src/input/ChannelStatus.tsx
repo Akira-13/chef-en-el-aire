@@ -3,13 +3,15 @@
 import { commandBus } from '../core/commandBus';
 import { output, useProfile } from '../core/services';
 import { setChannels, useChannelStore } from './channelStore';
+import { reportFallback } from './fallback';
 import styles from './input.module.css';
 import { requestMicrophone } from './voice/recognizer';
 import { WAKE_WORD } from './voice/wakeWord';
 
 export function ChannelStatus() {
   const prefs = useProfile().accessibility;
-  const { voice, camera, voiceEnabled, cameraUserOff, wakeArmed } = useChannelStore();
+  const { voice, camera, voiceEnabled, cameraUserOff, wakeArmed, gesturesLockedUntil } =
+    useChannelStore();
   const voiceAllowed = prefs.activeInputs.includes('voz') && !prefs.voiceDisabled;
   const gesturesAllowed = prefs.activeInputs.includes('gestos');
 
@@ -19,6 +21,7 @@ export function ChannelStatus() {
       output.announce({ text: 'Voz desactivada.', kind: 'info' });
       return;
     }
+    const askedAt = performance.now();
     if (await requestMicrophone()) {
       setChannels({ voiceEnabled: true });
       output.announce({
@@ -27,11 +30,7 @@ export function ChannelStatus() {
       });
     } else {
       setChannels({ voice: 'error' });
-      output.cue('error');
-      output.announce({
-        text: 'No tengo permiso para usar el micrófono. Usa gestos o toca la pantalla.',
-        kind: 'error',
-      });
+      reportFallback('not-allowed', askedAt);
     }
   }
 
@@ -44,13 +43,15 @@ export function ChannelStatus() {
         : `Di «${WAKE_WORD}…»`;
 
   const cameraLabel =
-    camera === 'on'
-      ? 'Cámara activa'
-      : camera === 'starting'
-        ? 'Abriendo cámara…'
-        : camera === 'error'
-          ? 'Cámara no disponible'
-          : 'Cámara apagada';
+    gesturesLockedUntil > 0
+      ? 'Gestos bloqueados'
+      : camera === 'on'
+        ? 'Cámara activa'
+        : camera === 'starting'
+          ? 'Abriendo cámara…'
+          : camera === 'error'
+            ? 'Cámara no disponible'
+            : 'Cámara apagada';
 
   return (
     <div className={styles.status}>

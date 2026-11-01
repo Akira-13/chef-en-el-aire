@@ -13,6 +13,9 @@ interface ChannelStore {
   cameraUserOff: boolean;
   /** Se escuchó "chef" y se espera el comando. */
   wakeArmed: boolean;
+  /** Gestos ignorados hasta este instante (Date.now()) por "bloquea gestos" (CA-17.2). */
+  gesturesLockedUntil: number;
+  online: boolean;
 }
 
 export const useChannelStore = create<ChannelStore>(() => ({
@@ -21,6 +24,8 @@ export const useChannelStore = create<ChannelStore>(() => ({
   voiceEnabled: false,
   cameraUserOff: false,
   wakeArmed: false,
+  gesturesLockedUntil: 0,
+  online: typeof navigator === 'undefined' ? true : navigator.onLine,
 }));
 
 export function setChannels(patch: Partial<ChannelStore>): void {

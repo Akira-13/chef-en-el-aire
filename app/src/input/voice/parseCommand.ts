@@ -64,7 +64,10 @@ const RULES: Rule[] = [
   ],
   [/^(?:apaga|desactiva) (?:la )?camara$/, () => ({ type: 'cameraOff' })],
   [/^(?:enciende|prende|activa) (?:la )?camara$/, () => ({ type: 'cameraOn' })],
-  [/^bloquea (?:los )?gestos$/, () => ({ type: 'lockGestures' })],
+  [
+    /^bloquea (?:los )?gestos(?: (?:por|durante) (\d+) segundos)?$/,
+    (m) => (m[1] ? { type: 'lockGestures', seconds: Number(m[1]) } : { type: 'lockGestures' }),
+  ],
   [/^no me (?:gusto|encanto)$/, () => ({ type: 'rate', value: 'down' })],
   [/^me (?:gusto|encanto)$/, () => ({ type: 'rate', value: 'up' })],
   [

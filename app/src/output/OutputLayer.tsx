@@ -18,6 +18,7 @@ export function OutputLayer() {
   const caption = useOutputStore((s) => s.caption);
   const flash = useOutputStore((s) => s.flash);
   const gestureNotice = useOutputStore((s) => s.gestureNotice);
+  const hint = useOutputStore((s) => s.hint);
 
   return (
     <div className={styles.layer} aria-hidden="true">
@@ -33,6 +34,12 @@ export function OutputLayer() {
       {gestureNotice && (
         <div key={gestureNotice.id} className={styles.gestureNotice}>
           {gestureNotice.label}
+        </div>
+      )}
+      {hint && (
+        <div key={hint.id} className={styles.hint}>
+          <span className={styles.hintIcon}>{hint.icon}</span>
+          <span>{hint.text}</span>
         </div>
       )}
       {caption && (

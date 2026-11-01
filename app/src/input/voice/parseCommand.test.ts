@@ -31,6 +31,7 @@ describe('parseCommand (CA-13.1)', () => {
     ['apaga la cámara', { type: 'cameraOff' }],
     ['enciende la camara', { type: 'cameraOn' }],
     ['bloquea gestos', { type: 'lockGestures' }],
+    ['bloquea los gestos por 60 segundos', { type: 'lockGestures', seconds: 60 }],
     ['me gustó', { type: 'rate', value: 'up' }],
     ['no me gustó', { type: 'rate', value: 'down' }],
     ['estoy nervioso', { type: 'feeling', feeling: 'nervous' }],

@@ -19,20 +19,28 @@ export interface GestureNotice extends Timed {
   label: string;
 }
 
+export interface Hint extends Timed {
+  icon: string;
+  text: string;
+}
+
 interface OutputState {
   caption: Caption | null;
   flash: Flash | null;
   gestureNotice: GestureNotice | null;
+  hint: Hint | null;
 }
 
 export const useOutputStore = create<OutputState>(() => ({
   caption: null,
   flash: null,
   gestureNotice: null,
+  hint: null,
 }));
 
 const FLASH_MS = 700;
 const GESTURE_NOTICE_MS = 1500;
+const HINT_MS = 6000;
 
 let nextId = 1;
 const timers = new Map<keyof OutputState, number>();
@@ -73,4 +81,9 @@ export function showFlash(kind: CueKind): void {
 /** Aviso de gesto reconocido, por ejemplo "Gesto: Siguiente" (CA-16.1). */
 export function showGestureNotice(label: string): void {
   show('gestureNotice', { label }, GESTURE_NOTICE_MS);
+}
+
+/** Gesto ilustrado que se sugiere como canal alterno (CA-14.2). */
+export function showHint(icon: string, text: string): void {
+  show('hint', { icon, text }, HINT_MS);
 }
