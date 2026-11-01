@@ -2,13 +2,16 @@
 // qué (CA-05.1) y deja elegir entre la versión adaptada y la original (CA-05.2). Si el
 // validador local encontró un alérgeno, solo se continúa con una confirmación explícita:
 // el botón dedicado o la voz, nunca un gesto genérico (RF-07, CA-06.2). Si el asistente no
-// está disponible se informa y la receta original sigue intacta (RF-10).
+// está disponible se informa, la receta original sigue intacta y se ofrecen los sustitutos del
+// recetario, que se calculan en el dispositivo y se validan igual (RF-10).
 
 import { useState } from 'react';
 import {
   ALLERGEN_LABELS,
+  applySafeSubstitutions,
   type AdaptResponse,
   type AllergenFinding,
+  type DietaryConstraints,
   type Recipe,
   type RecipeChange,
 } from '@chef/shared';
@@ -21,11 +24,15 @@ import styles from './assistant.module.css';
 
 type AdaptedResponse = Exclude<AdaptResponse, { status: 'unavailable' }>;
 
+// Lo que necesita la vista antes/después, venga del asistente o de los sustitutos del recetario.
+type Proposal = Pick<AdaptedResponse, 'adapted' | 'changes'> &
+  ({ status: 'ok' } | { status: 'blocked'; findings: AllergenFinding[] });
+
 type PanelState =
   | { phase: 'idle' }
   | { phase: 'loading' }
   | { phase: 'unavailable'; message: string }
-  | { phase: 'result'; response: AdaptedResponse };
+  | { phase: 'result'; response: Proposal; fromRecipe: boolean };
 
 function describeFinding(finding: AllergenFinding): string {
   const allergen = ALLERGEN_LABELS[finding.allergen];
@@ -63,17 +70,23 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
   const blocked =
     state.phase === 'result' && state.response.status === 'blocked' ? state.response : null;
 
+  const constraints: DietaryConstraints = {
+    allergies: profile.explicit.allergies,
+    dinerRestrictions: profile.explicit.dinerRestrictions,
+    diet: profile.explicit.diet,
+  };
+
+  // RF-10: sin asistente, los sustitutos del recetario cuyo motivo coincide con el perfil.
+  const recipeSubstitutions =
+    state.phase === 'unavailable' ? applySafeSubstitutions(recipe, constraints) : null;
+
   async function adapt() {
     // "Pensando…" se pinta antes de esperar la respuesta (RNF-03).
     setState({ phase: 'loading' });
     output.announce({ text: 'Pensando…', kind: 'info' });
     const response = await assistantClient.adapt({
       recipeId: recipe.id,
-      constraints: {
-        allergies: profile.explicit.allergies,
-        dinerRestrictions: profile.explicit.dinerRestrictions,
-        diet: profile.explicit.diet,
-      },
+      constraints,
       pantry: profile.pantry,
       skillLevel: profile.skillLevel,
     });
@@ -82,6 +95,21 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
       setState({ phase: 'unavailable', message: response.message });
       return;
     }
+    show(response, false);
+  }
+
+  function showRecipeSubstitutions() {
+    if (!recipeSubstitutions) return;
+    const { adapted, changes, findings } = recipeSubstitutions;
+    show(
+      findings.length > 0
+        ? { status: 'blocked', adapted, changes, findings }
+        : { status: 'ok', adapted, changes },
+      true,
+    );
+  }
+
+  function show(response: Proposal, fromRecipe: boolean) {
     if (response.status === 'blocked') {
       const found = response.findings.map(describeFinding).join('. ');
       output.announce({
@@ -95,10 +123,10 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
         kind: 'info',
       });
     }
-    setState({ phase: 'result', response });
+    setState({ phase: 'result', response, fromRecipe });
   }
 
-  function applyAdapted(response: AdaptedResponse) {
+  function applyAdapted(response: Proposal) {
     setAdaptedRecipe(response.adapted);
     output.announce({ text: 'Usaré la receta adaptada.', kind: 'success' });
     setState({ phase: 'idle' });
@@ -128,6 +156,11 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
 
       {state.phase === 'loading' && <p role="status">Pensando…</p>}
       {state.phase === 'unavailable' && <p role="status">{state.message}</p>}
+      {recipeSubstitutions && (
+        <Button variant="secondary" block onClick={showRecipeSubstitutions}>
+          Ver sustituciones del recetario
+        </Button>
+      )}
 
       {isAdapted && !result && (
         <>
@@ -142,6 +175,9 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
 
       {result && (
         <>
+          {state.phase === 'result' && state.fromRecipe && (
+            <p className={styles.note}>Sustituciones del recetario, sin asistente.</p>
+          )}
           {result.changes.length > 0 ? (
             <ul className={styles.changes} aria-label="Cambios propuestos">
               {result.changes.map((change, i) => (

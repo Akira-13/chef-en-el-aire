@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ASSISTANT_UNAVAILABLE_MESSAGE,
+  findAllergens,
   toRecipes,
   type AdaptResponse,
   type AllergenFinding,
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   announce: vi.fn(),
   setAdaptedRecipe: vi.fn(),
   clearAdaptedRecipe: vi.fn(),
+  allergies: ['mani'],
 }));
 
 vi.mock('../core/assistantClient', () => ({ assistantClient: { adapt: mocks.adapt } }));
@@ -25,7 +27,7 @@ vi.mock('../core/services', () => ({
   useProfile: () => ({
     skillLevel: 'novato',
     pantry: [],
-    explicit: { allergies: ['mani'], dinerRestrictions: [], diet: 'omnivora' },
+    explicit: { allergies: mocks.allergies, dinerRestrictions: [], diet: 'omnivora' },
   }),
 }));
 vi.mock('../core/recipes', () => ({
@@ -73,6 +75,7 @@ let root: Root;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.allergies = ['mani'];
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -204,5 +207,65 @@ describe('AdaptationPanel bloqueada por alérgeno', () => {
     await act(async () => button('Usar original')!.click());
     expect(mocks.clearAdaptedRecipe).toHaveBeenCalledWith('REC-008');
     expect(mocks.setAdaptedRecipe).not.toHaveBeenCalled();
+  });
+});
+
+describe('AdaptationPanel sin asistente: sustituciones del recetario', () => {
+  const unavailable: AdaptResponse = {
+    status: 'unavailable',
+    message: ASSISTANT_UNAVAILABLE_MESSAGE,
+  };
+  const OFFER = 'Ver sustituciones del recetario';
+
+  it('con el asistente no disponible ofrece los reemplazos del recetario (RF-10)', async () => {
+    await render();
+    expect(button(OFFER)).toBeUndefined();
+    await request(unavailable);
+    expect(container.textContent).toContain(ASSISTANT_UNAVAILABLE_MESSAGE);
+    expect(button(OFFER)).toBeDefined();
+    expect(mocks.setAdaptedRecipe).not.toHaveBeenCalled();
+  });
+
+  it('no ofrece nada si el recetario no tiene sustituto para el perfil (RF-10)', async () => {
+    mocks.allergies = ['pescado'];
+    await request(unavailable);
+    expect(button(OFFER)).toBeUndefined();
+  });
+
+  it('lista los cambios sin volver a llamar al asistente y marca su origen (CA-05.1)', async () => {
+    await request(unavailable);
+    await act(async () => button(OFFER)!.click());
+    const text = container.textContent ?? '';
+    expect(text).toContain('maní tostado');
+    expect(text).toContain('semillas de girasol tostadas');
+    expect(text).toContain('Sin maní');
+    expect(text).toContain('Sustituciones del recetario');
+    expect(mocks.adapt).toHaveBeenCalledTimes(1);
+  });
+
+  it('"Usar adaptada" aplica una receta que el validador no marca (CA-05.2, RF-07)', async () => {
+    await request(unavailable);
+    await act(async () => button(OFFER)!.click());
+    await act(async () => button('Usar adaptada')!.click());
+    const applied = mocks.setAdaptedRecipe.mock.calls[0]![0] as Recipe;
+    expect(applied.id).toBe('REC-008');
+    expect(
+      findAllergens(applied, { allergies: ['mani'], dinerRestrictions: [], diet: 'omnivora' }),
+    ).toEqual([]);
+  });
+
+  it('si aún queda un alérgeno en un paso, exige la misma confirmación explícita (CA-06.2)', async () => {
+    // El paso 5 nombra el huevo y el recetario solo sabe "omitir" el ingrediente.
+    mocks.allergies = ['huevo'];
+    await request(unavailable);
+    await act(async () => button(OFFER)!.click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('huevo');
+    expect(button('Usar adaptada')).toBeUndefined();
+    await act(async () => {
+      commandBus.emit({ type: 'confirm' }, 'touch');
+    });
+    expect(mocks.setAdaptedRecipe).not.toHaveBeenCalled();
+    await act(async () => void commandBus.emit({ type: 'confirm' }, 'voice'));
+    expect(mocks.setAdaptedRecipe).toHaveBeenCalledTimes(1);
   });
 });

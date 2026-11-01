@@ -145,3 +145,5 @@ export function findAllergens(recipe: Recipe, constraints: DietaryConstraints): 
 
   return findings;
 }
+
+export * from './substitutions';
