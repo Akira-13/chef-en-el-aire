@@ -361,3 +361,18 @@
   display: block;
   margin: 8px auto 0;
 }
+
+/* ---------- Bienvenida ---------- */
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-block: auto;
+  text-align: center;
+  animation: popIn 300ms ease-out;
+}
+
+.onboardingText {
+  font-size: var(--text-lg);
+}
