@@ -434,3 +434,76 @@ describe('AssistantPanel: retroalimentación afectiva', () => {
     expect(container.textContent).toContain('Tranquilo');
   });
 });
+
+describe('AssistantPanel: el ánimo declarado llega al asistente', () => {
+  const feel = (feeling: 'nervous' | 'tired' | 'confused' | 'happy') =>
+    act(async () => {
+      commandBus.emit({ type: 'feeling', feeling }, 'voice');
+    });
+  const lastRequest = () => mocks.ask.mock.calls.at(-1)![0] as Record<string, unknown>;
+
+  async function ask(text = '¿Cuánto hiervo las papas?') {
+    await type(text);
+    await act(async () => button('Preguntar')!.click());
+  }
+
+  it('tras declarar un ánimo, la siguiente pregunta lo lleva (RF-41, CA-33.1)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('nervous');
+    await ask();
+    expect(lastRequest()).toMatchObject({
+      feeling: 'nervous',
+      question: '¿Cuánto hiervo las papas?',
+    });
+  });
+
+  it('sin ánimo declarado la pregunta no trae feeling (RF-41)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await ask();
+    expect('feeling' in lastRequest()).toBe(false);
+  });
+
+  it('el último ánimo declarado es el que se envía (RF-41)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('nervous');
+    await feel('tired');
+    await ask();
+    expect(lastRequest().feeling).toBe('tired');
+  });
+
+  it('el ánimo sigue vigente al pasar al siguiente paso de la misma receta (CA-33.1)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('confused');
+    await act(async () => root.render(<AssistantPanel recipe={recipe} step={recipe.steps[4]!} />));
+    await ask();
+    expect(lastRequest()).toMatchObject({
+      feeling: 'confused',
+      stepNumber: recipe.steps[4]!.number,
+    });
+  });
+
+  it('declarar que está contento lo quita: ya no hay nada que ajustar (RF-41)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('nervous');
+    await feel('happy');
+    await ask();
+    expect('feeling' in lastRequest()).toBe(false);
+  });
+
+  it('al cambiar de receta el ánimo se olvida (RF-41)', async () => {
+    mocks.ask.mockResolvedValue(answer);
+    const other = toRecipes(rawRecipes as unknown as RawRecipeBook).find(
+      (r) => r.id === 'REC-001',
+    )!;
+    await render();
+    await feel('nervous');
+    await act(async () => root.render(<AssistantPanel recipe={other} step={other.steps[0]!} />));
+    await ask();
+    expect('feeling' in lastRequest()).toBe(false);
+  });
+});

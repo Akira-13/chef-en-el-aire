@@ -102,6 +102,14 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   // pause y resume de cualquier canal.
   const [feeling, setFeeling] = useState<Feeling | null>(null);
   const [paused, setPaused] = useState(false);
+  // RF-41, CA-33.1: el último ánimo declarado viaja con cada pregunta para que el asistente ajuste
+  // el tono. A diferencia del mensaje de apoyo, no se borra al cambiar de paso: quien está
+  // nervioso lo sigue estando. Se olvida al declarar que está contento o al cambiar de receta.
+  const declaredFeeling = useRef<Feeling | null>(null);
+
+  useEffect(() => {
+    declaredFeeling.current = null;
+  }, [recipe.id]);
 
   useEffect(() => {
     requestId.current += 1;
@@ -162,6 +170,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       question: trimmed,
       skillLevel: profile.skillLevel,
       tone: profile.emotional.assistantTone,
+      ...(declaredFeeling.current && { feeling: declaredFeeling.current }),
       constraints,
     };
     const response = await assistantClient.ask(request);
@@ -230,6 +239,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   function support(declared: Feeling) {
     const { message, offerPause } = FEELING_SUPPORT[declared];
     setFeeling(declared);
+    declaredFeeling.current = declared === 'happy' ? null : declared;
     output.announce({
       text: offerPause && !paused ? `${message} ${PAUSE_OFFER}` : message,
       short: message,
