@@ -244,11 +244,14 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
     }
 
     if (step.readyCue) {
+      // El texto del paso es de la receta, pero también puede nombrar un alérgeno vigilado.
+      const allergenWarnings = findAnswerWarnings([step.text, step.readyCue], request.constraints);
       const body: ExplainResponse = {
         status: 'ok',
         explanation: step.text,
         readyCue: step.readyCue,
         readyCueSource: 'recipe',
+        ...(allergenWarnings.length > 0 && { allergenWarnings }),
         provider: null,
         latencyMs: 0,
       };
@@ -268,10 +271,15 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
           }),
         ),
       );
+      const allergenWarnings = findAnswerWarnings(
+        [value.explanation, value.readyCue],
+        request.constraints,
+      );
       const body: ExplainResponse = {
         status: 'ok',
         ...value,
         readyCueSource: 'assistant',
+        ...(allergenWarnings.length > 0 && { allergenWarnings }),
         provider,
         latencyMs,
       };

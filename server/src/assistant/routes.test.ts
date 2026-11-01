@@ -482,6 +482,72 @@ describe('POST /api/assistant/explain', () => {
     expect(seen[0]?.prompt).toContain('maní');
   });
 
+  it('avisa si la explicación o la pista del modelo nombran un alérgeno del perfil (RF-07, RNF-06)', async () => {
+    const mentionsPeanut = (explicacion: string, pista: string) =>
+      JSON.stringify({ explicacion, pista_listo: pista });
+    const constraints = diego.constraints;
+    const inExplanation = await start({
+      remoto: fake('remoto', () => mentionsPeanut('Agrega el maní molido.', 'Se ve cremoso.')),
+    });
+    expect((await explain(inExplanation, { ...explainBody, constraints })).body).toMatchObject({
+      allergenWarnings: ['mani'],
+    });
+    const inCue = await start({
+      remoto: fake('remoto', () => mentionsPeanut('Se explica.', 'Sabe a maní tostado.')),
+    });
+    expect((await explain(inCue, { ...explainBody, constraints })).body).toMatchObject({
+      allergenWarnings: ['mani'],
+    });
+  });
+
+  it('avisa del alérgeno de un comensal en la explicación del modelo (RF-07, RNF-06)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () =>
+        JSON.stringify({ explicacion: 'Añade un poco de leche.', pista_listo: 'Se ve cremoso.' }),
+      ),
+    });
+    const { body } = await explain(baseUrl, {
+      ...explainBody,
+      constraints: {
+        allergies: [],
+        dinerRestrictions: [{ diner: 'esposo', restriction: 'leche', reason: 'lactosa' }],
+        diet: 'omnivora',
+      },
+    });
+    expect(body).toMatchObject({ allergenWarnings: ['leche'] });
+  });
+
+  it('sin alérgenos vigilados en la explicación no agrega avisos (RF-07)', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => generated) });
+    const other = await explain(baseUrl, { ...explainBody, constraints: diego.constraints });
+    expect(other.body).not.toHaveProperty('allergenWarnings');
+    expect((await explain(baseUrl, explainBody)).body).not.toHaveProperty('allergenWarnings');
+    const unwatched = await start({
+      remoto: fake('remoto', () =>
+        JSON.stringify({ explicacion: 'Usa leche.', pista_listo: 'Se ve cremoso.' }),
+      ),
+    });
+    const { body } = await explain(unwatched, { ...explainBody, constraints: diego.constraints });
+    expect(body).not.toHaveProperty('allergenWarnings');
+  });
+
+  it('también avisa con la pista de los datos si el texto del paso nombra un alérgeno (RF-07)', async () => {
+    // El paso 3 de la ocopa trae pista_listo y su texto nombra el maní.
+    const baseUrl = await start({});
+    const { body } = await explain(baseUrl, {
+      ...explainBody,
+      stepNumber: 3,
+      constraints: diego.constraints,
+    });
+    expect(body).toMatchObject({ readyCueSource: 'recipe', allergenWarnings: ['mani'] });
+    const clean = await explain(baseUrl, {
+      ...explainBody,
+      stepNumber: withCue.number,
+      constraints: diego.constraints,
+    });
+    expect(clean.body).not.toHaveProperty('allergenWarnings');
+  });
+
   it('responde 503 "no disponible" si falta la pista y nadie contesta (CA-08.3)', async () => {
     const baseUrl = await start({ remoto: failing('remoto'), ollama: failing('ollama') });
     const { status, body } = await explain(baseUrl, explainBody);

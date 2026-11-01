@@ -113,6 +113,8 @@ export type ExplainResponse =
       readyCue: string;
       /** `assistant` cuando la señal no estaba en los datos y la generó el LLM (CA-10.2). */
       readyCueSource: 'recipe' | 'assistant';
+      /** Alérgenos vigilados (del perfil o de un comensal) que la explicación o la señal mencionan; se omite si no hay (RF-07). */
+      allergenWarnings?: AllergenCategory[];
       provider: LLMProviderId | null;
       latencyMs: number;
     }
