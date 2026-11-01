@@ -1,0 +1,127 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note {
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.change {
+  padding: 12px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.label {
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.before {
+  color: var(--color-missing);
+  text-decoration: line-through;
+}
+
+.after {
+  color: var(--color-have);
+  font-weight: 700;
+}
+
+.reason {
+  display: block;
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.warning {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.warningTitle {
+  color: var(--color-accent);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.warningList {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.askRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.askField {
+  flex: 1 1 100%;
+}
+
+.askInput {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 10px 16px;
+  border: 2px solid var(--color-chip);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  /* Fija el color: dentro del panel oscuro heredaría el texto claro sobre fondo blanco. */
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.askInput::placeholder {
+  color: var(--color-text-2);
+}
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.readyCue {
+  color: var(--color-have);
+  font-weight: 700;
+}
+
+.allergenNotice {
+  padding: 8px 12px;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  color: var(--color-accent);
+  font-weight: 700;
+}

@@ -4,13 +4,24 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { assistantRouter } from './assistant/routes';
+import type { LLMProviderId } from '@chef/shared';
+import { createAssistantRouter } from './assistant/routes';
 import { loadConfig } from './config';
 import { getRecipe, getRecipes } from './data/recipes';
+import type { LLMProvider } from './llm/LLMProvider';
+import { createSelector } from './llm/ProviderSelector';
 
 const APP_DIST = fileURLToPath(new URL('../../app/dist', import.meta.url));
 
-export function createApp(options: { serveApp?: boolean } = {}) {
+export interface AppOptions {
+  serveApp?: boolean;
+  /** Proveedores de LLM que reemplazan a los reales; las pruebas inyectan proveedores falsos. */
+  providers?: Partial<Record<LLMProviderId, LLMProvider>>;
+  /** Destino del registro de qué proveedor respondió; por defecto, la consola. */
+  llmLog?: (message: string) => void;
+}
+
+export function createApp(options: AppOptions = {}) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
@@ -32,7 +43,11 @@ export function createApp(options: { serveApp?: boolean } = {}) {
     res.json(recipe);
   });
 
-  app.use('/api/assistant', assistantRouter);
+  // La configuración se lee en cada pedido: cambiar de proveedor no exige reiniciar (RF-09).
+  app.use(
+    '/api/assistant',
+    createAssistantRouter(() => createSelector(loadConfig(), options.providers, options.llmLog)),
+  );
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });
