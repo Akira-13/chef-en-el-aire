@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import type { Step } from '@chef/shared';
 import { AssistantPanel } from '../assistant/AssistantPanel';
+import { requestAlertPermission } from '../cooking/backgroundAlert';
 import { encouragement, estimatedReadingMs, substitutedIngredients } from '../cooking/progress';
 import { clearCookingSession } from '../cooking/session';
 import { stepIngredients } from '../cooking/stepIngredients';
@@ -128,7 +129,7 @@ export function CookingScreen() {
     });
   }
 
-  useCommands(({ command }) => {
+  useCommands(({ command, channel }) => {
     switch (command.type) {
       case 'next':
         noteSkippedReading();
@@ -167,6 +168,7 @@ export function CookingScreen() {
         nav.setPaused(false);
         break;
       case 'startTimer':
+        if (channel === 'touch') requestAlertPermission();
         handleStartTimer(command.name);
         break;
       case 'whereAmI':

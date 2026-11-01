@@ -35,6 +35,7 @@ export default defineConfig({
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
+        importScripts: ['/sw-notifications.js'],
         // Incluye el modelo y el wasm de gestos para que también funcionen sin conexión.
         globPatterns: ['**/*.{js,css,html,woff2,png,svg,wasm,task}'],
         // Android con Chrome usa la variante SIMD: las otras dos pesan 13 MB y 14 MB más.

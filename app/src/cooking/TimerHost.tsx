@@ -8,6 +8,7 @@ import { updateCommandContext } from '../core/commandContext';
 import { metrics } from '../core/metrics';
 import { output, useProfile } from '../core/services';
 import { Button, cx } from '../ui';
+import { notifyTimerDone, vibrate } from './backgroundAlert';
 import styles from './cooking.module.css';
 import {
   collectExpired,
@@ -27,6 +28,7 @@ function checkExpired(): void {
   for (const timer of collectExpired(now)) {
     metrics.record('timer.drift', now - timer.endsAt, 'ms', { timer: timer.name });
     output.announce({ text: `¡Temporizador terminado: ${timer.name}!`, kind: 'alert' });
+    void notifyTimerDone(timer.name);
   }
 }
 
@@ -95,9 +97,12 @@ export function TimerHost() {
   useEffect(() => {
     checkExpired();
     const interval = window.setInterval(checkExpired, TICK_MS);
+    const worker = new Worker(new URL('./tickWorker.ts', import.meta.url), { type: 'module' });
+    worker.onmessage = checkExpired;
     document.addEventListener('visibilitychange', checkExpired);
     return () => {
       window.clearInterval(interval);
+      worker.terminate();
       document.removeEventListener('visibilitychange', checkExpired);
     };
   }, []);
@@ -110,9 +115,13 @@ export function TimerHost() {
   }, [running, alert]);
 
   useEffect(() => {
-    if (!alert || !timerAlert.sound) return;
-    output.cue('timer');
-    const interval = window.setInterval(() => output.cue('timer'), ALERT_REPEAT_MS);
+    if (!alert) return;
+    const ring = () => {
+      vibrate();
+      if (timerAlert.sound) output.cue('timer');
+    };
+    ring();
+    const interval = window.setInterval(ring, ALERT_REPEAT_MS);
     return () => window.clearInterval(interval);
   }, [alert, timerAlert.sound]);
 
