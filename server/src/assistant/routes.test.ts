@@ -6,6 +6,8 @@ import {
   toRawRecipe,
   type AdaptRequest,
   type AdaptResponse,
+  type AskResponse,
+  type ExplainResponse,
   type LLMProviderId,
 } from '@chef/shared';
 import { createApp } from '../app';
@@ -247,5 +249,185 @@ describe('POST /api/assistant/adapt', () => {
   it('responde 404 si la receta no existe', async () => {
     const baseUrl = await start({ remoto: fake('remoto', removesPeanut) });
     expect((await adapt(baseUrl, { ...diego, recipeId: 'REC-999' })).status).toBe(404);
+  });
+});
+
+async function post(baseUrl: string, route: 'ask' | 'explain', body: unknown) {
+  const res = await fetch(`${baseUrl}/api/assistant/${route}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+const ask = (baseUrl: string, body: unknown) =>
+  post(baseUrl, 'ask', body) as Promise<{ status: number; body: AskResponse & { error?: string } }>;
+const explain = (baseUrl: string, body: unknown) =>
+  post(baseUrl, 'explain', body) as Promise<{
+    status: number;
+    body: ExplainResponse & { error?: string };
+  }>;
+
+const question = {
+  recipeId: 'REC-008',
+  stepNumber: 4,
+  question: '¿Cuánto hiervo las papas?',
+  skillLevel: 'novato',
+};
+
+const answerJson = (respuesta: string, detalle?: string) =>
+  JSON.stringify({ respuesta, ...(detalle && { mas_detalle: detalle }) });
+
+describe('POST /api/assistant/ask', () => {
+  it('responde la duda con respuesta breve y más detalle (CA-07.1)', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({
+      remoto: fake(
+        'remoto',
+        () => answerJson('Unos 15 minutos. Hasta que se pinchen.', 'Detalle'),
+        prompts,
+      ),
+    });
+    const { status, body } = await ask(baseUrl, question);
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
+      status: 'ok',
+      answer: 'Unos 15 minutos. Hasta que se pinchen.',
+      moreDetail: 'Detalle',
+      provider: 'remoto',
+    });
+    // El modelo recibe la pregunta con el paso actual de la receta.
+    expect(prompts[0]).toContain('¿Cuánto hiervo las papas?');
+    expect(prompts[0]).toContain('Paso 4');
+  });
+
+  it('recorta a 2 frases si el modelo se pasa (CA-07.1)', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => answerJson('Uno. Dos. Tres.')) });
+    const { body } = await ask(baseUrl, question);
+    expect(body).toMatchObject({ answer: 'Uno. Dos.' });
+  });
+
+  it('manda las restricciones del perfil al modelo para no sugerir alérgenos (RF-07)', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({ remoto: fake('remoto', () => answerJson('Ok.'), prompts) });
+    await ask(baseUrl, { ...question, constraints: diego.constraints });
+    expect(prompts[0]).toContain('maní');
+  });
+
+  it('usa una frase y el tono del perfil para un avanzado (RF-41, CA-33.1)', async () => {
+    const seen: Array<{ prompt: string; system?: string }> = [];
+    const baseUrl = await start({
+      remoto: fake('remoto', (prompt, system) => {
+        seen.push({ prompt, system });
+        return answerJson('Uno. Dos.');
+      }),
+    });
+    const { body } = await ask(baseUrl, {
+      ...question,
+      skillLevel: 'avanzado',
+      tone: 'cordial y directo',
+    });
+    expect(seen[0]?.system).toMatch(/UNA sola frase/);
+    expect(seen[0]?.prompt).toContain('cordial y directo');
+    expect(body).toMatchObject({ answer: 'Uno.' });
+  });
+
+  it('pasa al alterno si el principal devuelve algo que no es JSON (CA-08.1)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () => 'no sé'),
+      ollama: fake('ollama', () => answerJson('Sí.')),
+    });
+    const { body } = await ask(baseUrl, question);
+    expect(body).toMatchObject({ status: 'ok', provider: 'ollama' });
+  });
+
+  it('responde 503 "no disponible" si ningún proveedor contesta (CA-08.3)', async () => {
+    const baseUrl = await start({ remoto: failing('remoto'), ollama: failing('ollama') });
+    const { status, body } = await ask(baseUrl, question);
+    expect(status).toBe(503);
+    expect(body).toEqual({ status: 'unavailable', message: ASSISTANT_UNAVAILABLE_MESSAGE });
+  });
+
+  it('responde 400 si el pedido es inválido y 404 si no existe la receta o el paso', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => answerJson('Ok.')) });
+    expect((await ask(baseUrl, { recipeId: 'REC-008' })).status).toBe(400);
+    expect((await ask(baseUrl, { ...question, question: '  ' })).status).toBe(400);
+    expect((await ask(baseUrl, { ...question, skillLevel: 'experto' })).status).toBe(400);
+    expect((await ask(baseUrl, { ...question, recipeId: 'REC-999' })).status).toBe(404);
+    expect((await ask(baseUrl, { ...question, stepNumber: 99 })).status).toBe(404);
+  });
+});
+
+describe('POST /api/assistant/explain', () => {
+  // En la ocopa el paso 1 trae pista_listo y el 4 no.
+  const withCue = ocopa.steps[0]!;
+  const withoutCue = ocopa.steps[3]!;
+  const explainBody = { recipeId: 'REC-008', stepNumber: withoutCue.number, skillLevel: 'novato' };
+  const generated = JSON.stringify({ explicacion: 'Se explica.', pista_listo: 'Se ve cremoso.' });
+
+  it('usa la pista de los datos sin llamar al LLM (CA-10.1)', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({ remoto: fake('remoto', () => generated, prompts) });
+    const { status, body } = await explain(baseUrl, { ...explainBody, stepNumber: withCue.number });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
+      status: 'ok',
+      explanation: withCue.text,
+      readyCue: withCue.readyCue,
+      readyCueSource: 'recipe',
+      provider: null,
+    });
+    expect(prompts).toHaveLength(0);
+  });
+
+  it('con la pista de los datos responde aun sin proveedores (CA-10.1, RF-10)', async () => {
+    const baseUrl = await start({});
+    const { status, body } = await explain(baseUrl, { ...explainBody, stepNumber: withCue.number });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ readyCueSource: 'recipe' });
+  });
+
+  it('genera la pista con el LLM y la marca como del asistente (CA-10.2)', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => generated) });
+    const { body } = await explain(baseUrl, explainBody);
+    expect(body).toMatchObject({
+      status: 'ok',
+      explanation: 'Se explica.',
+      readyCue: 'Se ve cremoso.',
+      readyCueSource: 'assistant',
+      provider: 'remoto',
+    });
+  });
+
+  it('manda el nivel y las restricciones al generar la explicación (RF-41, RF-07)', async () => {
+    const seen: Array<{ prompt: string; system?: string }> = [];
+    const baseUrl = await start({
+      remoto: fake('remoto', (prompt, system) => {
+        seen.push({ prompt, system });
+        return generated;
+      }),
+    });
+    await explain(baseUrl, {
+      ...explainBody,
+      skillLevel: 'avanzado',
+      constraints: diego.constraints,
+    });
+    expect(seen[0]?.system).toMatch(/UNA sola frase/);
+    expect(seen[0]?.prompt).toContain('maní');
+  });
+
+  it('responde 503 "no disponible" si falta la pista y nadie contesta (CA-08.3)', async () => {
+    const baseUrl = await start({ remoto: failing('remoto'), ollama: failing('ollama') });
+    const { status, body } = await explain(baseUrl, explainBody);
+    expect(status).toBe(503);
+    expect(body).toEqual({ status: 'unavailable', message: ASSISTANT_UNAVAILABLE_MESSAGE });
+  });
+
+  it('responde 400 y 404 ante pedidos inválidos', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => generated) });
+    expect((await explain(baseUrl, { recipeId: 'REC-008' })).status).toBe(400);
+    expect((await explain(baseUrl, { ...explainBody, recipeId: 'REC-999' })).status).toBe(404);
+    expect((await explain(baseUrl, { ...explainBody, stepNumber: 99 })).status).toBe(404);
   });
 });

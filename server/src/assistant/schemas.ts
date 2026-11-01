@@ -118,3 +118,15 @@ export function toRecipeChange(change: z.output<typeof changeSchema>): RecipeCha
     reason: change.motivo,
   };
 }
+
+// Respuesta de /ask: la respuesta breve y, opcionalmente, el detalle que se muestra al pedirlo.
+export const answerSchema = z.object({
+  respuesta: z.string().trim().min(1),
+  mas_detalle: optionalText.transform((value) => value?.trim() || undefined),
+});
+
+// Respuesta de /explain cuando el paso no trae su señal de listo en los datos.
+export const explanationSchema = z.object({
+  explicacion: z.string().trim().min(1),
+  pista_listo: z.string().trim().min(1),
+});

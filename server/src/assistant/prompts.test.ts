@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AdaptRequest } from '@chef/shared';
 import { getRecipe } from '../data/recipes';
-import { buildAdaptPrompt } from './prompts';
+import {
+  buildAdaptPrompt,
+  buildAskPrompt,
+  buildExplainPrompt,
+  type AskInput,
+  type ExplainInput,
+} from './prompts';
 
 const recipe = getRecipe('REC-008')!;
 
@@ -66,5 +72,100 @@ describe('buildAdaptPrompt', () => {
       note: undefined,
     });
     expect(plain).toContain('ninguna');
+  });
+});
+
+const step = recipe.steps[3]!;
+
+const askRequest: AskInput = {
+  recipeId: 'REC-008',
+  stepNumber: step.number,
+  question: '¿Cuánto debo dejar hervir las papas?',
+  skillLevel: 'novato',
+};
+
+const constraints = {
+  allergies: ['mani' as const],
+  dinerRestrictions: [{ diner: 'esposo', restriction: 'leche' as const, reason: 'lactosa' }],
+  diet: 'omnivora',
+};
+
+describe('buildAskPrompt', () => {
+  it('incluye la receta, el paso actual y la pregunta (CA-07.1)', () => {
+    const { user } = buildAskPrompt(recipe, step, askRequest);
+    expect(user).toContain('Ocopa arequipeña');
+    expect(user).toContain(`Paso ${step.number}`);
+    expect(user).toContain(step.text);
+    expect(user).toContain('¿Cuánto debo dejar hervir las papas?');
+  });
+
+  it('pide un JSON con respuesta y mas_detalle, de 2 frases como máximo (CA-07.1)', () => {
+    const { system } = buildAskPrompt(recipe, step, askRequest);
+    expect(system).toContain('SOLO');
+    expect(system).toContain('"respuesta"');
+    expect(system).toContain('"mas_detalle"');
+    expect(system).toMatch(/2 frases/);
+  });
+
+  it('para un novato usa un tono tranquilizador y explicativo (RF-41, CA-33.1)', () => {
+    const { system } = buildAskPrompt(recipe, step, { ...askRequest, skillLevel: 'novato' });
+    expect(system).toMatch(/tranquilizador/i);
+    expect(system).toMatch(/explica/i);
+    expect(system).not.toMatch(/UNA sola frase/);
+  });
+
+  it('para un avanzado responde en una sola frase, directa (RF-41, CA-33.1)', () => {
+    const { system } = buildAskPrompt(recipe, step, { ...askRequest, skillLevel: 'avanzado' });
+    expect(system).toMatch(/UNA sola frase/);
+    expect(system).toMatch(/directa/i);
+    expect(system).not.toMatch(/tranquilizador/i);
+  });
+
+  it('incluye el tono del perfil y el sentimiento declarado (RF-41, RF-42)', () => {
+    const { user } = buildAskPrompt(recipe, step, {
+      ...askRequest,
+      tone: 'cordial y directo',
+      feeling: 'nervous',
+    });
+    expect(user).toContain('cordial y directo');
+    expect(user).toMatch(/nervios/i);
+  });
+
+  it('prohíbe sugerir alérgenos del usuario y de sus comensales (RF-07)', () => {
+    const { system, user } = buildAskPrompt(recipe, step, { ...askRequest, constraints });
+    expect(system).toMatch(/nunca.*(sugieras|recomiendes).*alérgenos/is);
+    expect(user).toContain('maní');
+    expect(user).toContain('esposo');
+    expect(user).toContain('leche');
+  });
+});
+
+describe('buildExplainPrompt', () => {
+  const explainRequest: ExplainInput = {
+    recipeId: 'REC-008',
+    stepNumber: step.number,
+    skillLevel: 'novato',
+  };
+
+  it('pide explicación y pista_listo en JSON para el paso (CA-10.2)', () => {
+    const { system, user } = buildExplainPrompt(recipe, step, explainRequest);
+    expect(system).toContain('"explicacion"');
+    expect(system).toContain('"pista_listo"');
+    expect(user).toContain(step.text);
+  });
+
+  it('ajusta el tono al nivel: novato explicativo, avanzado breve (RF-41, CA-33.1)', () => {
+    const novice = buildExplainPrompt(recipe, step, explainRequest).system;
+    const advanced = buildExplainPrompt(recipe, step, {
+      ...explainRequest,
+      skillLevel: 'avanzado',
+    }).system;
+    expect(novice).toMatch(/tranquilizador/i);
+    expect(advanced).toMatch(/UNA sola frase/);
+  });
+
+  it('incluye las restricciones para no sugerir alérgenos (RF-07)', () => {
+    const { user } = buildExplainPrompt(recipe, step, { ...explainRequest, constraints });
+    expect(user).toContain('maní');
   });
 });

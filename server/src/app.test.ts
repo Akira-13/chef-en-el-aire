@@ -62,14 +62,20 @@ describe('API del asistente', () => {
     expect(body.status).toBe('unavailable');
   });
 
-  it('/ask y /explain siguen respondiendo "no disponible" por ahora (RF-10)', async () => {
-    for (const route of ['ask', 'explain']) {
+  it('/ask y /explain responden "no disponible" si ningún proveedor contesta (RF-10, CA-35.2)', async () => {
+    // El paso 2 de REC-001 no trae pista_listo, así que /explain necesita al modelo.
+    const bodies = {
+      ask: { recipeId: 'REC-001', stepNumber: 2, question: '¿Y ahora?', skillLevel: 'novato' },
+      explain: { recipeId: 'REC-001', stepNumber: 2, skillLevel: 'novato' },
+    };
+    for (const [route, body] of Object.entries(bodies)) {
       const res = await fetch(`${baseUrl}/api/assistant/${route}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(body),
       });
       expect(res.status).toBe(503);
+      expect(((await res.json()) as AssistantUnavailable).status).toBe('unavailable');
     }
   });
 });

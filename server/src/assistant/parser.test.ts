@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toRawRecipe } from '@chef/shared';
 import { getRecipe } from '../data/recipes';
-import { parseAdaptation } from './parser';
+import { AdaptationParseError, parseAdaptation, parseAnswer, parseExplanation } from './parser';
 
 const original = getRecipe('REC-008')!;
 
@@ -114,5 +114,56 @@ describe('parseAdaptation', () => {
     const noSteps = validResponse();
     noSteps.receta.pasos = [];
     expect(() => parseAdaptation(JSON.stringify(noSteps))).toThrow();
+  });
+});
+
+describe('parseAnswer', () => {
+  it('lee respuesta y mas_detalle del JSON (CA-07.1)', () => {
+    const text = JSON.stringify({ respuesta: 'Unos 15 minutos.', mas_detalle: 'Hasta que...' });
+    expect(parseAnswer(text, 2)).toEqual({
+      answer: 'Unos 15 minutos.',
+      moreDetail: 'Hasta que...',
+    });
+  });
+
+  it('recorta la respuesta a 2 frases como máximo (CA-07.1)', () => {
+    const text = JSON.stringify({ respuesta: 'Uno. Dos. Tres. Cuatro.' });
+    expect(parseAnswer(text, 2).answer).toBe('Uno. Dos.');
+  });
+
+  it('recorta a una frase cuando el límite es 1 (CA-33.1)', () => {
+    const text = JSON.stringify({ respuesta: '¿Listo? Sí, ya. Más.' });
+    expect(parseAnswer(text, 1).answer).toBe('¿Listo?');
+  });
+
+  it('no parte los decimales como fin de frase (CA-07.1)', () => {
+    const text = JSON.stringify({ respuesta: 'Agrega 1.5 tazas de caldo. Mezcla bien. Sirve.' });
+    expect(parseAnswer(text, 2).answer).toBe('Agrega 1.5 tazas de caldo. Mezcla bien.');
+  });
+
+  it('tolera cercas de código y texto alrededor (CA-07.1)', () => {
+    const text = 'Claro:\n```json\n{"respuesta":"Sí.","mas_detalle":null}\n```';
+    expect(parseAnswer(text, 2)).toEqual({ answer: 'Sí.', moreDetail: undefined });
+  });
+
+  it('lanza si no es JSON o falta la respuesta, para probar el alterno (CA-08.1)', () => {
+    expect(() => parseAnswer('no sé', 2)).toThrow(AdaptationParseError);
+    expect(() => parseAnswer('{"respuesta":""}', 2)).toThrow(AdaptationParseError);
+    expect(() => parseAnswer('{"mas_detalle":"x"}', 2)).toThrow(AdaptationParseError);
+  });
+});
+
+describe('parseExplanation', () => {
+  it('lee explicación y pista_listo (CA-10.2)', () => {
+    const text = JSON.stringify({ explicacion: 'Se cocina.', pista_listo: 'Se ve dorado.' });
+    expect(parseExplanation(text)).toEqual({
+      explanation: 'Se cocina.',
+      readyCue: 'Se ve dorado.',
+    });
+  });
+
+  it('lanza si falta la pista de listo (CA-10.2)', () => {
+    expect(() => parseExplanation('{"explicacion":"x"}')).toThrow(AdaptationParseError);
+    expect(() => parseExplanation('nada')).toThrow(AdaptationParseError);
   });
 });
