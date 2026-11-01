@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ALLERGEN_LABELS, findAllergens, type AllergenFinding } from '@chef/shared';
 import { AdaptationPanel } from '../assistant/AdaptationPanel';
+import { clearCookingSession, useCookingSession } from '../cooking/session';
 import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { useRecipe } from '../core/recipes';
@@ -32,8 +33,10 @@ export function RecipeScreen() {
   const navigate = useNavigate();
   const profile = useProfile();
   const { status, recipe, isAdapted } = useRecipe(recipeId);
+  const session = useCookingSession();
   const [riskAccepted, setRiskAccepted] = useState(false);
 
+  const resumeStep = session.recipeId === recipeId ? session.stepIndex : 0;
   const warnings = recipe ? findAllergens(recipe, profile.explicit).map(describeFinding) : [];
   const warningText = warnings.join('. ');
   const blocked = warnings.length > 0 && !riskAccepted;
@@ -78,9 +81,23 @@ export function RecipeScreen() {
             Confirmo, cocinar igual
           </Button>
         ) : (
-          <Button size="lg" block onClick={() => navigate(`/cocinar/${recipe.id}`)}>
-            👩‍🍳 Empezar a cocinar
-          </Button>
+          <>
+            <Button size="lg" block onClick={() => navigate(`/cocinar/${recipe.id}`)}>
+              {resumeStep > 0 ? `👩‍🍳 Seguir en el paso ${resumeStep + 1}` : '👩‍🍳 Empezar a cocinar'}
+            </Button>
+            {resumeStep > 0 && (
+              <Button
+                variant="ghost"
+                block
+                onClick={() => {
+                  clearCookingSession();
+                  navigate(`/cocinar/${recipe.id}`);
+                }}
+              >
+                Empezar de nuevo
+              </Button>
+            )}
+          </>
         )
       }
     >
