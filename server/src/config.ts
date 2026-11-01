@@ -16,7 +16,7 @@ export interface LlmConfig {
 
 export interface ServerConfig {
   llm: LlmConfig;
-  groq: { apiKey: string | undefined; model: string; baseUrl: string };
+  deepseek: { apiKey: string | undefined; model: string; baseUrl: string };
   ollama: { url: string; model: string };
 }
 
@@ -40,10 +40,10 @@ export function loadConfig(): ServerConfig {
       fallback: raw.llm.alterno ?? null,
       timeoutMs: raw.llm.tiempo_limite_ms ?? 8000,
     },
-    groq: {
-      apiKey: process.env.GROQ_API_KEY || undefined,
-      model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
-      baseUrl: process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+    deepseek: {
+      apiKey: process.env.DEEPSEEK_API_KEY || undefined,
+      model: process.env.DEEPSEEK_MODEL || 'deepseek-flash',
+      baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
     },
     ollama: {
       url: process.env.OLLAMA_URL || 'http://localhost:11434',

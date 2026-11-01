@@ -4,13 +4,13 @@
 
 - Node.js 22.12 o superior (con npm).
 - Para probar en el teléfono: Chrome en Android y [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), que crea un túnel HTTPS gratuito sin cuenta.
-- Opcional: una clave de [Groq](https://console.groq.com/keys) para el asistente. Sin clave, la app funciona igual y el asistente aparece como "no disponible".
+- Opcional: una clave de [DeepSeek](https://platform.deepseek.com/api_keys) para el asistente. Sin clave, la app funciona igual y el asistente aparece como "no disponible".
 
 ## Instalación
 
 ```bash
 npm install
-cp server/.env.example server/.env   # y completa GROQ_API_KEY
+cp server/.env.example server/.env   # y completa DEEPSEEK_API_KEY
 ```
 
 ## Desarrollo
@@ -41,7 +41,7 @@ El proveedor de LLM se elige en `server/llm.config.json`, sin tocar la interfaz:
 { "llm": { "principal": "remoto", "alterno": "ollama", "tiempo_limite_ms": 8000 } }
 ```
 
-- `remoto` usa Groq (`GROQ_API_KEY` y `GROQ_MODEL` en `server/.env`).
+- `remoto` usa DeepSeek (`DEEPSEEK_API_KEY` y `DEEPSEEK_MODEL` en `server/.env`).
 - `ollama` usa un modelo local (`OLLAMA_URL` y `OLLAMA_MODEL`).
 
 ## Verificación
