@@ -9,11 +9,12 @@ import {
   type AskRequest,
   type DietaryConstraints,
   type ExplainRequest,
+  type Feeling,
   type Recipe,
   type Step,
 } from '@chef/shared';
 import { assistantClient } from '../core/assistantClient';
-import { useCommands } from '../core/commandBus';
+import { commandBus, useCommands } from '../core/commandBus';
 import { metrics } from '../core/metrics';
 import { output, profileService, useProfile } from '../core/services';
 import { Button } from '../ui';
@@ -40,7 +41,30 @@ type PanelState =
       detailShown: boolean;
       allergenWarnings: AllergenCategory[];
     }
-  | { phase: 'explanation'; text: string; readyCue: string; suggested: boolean };
+  | {
+      phase: 'explanation';
+      text: string;
+      readyCue: string;
+      suggested: boolean;
+      allergenWarnings: AllergenCategory[];
+    };
+
+// RF-42, CA-33.2: apoyo con texto fijo, así responde también sin red y sin gastar una llamada
+// al asistente. Quien está contento solo recibe ánimo; los demás reciben además pausar.
+const FEELING_SUPPORT: Record<Feeling, { message: string; offerPause: boolean }> = {
+  nervous: { message: 'Tranquilo, vas bien. Respira hondo, aquí no hay apuro.', offerPause: true },
+  tired: {
+    message: 'Se nota el esfuerzo. Puedes tomarte un respiro cuando quieras.',
+    offerPause: true,
+  },
+  confused: {
+    message: 'No pasa nada, vamos con calma. Di «explícame» y lo vemos paso a paso.',
+    offerPause: true,
+  },
+  happy: { message: '¡Qué bien! Sigue así, lo estás haciendo muy bien.', offerPause: false },
+};
+
+const PAUSE_OFFER = '¿Quieres pausar un momento? Di «pausa» o pulsa el botón.';
 
 // "maní", "maní y leche", "maní, leche y huevo".
 const listFormat = new Intl.ListFormat('es', { style: 'long', type: 'conjunction' });
@@ -48,6 +72,22 @@ const listFormat = new Intl.ListFormat('es', { style: 'long', type: 'conjunction
 function allergenNotice(warnings: AllergenCategory[]): string {
   const names = listFormat.format(warnings.map((a) => ALLERGEN_LABELS[a]));
   return `Esta respuesta menciona ${names}. Recuerda tus alergias y restricciones.`;
+}
+
+// RF-07: el texto nombra un alérgeno vigilado; se avisa por voz y subtítulos sin ocultarlo.
+function announceAllergenNotice(warnings: AllergenCategory[]) {
+  if (warnings.length === 0) return;
+  const notice = allergenNotice(warnings);
+  output.announce({ text: notice, short: notice, kind: 'alert' });
+}
+
+function AllergenNotice({ warnings }: { warnings: AllergenCategory[] }) {
+  if (warnings.length === 0) return null;
+  return (
+    <p role="alert" className={styles.allergenNotice}>
+      {allergenNotice(warnings)}
+    </p>
+  );
 }
 
 export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
@@ -58,12 +98,17 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   // Descarta la respuesta que llega tarde, por ejemplo tras cambiar de paso.
   const requestId = useRef(0);
   const busy = useRef(false);
+  // El apoyo afectivo va aparte de la respuesta para no pisarla; `paused` sigue los comandos
+  // pause y resume de cualquier canal.
+  const [feeling, setFeeling] = useState<Feeling | null>(null);
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     requestId.current += 1;
     busy.current = false;
     setState({ phase: 'idle' });
     setQuestion('');
+    setFeeling(null);
   }, [recipe.id, step.number]);
 
   // RNF-03: "Pensando…" cuenta como mostrado cuando ya se pintó, no cuando se pidió.
@@ -127,12 +172,8 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     }
     // CA-07.3: se muestra escrita y el servicio de salida la lee si la voz está activa.
     output.announce({ text: response.answer, kind: 'answer' });
-    // RF-07: la respuesta nombra un alérgeno vigilado; se avisa sin ocultarla ni reescribirla.
     const allergenWarnings = response.allergenWarnings ?? [];
-    if (allergenWarnings.length > 0) {
-      const notice = allergenNotice(allergenWarnings);
-      output.announce({ text: notice, short: notice, kind: 'alert' });
-    }
+    announceAllergenNotice(allergenWarnings);
     setState({
       phase: 'answer',
       text: response.answer,
@@ -168,12 +209,15 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       short: response.readyCue,
       kind: 'answer',
     });
+    const allergenWarnings = response.allergenWarnings ?? [];
+    announceAllergenNotice(allergenWarnings);
     setState({
       phase: 'explanation',
       text: response.explanation,
       readyCue: response.readyCue,
       // CA-10.2: la señal que generó el asistente se distingue de la de la receta.
       suggested: response.readyCueSource === 'assistant',
+      allergenWarnings,
     });
   }
 
@@ -183,10 +227,23 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     setState({ ...current, detailShown: true });
   }
 
+  function support(declared: Feeling) {
+    const { message, offerPause } = FEELING_SUPPORT[declared];
+    setFeeling(declared);
+    output.announce({
+      text: offerPause && !paused ? `${message} ${PAUSE_OFFER}` : message,
+      short: message,
+      kind: 'info',
+    });
+  }
+
   // La voz, el gesto o el teclado piden lo mismo que los botones (RF-24).
   useCommands((event) => {
     if (event.command.type === 'ask') void ask(event.command.question);
     if (event.command.type === 'explain') void explain();
+    if (event.command.type === 'feeling') support(event.command.feeling);
+    if (event.command.type === 'pause') setPaused(true);
+    if (event.command.type === 'resume') setPaused(false);
   });
 
   function submit(event: FormEvent) {
@@ -195,6 +252,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   }
 
   const loading = state.phase === 'loading';
+  const feelingSupport = feeling ? FEELING_SUPPORT[feeling] : null;
 
   return (
     <section aria-label="Asistente" className={styles.panel}>
@@ -229,11 +287,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
 
       {state.phase === 'answer' && (
         <div className={styles.answer}>
-          {state.allergenWarnings.length > 0 && (
-            <p role="alert" className={styles.allergenNotice}>
-              {allergenNotice(state.allergenWarnings)}
-            </p>
-          )}
+          <AllergenNotice warnings={state.allergenWarnings} />
           <p>{state.text}</p>
           {state.detailShown && <p>{state.moreDetail}</p>}
           {state.moreDetail && !state.detailShown && (
@@ -244,8 +298,27 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
         </div>
       )}
 
+      {feelingSupport && (
+        <div className={styles.answer}>
+          <p>{feelingSupport.message}</p>
+          {feelingSupport.offerPause &&
+            (paused ? (
+              <p className={styles.note}>En pausa. Di «continuar» cuando quieras seguir.</p>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => commandBus.emit({ type: 'pause' }, 'touch')}
+              >
+                Pausar un momento
+              </Button>
+            ))}
+        </div>
+      )}
+
       {state.phase === 'explanation' && (
         <div className={styles.answer}>
+          <AllergenNotice warnings={state.allergenWarnings} />
           <p>{state.text}</p>
           <p className={styles.readyCue}>✨ {state.readyCue}</p>
           {state.suggested && <p className={styles.note}>Sugerencia del asistente</p>}

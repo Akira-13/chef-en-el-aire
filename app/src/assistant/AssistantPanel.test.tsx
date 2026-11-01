@@ -278,6 +278,30 @@ describe('AssistantPanel: explicar el paso', () => {
     );
   });
 
+  it('avisa y anuncia como alerta si la explicación menciona un alérgeno (RF-07, RNF-06)', async () => {
+    mocks.explain.mockResolvedValueOnce({ ...explanation, allergenWarnings: ['mani'] });
+    await render();
+    await act(async () => button('Más')!.click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      'Esta respuesta menciona maní.',
+    );
+    expect(container.textContent).toContain('Corta las papas en rodajas.');
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Esta respuesta menciona maní.'),
+        kind: 'alert',
+      }),
+    );
+  });
+
+  it('no muestra ni anuncia aviso si la explicación no trae alérgenos (RF-07)', async () => {
+    mocks.explain.mockResolvedValueOnce(explanation);
+    await render();
+    await act(async () => button('Más')!.click());
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(mocks.announce).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'alert' }));
+  });
+
   it('responde al comando explain y muestra "Pensando…" (RF-13, RNF-03)', async () => {
     let resolve!: (response: ExplainResponse) => void;
     mocks.explain.mockReturnValueOnce(new Promise<ExplainResponse>((r) => (resolve = r)));
@@ -325,5 +349,88 @@ describe('AssistantPanel: sin conexión', () => {
     expect(mocks.announce).toHaveBeenCalledWith(
       expect.objectContaining({ text: expect.stringContaining(OFFLINE_MESSAGE) }),
     );
+  });
+});
+
+describe('AssistantPanel: retroalimentación afectiva', () => {
+  const feel = (feeling: 'nervous' | 'tired' | 'confused' | 'happy', channel = 'voice' as const) =>
+    act(async () => {
+      commandBus.emit({ type: 'feeling', feeling }, channel);
+    });
+
+  it('ante el comando feeling responde con apoyo, lo anuncia y ofrece pausar (CA-33.2)', async () => {
+    await render();
+    await feel('nervous');
+    expect(container.textContent).toContain('Tranquilo');
+    expect(button('Pausar un momento')).toBeDefined();
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringMatching(/Tranquilo.*pausa/s),
+        short: expect.stringContaining('Tranquilo'),
+        kind: 'info',
+      }),
+    );
+    // Es un texto fijo: no gasta una llamada al asistente.
+    expect(mocks.ask).not.toHaveBeenCalled();
+    expect(mocks.explain).not.toHaveBeenCalled();
+  });
+
+  it('responde igual sin conexión porque no depende del asistente (CA-33.2, CA-35.2)', async () => {
+    mocks.online = false;
+    await render();
+    await feel('tired');
+    expect(container.textContent).toContain('respiro');
+    expect(button('Pausar un momento')).toBeDefined();
+  });
+
+  it('ofrece pausar a quien está confundido, cansado o nervioso, pero no a quien está contento (CA-33.2)', async () => {
+    await render();
+    await feel('happy');
+    expect(container.textContent).toContain('Qué bien');
+    expect(button('Pausar un momento')).toBeUndefined();
+    await feel('confused');
+    expect(button('Pausar un momento')).toBeDefined();
+  });
+
+  it('"Pausar un momento" emite el comando pause por toque y deja de ofrecerlo (RF-12, CA-33.2)', async () => {
+    const seen: Array<{ type: string; channel: string }> = [];
+    const stop = commandBus.subscribe(({ command, channel }) =>
+      seen.push({ type: command.type, channel }),
+    );
+    await render();
+    await feel('nervous');
+    await act(async () => button('Pausar un momento')!.click());
+    stop();
+    expect(seen).toContainEqual({ type: 'pause', channel: 'touch' });
+    expect(button('Pausar un momento')).toBeUndefined();
+    expect(container.textContent).toContain('En pausa');
+  });
+
+  it('si ya pausó por otro canal no ofrece pausar, y al continuar vuelve a ofrecerlo (RF-24)', async () => {
+    await render();
+    await act(async () => {
+      commandBus.emit({ type: 'pause' }, 'voice');
+    });
+    await feel('tired');
+    expect(button('Pausar un momento')).toBeUndefined();
+    await act(async () => {
+      commandBus.emit({ type: 'resume' }, 'gesture');
+    });
+    expect(button('Pausar un momento')).toBeDefined();
+  });
+
+  it('el mensaje no sigue en pantalla al cambiar de paso', async () => {
+    await render();
+    await feel('nervous');
+    await act(async () => root.render(<AssistantPanel recipe={recipe} step={recipe.steps[4]!} />));
+    expect(container.textContent).not.toContain('Tranquilo');
+  });
+
+  it('no pisa la respuesta del asistente que ya se estaba mostrando (CA-33.2)', async () => {
+    mocks.ask.mockResolvedValueOnce(answer);
+    await askQuestion();
+    await feel('nervous');
+    expect(container.textContent).toContain('Unos 15 minutos.');
+    expect(container.textContent).toContain('Tranquilo');
   });
 });
