@@ -1,0 +1,58 @@
+/* Indicadores de canal en el encabezado del modo cocina (CA-16.2). */
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch-min);
+  padding: 0 14px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: calc(var(--text-sm) * var(--font-scale));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pill:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.pill[data-state='on'] {
+  border-color: var(--color-have);
+}
+
+.pill[data-state='on']::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-have);
+}
+
+.pill[data-state='error'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.pill[data-state='off'] {
+  color: var(--color-text-2);
+}
+
+.pill[data-armed] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.pillText {
+  white-space: nowrap;
+}
