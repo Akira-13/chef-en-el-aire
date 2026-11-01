@@ -8,7 +8,9 @@ import {
   ASSISTANT_UNAVAILABLE_MESSAGE,
   findAllergens,
   findAllergensInText,
+  neutralizeTitles,
   scaleRecipe,
+  watchedAllergens,
   type AdaptRequest,
   type AdaptResponse,
   type AllergenCategory,
@@ -18,7 +20,6 @@ import {
   type DietaryConstraints,
   type ExplainRequest,
   type ExplainResponse,
-  type Recipe,
   type RecipeChange,
 } from '@chef/shared';
 import { getRecipe } from '../data/recipes';
@@ -51,35 +52,6 @@ const adaptRequestSchema = z.object({
   skillLevel: skillLevelSchema,
   note: z.string().max(500).optional(),
 });
-
-// Alérgenos que vigila el pedido: los del propio perfil y los de sus comensales.
-function watchedAllergens({
-  allergies,
-  dinerRestrictions,
-}: DietaryConstraints): Set<AllergenCategory> {
-  return new Set([...allergies, ...dinerRestrictions.map((r) => r.restriction)]);
-}
-
-// RNF-06: el nombre y la descripción no los revisa el validador de alérgenos, pero el usuario
-// los lee. Si nombran un alérgeno vigilado se reemplazan por un texto neutro, porque la
-// descripción original puede mencionarlo igual.
-function neutralizeTitles(
-  adapted: Recipe,
-  original: Recipe,
-  constraints: DietaryConstraints,
-): Recipe {
-  const watched = watchedAllergens(constraints);
-  const mentionsWatched = (text: string) =>
-    findAllergensInText(text).some((m) => watched.has(m.allergen));
-  const fallbackName = mentionsWatched(original.name) ? 'Receta adaptada' : original.name;
-  return {
-    ...adapted,
-    name: mentionsWatched(adapted.name) ? fallbackName : adapted.name,
-    description: mentionsWatched(adapted.description)
-      ? `Versión adaptada de ${fallbackName}.`
-      : adapted.description,
-  };
-}
 
 // RF-07: la respuesta del modelo no se bloquea ni se reescribe (una negación como «no agregues
 // maní» también lo nombra), pero sí se avisa de los alérgenos vigilados que menciona.
@@ -159,8 +131,8 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
       // El id y las porciones no los decide el modelo.
       const adapted = neutralizeTitles(
         { ...value.recipe, id: original.id, servings: scaled.servings },
-        original,
         request.constraints,
+        original,
       );
       const changes: RecipeChange[] = value.changes;
       if (scaled.servings !== original.servings && !changes.some((c) => c.kind === 'servings')) {

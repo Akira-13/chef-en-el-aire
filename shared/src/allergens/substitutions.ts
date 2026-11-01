@@ -13,6 +13,7 @@ import {
   type SubstituteReason,
 } from '../types/recipe';
 import { findAllergens, findAllergensInText } from './index';
+import { neutralizeTitles } from './titles';
 
 export interface SafeSubstitutionResult {
   adapted: Recipe;
@@ -75,24 +76,6 @@ function rewriteStep(step: Step, replacements: Array<{ pattern: RegExp; name: st
     next[field] = replacements.reduce((text, r) => rewrite(text, r.pattern, r.name), value);
   }
   return next;
-}
-
-// RNF-06: el nombre y la descripción no los revisa el validador, pero el usuario los lee.
-function neutralizeTitles(recipe: Recipe, constraints: DietaryConstraints): Recipe {
-  const watched = new Set<AllergenCategory>([
-    ...constraints.allergies,
-    ...constraints.dinerRestrictions.map((r) => r.restriction),
-  ]);
-  const mentionsWatched = (text: string) =>
-    findAllergensInText(text).some((m) => watched.has(m.allergen));
-  const name = mentionsWatched(recipe.name) ? 'Receta adaptada' : recipe.name;
-  return {
-    ...recipe,
-    name,
-    description: mentionsWatched(recipe.description)
-      ? `Versión adaptada de ${name}.`
-      : recipe.description,
-  };
 }
 
 /**
