@@ -49,6 +49,29 @@
   text-decoration: none;
 }
 
+.timeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeChip {
+  min-height: var(--touch-min);
+  padding: 8px 14px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timeChip[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -218,6 +241,22 @@
   padding: 8px 16px;
   font-size: var(--text-md);
   font-variant-numeric: tabular-nums;
+}
+
+.stepIngredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cheer {
+  display: block;
+  color: var(--color-accent);
+  font-size: var(--text-md);
+  font-weight: 700;
 }
 
 .paused {
