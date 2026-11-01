@@ -38,6 +38,12 @@
   --touch-min: 44px;
   --gutter: 16px;
   --content-max: 480px;
+  /* Alto de la franja "sin conexión"; 0 mientras hay red. */
+  --offline-height: 0px;
+}
+
+:root[data-offline='true'] {
+  --offline-height: 32px;
 }
 
 :root[data-font-size='grande'] {

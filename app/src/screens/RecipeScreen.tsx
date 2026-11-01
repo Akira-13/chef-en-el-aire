@@ -1,12 +1,16 @@
 // Detalle de receta: ingredientes frente a la despensa, adaptación con IA y entrada al modo
-// cocina (RF-03, RF-05, RF-06).
+// cocina (RF-03, RF-05, RF-06). Si la receta tiene un alérgeno del perfil o de un comensal, no
+// se puede empezar sin una confirmación explícita (RF-07, CA-06.2).
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { ALLERGEN_LABELS, findAllergens, type AllergenFinding } from '@chef/shared';
 import { AdaptationPanel } from '../assistant/AdaptationPanel';
+import { clearCookingSession, useCookingSession } from '../cooking/session';
+import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { useRecipe } from '../core/recipes';
-import { useProfile } from '../core/services';
+import { output, useProfile } from '../core/services';
 import { pantryStatus, type IngredientStatus } from '../personalization';
 import { SubstitutionHints } from '../personalization/SubstitutionHints';
 import { Button, Chip, IconButton, Screen } from '../ui';
@@ -19,17 +23,40 @@ const STATUS_LABELS: Record<IngredientStatus, string> = {
   substitute: 'sustituir',
 };
 
+function describeFinding(finding: AllergenFinding): string {
+  const who = finding.source === 'diner' ? `para ${finding.diner}` : 'para ti';
+  return `${finding.ingredientName}: ${ALLERGEN_LABELS[finding.allergen]} (${who})`;
+}
+
 export function RecipeScreen() {
   const { recipeId } = useParams();
   const navigate = useNavigate();
   const profile = useProfile();
-  const { status, recipe } = useRecipe(recipeId);
+  const { status, recipe, isAdapted } = useRecipe(recipeId);
+  const session = useCookingSession();
+  const [riskAccepted, setRiskAccepted] = useState(false);
+
+  const resumeStep = session.recipeId === recipeId ? session.stepIndex : 0;
+  const warnings = recipe ? findAllergens(recipe, profile.explicit).map(describeFinding) : [];
+  const warningText = warnings.join('. ');
+  const blocked = warnings.length > 0 && !riskAccepted;
 
   useEffect(() => enterScreen('recipe', { recipeId }), [recipeId]);
 
+  useEffect(() => {
+    if (warningText) {
+      output.announce({ text: `Cuidado, esta receta contiene: ${warningText}.`, kind: 'alert' });
+    }
+  }, [warningText]);
+
+  // Por voz solo vale decir "confirmo": un gesto genérico no alcanza (CA-06.2).
+  useCommands(({ command, channel }) => {
+    if (blocked && command.type === 'confirm' && channel === 'voice') setRiskAccepted(true);
+  });
+
   if (!recipe) {
     return (
-      <Screen>
+      <Screen title="Receta">
         <p role={status === 'loading' ? 'status' : 'alert'}>
           {status === 'loading' ? 'Cargando receta…' : 'No encontré esta receta.'}
         </p>
@@ -42,15 +69,36 @@ export function RecipeScreen() {
 
   return (
     <Screen
+      title={recipe.name}
       header={
         <IconButton aria-label="Volver" onClick={() => navigate(-1)}>
           ←
         </IconButton>
       }
       footer={
-        <Button size="lg" block onClick={() => navigate(`/cocinar/${recipe.id}`)}>
-          👩‍🍳 Empezar a cocinar
-        </Button>
+        blocked ? (
+          <Button variant="secondary" size="lg" block onClick={() => setRiskAccepted(true)}>
+            Confirmo, cocinar igual
+          </Button>
+        ) : (
+          <>
+            <Button size="lg" block onClick={() => navigate(`/cocinar/${recipe.id}`)}>
+              {resumeStep > 0 ? `👩‍🍳 Seguir en el paso ${resumeStep + 1}` : '👩‍🍳 Empezar a cocinar'}
+            </Button>
+            {resumeStep > 0 && (
+              <Button
+                variant="ghost"
+                block
+                onClick={() => {
+                  clearCookingSession();
+                  navigate(`/cocinar/${recipe.id}`);
+                }}
+              >
+                Empezar de nuevo
+              </Button>
+            )}
+          </>
+        )
       }
     >
       <div className={styles.hero}>
@@ -62,10 +110,27 @@ export function RecipeScreen() {
           {recipe.totalMinutes} min · {DIFFICULTY_LABELS[recipe.difficulty]} · {recipe.servings}{' '}
           porciones
         </p>
+        {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
       </div>
 
+      {warnings.length > 0 && (
+        <section className={styles.allergenWarning} aria-labelledby="allergen-title">
+          <h2 id="allergen-title" className={styles.allergenTitle}>
+            ⚠️ Cuidado: contiene alérgenos de tu perfil
+          </h2>
+          <ul className={styles.allergenList}>
+            {warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+          {blocked && <p>Adáptala con IA o confirma que quieres cocinarla igual.</p>}
+        </section>
+      )}
+
+      <AdaptationPanel recipe={recipe} />
+
       <h2 className={styles.sectionTitle}>Ingredientes</h2>
-      <ul className={styles.list}>
+      <ul className={styles.ingredientList}>
         {recipe.ingredients.map((ingredient) => {
           const state = statusById[ingredient.id] ?? 'missing';
           return (
@@ -74,14 +139,15 @@ export function RecipeScreen() {
                 {ingredient.quantity > 0 && `${ingredient.quantity} ${ingredient.unit} · `}
                 {ingredient.name}
               </span>
-              <Chip tone={state}>{STATUS_LABELS[state]}</Chip>
+              <Chip tone={state} className={styles.ingredientChip}>
+                {STATUS_LABELS[state]}
+              </Chip>
             </li>
           );
         })}
       </ul>
 
       <SubstitutionHints recipe={recipe} />
-      <AdaptationPanel recipe={recipe} />
     </Screen>
   );
 }

@@ -21,12 +21,55 @@
 
 .searchInput {
   width: 100%;
-  min-height: var(--touch-min);
+  min-height: 48px;
   padding: 10px 16px;
-  border: 2px solid var(--color-chip);
+  border: 2px solid transparent;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   font-size: var(--text-md);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-2);
+  opacity: 1;
+}
+
+.pantryLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.timeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeChip {
+  min-height: var(--touch-min);
+  padding: 8px 14px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timeChip[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .list {
@@ -42,8 +85,8 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 72px;
-  padding: 12px 16px;
+  min-height: 84px;
+  padding: 12px 20px;
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
@@ -56,8 +99,10 @@
 }
 
 .recipeName {
+  display: block;
   font-size: var(--text-lg);
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .hero {
@@ -76,6 +121,7 @@
 .title {
   font-size: var(--text-title);
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .ingredient {
@@ -84,16 +130,62 @@
   justify-content: space-between;
   gap: 12px;
   min-height: var(--touch-min);
-  padding: 8px 0;
-  border-bottom: 1px solid var(--color-chip);
+}
+
+.ingredientChip {
+  flex: none;
+  justify-content: center;
+  min-width: 88px;
+}
+
+.ingredientList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- Advertencia de alérgenos ---------- */
+.allergenWarning {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.allergenTitle {
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.allergenList {
+  margin: 0;
+  padding-left: 20px;
 }
 
 /* ---------- Modo cocina ---------- */
+.cookingMain {
+  gap: 12px;
+}
+
 .stepCard {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  color: var(--color-text);
+  gap: 12px;
+  margin-top: 10px;
+  animation: stepIn 200ms ease-out;
+}
+
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
 }
 
 .stepHeader {
@@ -104,14 +196,21 @@
 
 .stepNumber {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--color-primary);
   color: var(--color-on-primary);
-  font-size: 1.5rem;
+  font-size: var(--text-title);
   font-weight: 700;
+}
+
+.stepCount {
+  flex: 1;
+  color: var(--color-text-2);
+  font-size: var(--text-md);
 }
 
 .stepText {
@@ -125,17 +224,59 @@
   font-size: var(--text-lg);
 }
 
+.warning {
+  color: var(--color-accent);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
 .chipRow {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+.timerRunning {
+  min-height: var(--touch-min);
+  padding: 8px 16px;
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepIngredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cheer {
+  display: block;
+  color: var(--color-accent);
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.paused {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--color-chip);
+  font-weight: 700;
+  text-align: center;
+}
+
 .navRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
+}
+
+.navMiddle {
+  display: flex;
+  gap: 12px;
 }
 
 .channelHint {
@@ -145,16 +286,93 @@
   color: var(--color-on-dark);
 }
 
+/* Con letra extragrande cada línea cuenta: el paso importa más que este recordatorio. */
+:root[data-font-size='extragrande'] .channelHint {
+  display: none;
+}
+
 /* ---------- Celebración ---------- */
+.celebrationBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-block: auto;
+}
+
 .celebrationText {
-  font-size: var(--text-step);
+  font-size: 1.75rem;
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
+  animation: popIn 400ms ease-out;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.celebrationNote {
+  text-align: center;
 }
 
 .ratingRow {
   display: flex;
   justify-content: center;
   gap: 24px;
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confettiPiece {
+  position: absolute;
+  top: -24px;
+  width: 10px;
+  height: 18px;
+  border-radius: 3px;
+  opacity: 0;
+  animation-name: confettiFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105dvh) rotate(540deg);
+  }
+}
+
+.skip {
+  display: block;
+  margin: 8px auto 0;
+}
+
+/* ---------- Bienvenida ---------- */
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-block: auto;
+  text-align: center;
+  animation: popIn 300ms ease-out;
+}
+
+.onboardingText {
+  font-size: var(--text-lg);
 }
