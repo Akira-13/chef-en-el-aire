@@ -195,6 +195,113 @@ describe('findAllergens por nombre', () => {
   });
 });
 
+// ---------- Sustitutos sin gluten del recetario (RF-07, RNF-06) ----------
+
+describe('findAllergens con sustitutos sin gluten', () => {
+  const gluten = constraintsFor('gluten');
+
+  it('"<término> sin gluten" no cuenta como gluten (RF-07)', () => {
+    const names = [
+      'pan sin gluten',
+      'bebida de avena sin gluten',
+      'Pasta SIN Gluten',
+      'galletas sin gluten',
+    ];
+    for (const name of names) {
+      expect(findAllergens(recipeWith([name]), gluten), name).toEqual([]);
+    }
+  });
+
+  it('la frase "sin gluten" también vale en el texto de los pasos (RF-07)', () => {
+    const recipe = recipeWith(['papa'], ['Sirve con pan sin gluten tostado.']);
+    expect(findAllergens(recipe, gluten)).toEqual([]);
+  });
+
+  it('"sin gluten" solo exime al término que la precede (RNF-06)', () => {
+    // El pan sigue siendo trigo aunque la pasta del lado sea sin gluten.
+    expect(allergensOf(findAllergens(recipeWith(['pan y pasta sin gluten']), gluten))).toEqual([
+      'gluten',
+    ]);
+    expect(
+      allergensOf(findAllergens(recipeWith(['harina de trigo y pan sin gluten']), gluten)),
+    ).toEqual(['gluten']);
+  });
+
+  it('"sin gluten" no exime otras categorías de la misma frase (RNF-06)', () => {
+    expect(
+      allergensOf(
+        findAllergens(recipeWith(['queso con pan sin gluten']), constraintsFor('leche', 'gluten')),
+      ),
+    ).toEqual(['leche']);
+    expect(
+      allergensOf(
+        findAllergens(recipeWith(['tamari sin gluten']), constraintsFor('soya', 'gluten')),
+      ),
+    ).toEqual(['soya']);
+  });
+
+  it('el pan, la pasta, las galletas, la avena y la harina de trigo sin la frase siguen siendo gluten (RNF-06)', () => {
+    for (const name of [
+      'pan',
+      'pan de molde',
+      'pasta',
+      'galletas',
+      'avena',
+      'bebida de avena',
+      'harina de trigo',
+    ]) {
+      expect(allergensOf(findAllergens(recipeWith([name]), gluten)), name).toEqual(['gluten']);
+    }
+  });
+
+  it('"sin lactosa" no exime a la leche: conserva la proteína láctea (RNF-06)', () => {
+    const milk = constraintsFor('leche');
+    for (const name of ['leche sin lactosa', 'yogur sin lactosa', 'queso sin lactosa']) {
+      expect(allergensOf(findAllergens(recipeWith([name]), milk)), name).toEqual(['leche']);
+    }
+    expect(findAllergensInText('leche sin lactosa')).toContainEqual({
+      allergen: 'leche',
+      term: 'leche',
+    });
+  });
+
+  it('los productos de arroz no cuentan como gluten (RF-07)', () => {
+    const names = [
+      'pasta de arroz',
+      'pastas de arroz',
+      'galletas de arroz',
+      'harina de arroz',
+      'fideos de arroz',
+      'tallarines de arroz',
+    ];
+    for (const name of names) {
+      expect(findAllergens(recipeWith([name]), gluten), name).toEqual([]);
+    }
+  });
+
+  it('la excepción del arroz no tapa el trigo de la misma frase (RNF-06)', () => {
+    expect(allergensOf(findAllergens(recipeWith(['pasta de arroz y trigo']), gluten))).toEqual([
+      'gluten',
+    ]);
+    expect(allergensOf(findAllergens(recipeWith(['galletas de arroz con pan']), gluten))).toEqual([
+      'gluten',
+    ]);
+  });
+
+  it('el tamari es soya, no gluten: se marca solo para quien vigila la soya (RNF-06)', () => {
+    expect(findAllergens(recipeWith(['tamari sin gluten']), gluten)).toEqual([]);
+    expect(
+      allergensOf(findAllergens(recipeWith(['tamari sin gluten']), constraintsFor('soya'))),
+    ).toEqual(['soya']);
+  });
+
+  it('lo declarado manda aunque el nombre diga "sin gluten" (RF-07)', () => {
+    const recipe = recipeWith(['pan sin gluten']);
+    recipe.ingredients[0]!.allergens = ['gluten'];
+    expect(findAllergens(recipe, gluten)).toHaveLength(1);
+  });
+});
+
 // ---------- CA-06.3: 10 recetas × 4 perfiles, también con metadatos perdidos ----------
 
 interface Watcher {

@@ -5,7 +5,12 @@
 
 import type { AllergenFinding, DietaryConstraints } from '../assistant';
 import { ALLERGEN_CATEGORIES, type AllergenCategory, type Recipe } from '../types/recipe';
-import { ALLERGEN_EXCEPTIONS, ALLERGEN_TERMS, INGREDIENT_ONLY_TERMS } from './terms';
+import {
+  ALLERGEN_EXCEPTIONS,
+  ALLERGEN_FREE_QUALIFIERS,
+  ALLERGEN_TERMS,
+  INGREDIENT_ONLY_TERMS,
+} from './terms';
 
 export interface TextMatch {
   allergen: AllergenCategory;
@@ -53,6 +58,25 @@ const EXCEPTIONS = ALLERGEN_EXCEPTIONS.map((e) => ({
   pattern: new RegExp(wordPattern(e.phrase).source, 'g'),
 }));
 
+// "<término> sin gluten": se quita el término junto con su cualificador, así el resto de la
+// frase se sigue revisando ("pan y pasta sin gluten" conserva el pan). El plural simple vale
+// para el término ("galletas sin gluten").
+const FREE_FORMS = Object.fromEntries(
+  ALLERGEN_CATEGORIES.map((c) => {
+    const qualifier = ALLERGEN_FREE_QUALIFIERS[c];
+    const patterns = qualifier
+      ? ALLERGEN_TERMS[c].map(
+          (term) =>
+            new RegExp(
+              `(?<= )${normalize(term).trim()}(?:e?s)? ${normalize(qualifier).trim()}(?= )`,
+              'g',
+            ),
+        )
+      : [];
+    return [c, patterns];
+  }),
+) as Record<AllergenCategory, RegExp[]>;
+
 /**
  * Alérgenos que menciona un texto libre. Con `ingredient: true` se aplican también los
  * términos ambiguos que solo valen en el nombre de un ingrediente.
@@ -69,6 +93,7 @@ export function findAllergensInText(
     for (const exception of EXCEPTIONS) {
       if (exception.allergens.includes(allergen)) scoped = scoped.replace(exception.pattern, ' ');
     }
+    for (const pattern of FREE_FORMS[allergen]) scoped = scoped.replace(pattern, ' ');
     const candidates = options.ingredient
       ? [...TERMS[allergen], ...INGREDIENT_ONLY[allergen]]
       : TERMS[allergen];

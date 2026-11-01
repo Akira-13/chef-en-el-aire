@@ -169,6 +169,31 @@ describe('applySafeSubstitutions', () => {
     expect(applySafeSubstitutions(byId(recipes, 'REC-006'), only('mani'))).toBeNull();
   });
 
+  it('elige los sustitutos sin gluten del recetario para un perfil con gluten (RF-07, RNF-06)', () => {
+    const gluten = only('gluten');
+    const picked = (recipeId: string, ingredientId: string) =>
+      applySafeSubstitutions(byId(recipes, recipeId), gluten)!.adapted.ingredients.find(
+        (i) => i.id === ingredientId,
+      )?.name;
+    expect(picked('REC-001', 'ING-005')).toBe('pan sin gluten');
+    expect(picked('REC-002', 'ING-014')).toBe('tamari sin gluten');
+    expect(picked('REC-005', 'ING-030')).toBe('pasta de arroz');
+    expect(picked('REC-008', 'ING-052')).toBe('galletas de arroz');
+    const milk = applySafeSubstitutions(byId(recipes, 'REC-008'), only('gluten', 'leche'))!;
+    expect(milk.adapted.ingredients.find((i) => i.id === 'ING-053')?.name).toBe(
+      'bebida de avena sin gluten',
+    );
+    for (const recipeId of ['REC-001', 'REC-002', 'REC-005']) {
+      const result = applySafeSubstitutions(byId(recipes, recipeId), gluten)!;
+      expect(result.findings.filter((f) => f.ingredientId.startsWith('ING-'))).toEqual([]);
+    }
+  });
+
+  it('con soya y gluten descarta el tamari (es soya) y usa los aminos de coco (RNF-06)', () => {
+    const result = applySafeSubstitutions(byId(recipes, 'REC-002'), only('soya', 'gluten'))!;
+    expect(result.adapted.ingredients.find((i) => i.id === 'ING-014')?.name).toBe('aminos de coco');
+  });
+
   it('nunca devuelve un reemplazo que el validador marque, en las 10 recetas × 4 perfiles (RNF-06)', () => {
     for (const recipe of recipes) {
       for (const profile of profiles) {
