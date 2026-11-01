@@ -315,6 +315,71 @@ describe('POST /api/assistant/ask', () => {
     expect(prompts[0]).toContain('maní');
   });
 
+  it('avisa sin bloquear si la respuesta menciona un alérgeno del perfil (RF-07, RNF-06)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () => answerJson('No agregues maní, eres alérgico.')),
+    });
+    const { status, body } = await ask(baseUrl, { ...question, constraints: diego.constraints });
+    expect(status).toBe(200);
+    // La respuesta llega intacta: una negación legítima también nombra el alérgeno.
+    expect(body).toMatchObject({
+      status: 'ok',
+      answer: 'No agregues maní, eres alérgico.',
+      allergenWarnings: ['mani'],
+    });
+  });
+
+  it('revisa también el detalle (RF-07, RNF-06)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () => answerJson('Unos 15 minutos.', 'Sin maní en la salsa.')),
+    });
+    const { body } = await ask(baseUrl, { ...question, constraints: diego.constraints });
+    expect(body).toMatchObject({ allergenWarnings: ['mani'] });
+  });
+
+  it('no repite la categoría si se menciona en la respuesta y el detalle (RF-07, RNF-06)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () =>
+        answerJson('Evita el maní.', 'Tampoco uses pasta de maní ni cacahuate.'),
+      ),
+    });
+    const { body } = await ask(baseUrl, { ...question, constraints: diego.constraints });
+    expect(body).toMatchObject({ allergenWarnings: ['mani'] });
+  });
+
+  it('avisa del alérgeno de un comensal (RF-07, RNF-06)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () => answerJson('Sirve con un chorrito de leche.')),
+    });
+    const { body } = await ask(baseUrl, {
+      ...question,
+      constraints: {
+        allergies: [],
+        dinerRestrictions: [{ diner: 'esposo', restriction: 'leche', reason: 'lactosa' }],
+        diet: 'omnivora',
+      },
+    });
+    expect(body).toMatchObject({ allergenWarnings: ['leche'] });
+  });
+
+  it('sin alérgenos en la respuesta no agrega avisos (RF-07)', async () => {
+    const baseUrl = await start({
+      remoto: fake('remoto', () => answerJson('Unos 15 minutos.', 'Hasta que se pinchen.')),
+    });
+    const { body } = await ask(baseUrl, { ...question, constraints: diego.constraints });
+    expect(body).not.toHaveProperty('allergenWarnings');
+  });
+
+  it('ignora los alérgenos que no vigila el perfil y no avisa sin restricciones (RF-07)', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => answerJson('Usa leche y maní.')) });
+    const other = await ask(baseUrl, {
+      ...question,
+      constraints: { allergies: ['soya'], dinerRestrictions: [], diet: 'omnivora' },
+    });
+    expect(other.body).not.toHaveProperty('allergenWarnings');
+    expect((await ask(baseUrl, question)).body).not.toHaveProperty('allergenWarnings');
+  });
+
   it('usa una frase y el tono del perfil para un avanzado (RF-41, CA-33.1)', async () => {
     const seen: Array<{ prompt: string; system?: string }> = [];
     const baseUrl = await start({

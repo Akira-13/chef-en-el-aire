@@ -70,11 +70,6 @@ export function buildAdaptPrompt(recipe: Recipe, request: AdaptRequest): Prompt 
   return { system: ADAPT_SYSTEM, user };
 }
 
-// Los pedidos de pregunta y explicación pueden traer las restricciones del perfil para que el
-// modelo nunca sugiera un alérgeno; el contrato compartido todavía no las declara.
-export type AskInput = AskRequest & { constraints?: DietaryConstraints };
-export type ExplainInput = ExplainRequest & { constraints?: DietaryConstraints };
-
 // RF-41, CA-33.1: el novato recibe una explicación tranquilizadora; el avanzado, una sola frase.
 const TONE_BY_LEVEL: Record<SkillLevel, string> = {
   novato:
@@ -100,7 +95,7 @@ function toneSection(level: SkillLevel): string {
   return TONE_BY_LEVEL[level];
 }
 
-function describeUser(request: AskInput | ExplainInput): string[] {
+function describeUser(request: AskRequest | ExplainRequest): string[] {
   const lines = [`Nivel de cocina: ${request.skillLevel}`];
   if ('tone' in request && request.tone?.trim()) {
     lines.push(`Tono preferido por el usuario: ${request.tone.trim()}`);
@@ -140,7 +135,7 @@ Reglas:
 }
 
 /** Prompt para una duda del usuario en el paso actual (RF-08, CA-07.1). */
-export function buildAskPrompt(recipe: Recipe, step: Step, request: AskInput): Prompt {
+export function buildAskPrompt(recipe: Recipe, step: Step, request: AskRequest): Prompt {
   const user = [
     ...describeUser(request),
     ...describeStep(recipe, step),
@@ -164,7 +159,7 @@ Reglas:
 }
 
 /** Prompt para ampliar un paso y, si los datos no la traen, generar su señal de listo (RF-13). */
-export function buildExplainPrompt(recipe: Recipe, step: Step, request: ExplainInput): Prompt {
+export function buildExplainPrompt(recipe: Recipe, step: Step, request: ExplainRequest): Prompt {
   const user = [...describeUser(request), ...describeStep(recipe, step)].join('\n');
   return { system: explainSystem(request.skillLevel), user };
 }

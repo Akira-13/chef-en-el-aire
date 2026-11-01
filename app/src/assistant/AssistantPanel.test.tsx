@@ -150,6 +150,35 @@ describe('AssistantPanel: preguntar', () => {
     );
   });
 
+  it('avisa y anuncia como alerta si la respuesta menciona un alérgeno (RF-07, RNF-06)', async () => {
+    mocks.ask.mockResolvedValueOnce({ ...answer, allergenWarnings: ['mani'] });
+    await askQuestion();
+    const notice = container.querySelector('[role="alert"]');
+    expect(notice?.textContent).toContain('Esta respuesta menciona maní.');
+    expect(container.textContent).toContain('Unos 15 minutos.');
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining('Esta respuesta menciona maní.'),
+        kind: 'alert',
+      }),
+    );
+  });
+
+  it('une varios alérgenos de forma natural en el aviso (RF-07, RNF-06)', async () => {
+    mocks.ask.mockResolvedValueOnce({ ...answer, allergenWarnings: ['mani', 'leche', 'huevo'] });
+    await askQuestion();
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      'Esta respuesta menciona maní, leche y huevo.',
+    );
+  });
+
+  it('no muestra ni anuncia aviso si la respuesta no trae alérgenos (RF-07)', async () => {
+    mocks.ask.mockResolvedValueOnce(answer);
+    await askQuestion();
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(mocks.announce).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'alert' }));
+  });
+
   it('revela el detalle solo al pulsar "Más detalle" (CA-07.1)', async () => {
     mocks.ask.mockResolvedValueOnce(answer);
     await askQuestion();

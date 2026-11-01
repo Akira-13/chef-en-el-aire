@@ -81,6 +81,8 @@ export interface AskRequest {
   skillLevel: SkillLevel;
   tone?: string;
   feeling?: Feeling;
+  /** Alergias y restricciones del perfil, para que el asistente no sugiera un alérgeno (RF-07). */
+  constraints?: DietaryConstraints;
 }
 
 export type AskResponse =
@@ -89,6 +91,8 @@ export type AskResponse =
       /** Respuesta breve, de 2 frases como máximo (CA-07.1). */
       answer: string;
       moreDetail?: string;
+      /** Alérgenos vigilados (del perfil o de un comensal) que la respuesta menciona; se omite si no hay (RF-07). */
+      allergenWarnings?: AllergenCategory[];
       provider: LLMProviderId;
       latencyMs: number;
     }
@@ -98,6 +102,8 @@ export interface ExplainRequest {
   recipeId: string;
   stepNumber: number;
   skillLevel: SkillLevel;
+  /** Alergias y restricciones del perfil, para que el asistente no sugiera un alérgeno (RF-07). */
+  constraints?: DietaryConstraints;
 }
 
 export type ExplainResponse =

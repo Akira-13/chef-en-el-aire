@@ -12,8 +12,11 @@ import {
   type AdaptRequest,
   type AdaptResponse,
   type AllergenCategory,
+  type AskRequest,
   type AskResponse,
   type AssistantUnavailable,
+  type DietaryConstraints,
+  type ExplainRequest,
   type ExplainResponse,
   type Recipe,
   type RecipeChange,
@@ -21,14 +24,7 @@ import {
 import { getRecipe } from '../data/recipes';
 import { AssistantUnavailableError, type ProviderSelector } from '../llm/ProviderSelector';
 import { parseAdaptation, parseAnswer, parseExplanation } from './parser';
-import {
-  buildAdaptPrompt,
-  buildAskPrompt,
-  buildExplainPrompt,
-  maxSentences,
-  type AskInput,
-  type ExplainInput,
-} from './prompts';
+import { buildAdaptPrompt, buildAskPrompt, buildExplainPrompt, maxSentences } from './prompts';
 
 const unavailable: AssistantUnavailable = {
   status: 'unavailable',
@@ -56,18 +52,23 @@ const adaptRequestSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+// Alérgenos que vigila el pedido: los del propio perfil y los de sus comensales.
+function watchedAllergens({
+  allergies,
+  dinerRestrictions,
+}: DietaryConstraints): Set<AllergenCategory> {
+  return new Set([...allergies, ...dinerRestrictions.map((r) => r.restriction)]);
+}
+
 // RNF-06: el nombre y la descripción no los revisa el validador de alérgenos, pero el usuario
 // los lee. Si nombran un alérgeno vigilado se reemplazan por un texto neutro, porque la
 // descripción original puede mencionarlo igual.
 function neutralizeTitles(
   adapted: Recipe,
   original: Recipe,
-  constraints: AdaptRequest['constraints'],
+  constraints: DietaryConstraints,
 ): Recipe {
-  const watched = new Set<AllergenCategory>([
-    ...constraints.allergies,
-    ...constraints.dinerRestrictions.map((r) => r.restriction),
-  ]);
+  const watched = watchedAllergens(constraints);
   const mentionsWatched = (text: string) =>
     findAllergensInText(text).some((m) => watched.has(m.allergen));
   const fallbackName = mentionsWatched(original.name) ? 'Receta adaptada' : original.name;
@@ -78,6 +79,18 @@ function neutralizeTitles(
       ? `Versión adaptada de ${fallbackName}.`
       : adapted.description,
   };
+}
+
+// RF-07: la respuesta del modelo no se bloquea ni se reescribe (una negación como «no agregues
+// maní» también lo nombra), pero sí se avisa de los alérgenos vigilados que menciona.
+function findAnswerWarnings(
+  texts: Array<string | undefined>,
+  constraints: DietaryConstraints | undefined,
+): AllergenCategory[] {
+  if (!constraints) return [];
+  const watched = watchedAllergens(constraints);
+  const mentioned = texts.flatMap((text) => (text ? findAllergensInText(text) : []));
+  return [...new Set(mentioned.map((m) => m.allergen).filter((a) => watched.has(a)))];
 }
 
 // Las restricciones son opcionales: sin ellas el modelo no sabe qué alérgenos evitar, por eso la
@@ -180,7 +193,7 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
       res.status(400).json({ error: 'Pedido de pregunta inválido' });
       return;
     }
-    const request: AskInput = parsed.data;
+    const request: AskRequest = parsed.data;
     const recipe = getRecipe(request.recipeId);
     const step = recipe?.steps.find((s) => s.number === request.stepNumber);
     if (!recipe || !step) {
@@ -196,7 +209,17 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
           maxSentences(request.skillLevel),
         ),
       );
-      const body: AskResponse = { status: 'ok', ...value, provider, latencyMs };
+      const allergenWarnings = findAnswerWarnings(
+        [value.answer, value.moreDetail],
+        request.constraints,
+      );
+      const body: AskResponse = {
+        status: 'ok',
+        ...value,
+        ...(allergenWarnings.length > 0 && { allergenWarnings }),
+        provider,
+        latencyMs,
+      };
       res.json(body);
     } catch (error) {
       if (!(error instanceof AssistantUnavailableError)) console.error('[assistant] /ask', error);
@@ -212,7 +235,7 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
       res.status(400).json({ error: 'Pedido de explicación inválido' });
       return;
     }
-    const request: ExplainInput = parsed.data;
+    const request: ExplainRequest = parsed.data;
     const recipe = getRecipe(request.recipeId);
     const step = recipe?.steps.find((s) => s.number === request.stepNumber);
     if (!recipe || !step) {

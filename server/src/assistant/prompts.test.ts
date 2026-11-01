@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { AdaptRequest } from '@chef/shared';
+import type { AdaptRequest, AskRequest, DietaryConstraints, ExplainRequest } from '@chef/shared';
 import { getRecipe } from '../data/recipes';
-import {
-  buildAdaptPrompt,
-  buildAskPrompt,
-  buildExplainPrompt,
-  type AskInput,
-  type ExplainInput,
-} from './prompts';
+import { buildAdaptPrompt, buildAskPrompt, buildExplainPrompt } from './prompts';
 
 const recipe = getRecipe('REC-008')!;
 
@@ -77,16 +71,16 @@ describe('buildAdaptPrompt', () => {
 
 const step = recipe.steps[3]!;
 
-const askRequest: AskInput = {
+const askRequest: AskRequest = {
   recipeId: 'REC-008',
   stepNumber: step.number,
   question: '¿Cuánto debo dejar hervir las papas?',
   skillLevel: 'novato',
 };
 
-const constraints = {
-  allergies: ['mani' as const],
-  dinerRestrictions: [{ diner: 'esposo', restriction: 'leche' as const, reason: 'lactosa' }],
+const constraints: DietaryConstraints = {
+  allergies: ['mani'],
+  dinerRestrictions: [{ diner: 'esposo', restriction: 'leche', reason: 'lactosa' }],
   diet: 'omnivora',
 };
 
@@ -132,7 +126,8 @@ describe('buildAskPrompt', () => {
   });
 
   it('prohíbe sugerir alérgenos del usuario y de sus comensales (RF-07)', () => {
-    const { system, user } = buildAskPrompt(recipe, step, { ...askRequest, constraints });
+    const request: AskRequest = { ...askRequest, constraints };
+    const { system, user } = buildAskPrompt(recipe, step, request);
     expect(system).toMatch(/nunca.*(sugieras|recomiendes).*alérgenos/is);
     expect(user).toContain('maní');
     expect(user).toContain('esposo');
@@ -141,7 +136,7 @@ describe('buildAskPrompt', () => {
 });
 
 describe('buildExplainPrompt', () => {
-  const explainRequest: ExplainInput = {
+  const explainRequest: ExplainRequest = {
     recipeId: 'REC-008',
     stepNumber: step.number,
     skillLevel: 'novato',
@@ -165,7 +160,8 @@ describe('buildExplainPrompt', () => {
   });
 
   it('incluye las restricciones para no sugerir alérgenos (RF-07)', () => {
-    const { user } = buildExplainPrompt(recipe, step, { ...explainRequest, constraints });
+    const request: ExplainRequest = { ...explainRequest, constraints };
+    const { user } = buildExplainPrompt(recipe, step, request);
     expect(user).toContain('maní');
   });
 });

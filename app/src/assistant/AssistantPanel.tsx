@@ -3,7 +3,15 @@
 // la receta sigue usable (RF-10, CA-35.2).
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { AskRequest, DietaryConstraints, ExplainRequest, Recipe, Step } from '@chef/shared';
+import {
+  ALLERGEN_LABELS,
+  type AllergenCategory,
+  type AskRequest,
+  type DietaryConstraints,
+  type ExplainRequest,
+  type Recipe,
+  type Step,
+} from '@chef/shared';
 import { assistantClient } from '../core/assistantClient';
 import { useCommands } from '../core/commandBus';
 import { metrics } from '../core/metrics';
@@ -25,8 +33,22 @@ type PanelState =
   | { phase: 'idle' }
   | { phase: 'loading' }
   | { phase: 'unavailable'; message: string }
-  | { phase: 'answer'; text: string; moreDetail?: string; detailShown: boolean }
+  | {
+      phase: 'answer';
+      text: string;
+      moreDetail?: string;
+      detailShown: boolean;
+      allergenWarnings: AllergenCategory[];
+    }
   | { phase: 'explanation'; text: string; readyCue: string; suggested: boolean };
+
+// "maní", "maní y leche", "maní, leche y huevo".
+const listFormat = new Intl.ListFormat('es', { style: 'long', type: 'conjunction' });
+
+function allergenNotice(warnings: AllergenCategory[]): string {
+  const names = listFormat.format(warnings.map((a) => ALLERGEN_LABELS[a]));
+  return `Esta respuesta menciona ${names}. Recuerda tus alergias y restricciones.`;
+}
 
 export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   const profile = useProfile();
@@ -89,7 +111,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     if (!trimmed) return;
     const id = begin();
     if (id === null) return;
-    const request: AskRequest & { constraints: DietaryConstraints } = {
+    const request: AskRequest = {
       recipeId: recipe.id,
       stepNumber: step.number,
       question: trimmed,
@@ -105,11 +127,18 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     }
     // CA-07.3: se muestra escrita y el servicio de salida la lee si la voz está activa.
     output.announce({ text: response.answer, kind: 'answer' });
+    // RF-07: la respuesta nombra un alérgeno vigilado; se avisa sin ocultarla ni reescribirla.
+    const allergenWarnings = response.allergenWarnings ?? [];
+    if (allergenWarnings.length > 0) {
+      const notice = allergenNotice(allergenWarnings);
+      output.announce({ text: notice, short: notice, kind: 'alert' });
+    }
     setState({
       phase: 'answer',
       text: response.answer,
       moreDetail: response.moreDetail,
       detailShown: false,
+      allergenWarnings,
     });
   }
 
@@ -122,7 +151,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     });
     const id = begin();
     if (id === null) return;
-    const request: ExplainRequest & { constraints: DietaryConstraints } = {
+    const request: ExplainRequest = {
       recipeId: recipe.id,
       stepNumber: step.number,
       skillLevel: profile.skillLevel,
@@ -200,6 +229,11 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
 
       {state.phase === 'answer' && (
         <div className={styles.answer}>
+          {state.allergenWarnings.length > 0 && (
+            <p role="alert" className={styles.allergenNotice}>
+              {allergenNotice(state.allergenWarnings)}
+            </p>
+          )}
           <p>{state.text}</p>
           {state.detailShown && <p>{state.moreDetail}</p>}
           {state.moreDetail && !state.detailShown && (
