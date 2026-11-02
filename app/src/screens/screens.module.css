@@ -169,6 +169,28 @@
 }
 
 /* ---------- Modo cocina ---------- */
+/* Los temporizadores van en su propia fila: a 360 px los indicadores de voz y cámara no les
+   dejan ancho. El padding menor mantiene esos indicadores en una línea para no restar espacio
+   al paso. */
+.cookingHeader {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cookingTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cookingTopBar button {
+  padding-inline: 10px;
+}
+
 .cookingMain {
   gap: 12px;
 }
