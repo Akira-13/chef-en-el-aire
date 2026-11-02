@@ -1,0 +1,145 @@
+/* Capa visual de la salida. No recibe toques para no bloquear los botones. */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* ---------- Subtítulos (RF-26, CA-20.2) ---------- */
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: calc(136px + env(safe-area-inset-bottom));
+  width: calc(100% - 2 * var(--gutter));
+  max-width: var(--content-max);
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgb(26 18 12 / 0.88);
+  color: var(--color-on-dark);
+  font-size: calc(var(--text-lg) * var(--font-scale));
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* ---------- Destello equivalente a cada sonido (CA-20.3) ---------- */
+.flash {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 10px var(--flash-color);
+  animation: flash 700ms ease-out forwards;
+}
+
+.flashIcon {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin-left: -48px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow:
+    0 0 0 6px var(--flash-color),
+    var(--shadow-card);
+  font-size: 48px;
+  animation: pop 700ms ease-out forwards;
+}
+
+.success {
+  --flash-color: var(--color-have);
+}
+
+.error {
+  --flash-color: var(--color-accent);
+}
+
+.timer {
+  --flash-color: var(--color-timer);
+}
+
+.gesture,
+.navigate,
+.celebration {
+  --flash-color: var(--color-primary);
+}
+
+/* ---------- Aviso de gesto reconocido (RF-21, CA-16.1) ---------- */
+.gestureNotice {
+  position: absolute;
+  top: calc(76px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: calc(var(--text-lg) * var(--font-scale));
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Gesto sugerido como canal alterno (CA-14.2) ---------- */
+.hint {
+  position: absolute;
+  top: calc(140px + env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 2 * var(--gutter));
+  max-width: 360px;
+  transform: translateX(-50%);
+  padding: 16px 20px;
+  border: 3px solid var(--color-primary);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: calc(var(--text-lg) * var(--font-scale));
+  font-weight: 700;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.hintIcon {
+  font-size: 64px;
+  line-height: 1;
+}
+
+@keyframes flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .flashIcon {
+    animation: none;
+  }
+}
