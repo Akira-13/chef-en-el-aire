@@ -12,9 +12,16 @@ export function getCommandContext(): CommandContext {
   return useCommandContext.getState();
 }
 
-/** Cambia de pantalla y descarta el contexto de la pantalla anterior. */
+/**
+ * Cambia de pantalla y descarta el contexto de la pantalla anterior. Los temporizadores y sus
+ * alertas no dependen de la pantalla: siguen corriendo aunque el usuario navegue.
+ */
 export function enterScreen(screen: ScreenId, extra: Partial<CommandContext> = {}): void {
-  useCommandContext.setState({ ...initialContext, ...extra, screen }, true);
+  const { activeTimers, alertActive } = getCommandContext();
+  useCommandContext.setState(
+    { ...initialContext, activeTimers, alertActive, ...extra, screen },
+    true,
+  );
 }
 
 /** Actualiza parte del contexto sin cambiar de pantalla. */

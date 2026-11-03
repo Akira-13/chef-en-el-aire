@@ -11,6 +11,7 @@ html {
 
 body {
   margin: 0;
+  padding-top: var(--offline-height);
   min-height: 100dvh;
   font-family: var(--font-family);
   line-height: 1.4;
@@ -56,7 +57,9 @@ a {
   *,
   *::before,
   *::after {
+    /* Una sola iteración: una animación infinita a esta duración sería un parpadeo. */
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

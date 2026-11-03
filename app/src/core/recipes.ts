@@ -1,10 +1,13 @@
 // Acceso al recetario desde la interfaz. Las recetas vienen de la API ya convertidas al
 // tipo Recipe; se piden una sola vez por sesión. Si el usuario eligió una versión adaptada
 // (por el asistente o por una sustitución), `useRecipe` la devuelve en lugar de la original,
-// que se conserva intacta (RF-06, CA-05.2).
+// que se conserva intacta (RF-06, CA-05.2). La elección se guarda en el dispositivo: si el
+// sistema cierra la pestaña a mitad de receta, no se vuelve en silencio a una versión que puede
+// tener el alérgeno que se quitó (RF-07, RF-44).
 
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Recipe } from '@chef/shared';
 
 export type RecipesState =
@@ -44,7 +47,12 @@ export function useRecipes(): RecipesState {
 }
 
 // Versiones adaptadas elegidas por el usuario, por id de receta.
-const useAdaptedRecipes = create<Record<string, Recipe>>(() => ({}));
+const useAdaptedRecipes = create<Record<string, Recipe>>()(
+  persist(() => ({}), {
+    name: 'chef.adaptedRecipes',
+    storage: createJSONStorage(() => localStorage),
+  }),
+);
 
 /** Usa `recipe` en lugar de la original con el mismo id hasta que se descarte. */
 export function setAdaptedRecipe(recipe: Recipe): void {
