@@ -2,6 +2,7 @@
 // Solo se usa en los bordes: al leer los archivos y al exportar el perfil.
 // El resto del código trabaja con los tipos de ../types.
 
+import type { Feeling } from '../commands';
 import type { AllergenCategory, Difficulty, SubstituteReason } from '../types/recipe';
 import type {
   CelebrationStyle,
@@ -112,12 +113,17 @@ export interface RawLearnedData {
   salta_lectura_completa?: boolean;
   consulta_frecuente?: string[];
   pide_explicacion_frecuente?: string[];
+  sustituciones_rechazadas?: { original: string; sustituto: string }[];
+  pasos_dificiles?: { receta_id: string; paso: number }[];
+  lecturas_saltadas_seguidas?: string[];
+  origenes?: { clave: string; evento: string; fecha: string }[];
 }
 
 export interface RawEmotionalPrefs {
   tono_asistente: string;
   celebracion: CelebrationStyle;
   musica_ambiente: string;
+  ultima_emocion?: { emocion: Feeling; fecha: string };
 }
 
 export interface RawHistoryEntry {
