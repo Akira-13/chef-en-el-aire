@@ -12,8 +12,10 @@ import {
   type RawProfileBook,
 } from '@chef/shared';
 import type { ProfileService, ProfileSummary, UsageEvent } from '../core/contracts';
+import { commandBus } from '../core/commandBus';
 import { metrics } from '../core/metrics';
-import { applyUsageEvent } from './learning';
+import { addToPantry } from '../personalization/pantry';
+import { applyUsageEvent, createLearningSession } from './learning';
 import { openProfileStore, type ProfileStore } from './storage';
 
 const DEFAULT_PROFILE_ID = 'USR-002';
@@ -26,12 +28,23 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function createProfileService(): ProfileService {
+/** "papa, pollo y ají amarillo" */
+function listInWords(items: string[]): string {
+  return items.length > 1 ? `${items.slice(0, -1).join(', ')} y ${items.at(-1)}` : (items[0] ?? '');
+}
+
+export interface ProfileServiceOptions {
+  /** Escucha los comandos de voz del perfil (CA-03.1, CA-24.3). Por defecto, sí. */
+  listenToCommands?: boolean;
+}
+
+export function createProfileService(options: ProfileServiceOptions = {}): ProfileService {
   let profiles = seedProfiles();
   let currentId = DEFAULT_PROFILE_ID;
   let store: ProfileStore | null = null;
   const listeners = new Set<() => void>();
   const noticeListeners = new Set<(message: string) => void>();
+  const session = createLearningSession();
 
   // getProfile devuelve la referencia guardada en `profiles`: solo cambia cuando se reemplaza
   // el perfil, así useSyncExternalStore no entra en un bucle.
@@ -96,11 +109,26 @@ export function createProfileService(): ProfileService {
   async function recordEvent(event: UsageEvent): Promise<void> {
     let message: string | undefined;
     await update((profile) => {
-      const result = applyUsageEvent(profile, event, today());
+      const result = applyUsageEvent(profile, event, today(), session);
       message = result.notice;
       return result.profile;
     });
     if (message) notice(message);
+  }
+
+  // Comandos que modifican el perfil, vengan del canal que vengan.
+  if (options.listenToCommands !== false) {
+    commandBus.subscribe(({ command }) => {
+      if (command.type === 'addPantry') {
+        const items = command.items.map((item) => item.trim()).filter(Boolean);
+        if (items.length === 0) return;
+        void update((p) => ({ ...p, pantry: addToPantry(p.pantry, items) })).then(() =>
+          notice(`Agregué ${listInWords(items)} a tu despensa.`),
+        );
+      } else if (command.type === 'feeling') {
+        void recordEvent({ type: 'feelingDeclared', feeling: command.feeling });
+      }
+    });
   }
 
   return {

@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { commandBus } from '../core/commandBus';
 import { metrics } from '../core/metrics';
 import { createProfileService } from './index';
 
@@ -78,5 +79,27 @@ describe('perfil persistente', () => {
     const raw = service.exportRaw();
     expect(raw.nombre).toBe('Diego');
     expect(raw.explicito.alergias).toEqual(['mani']);
+  });
+});
+
+describe('comandos del perfil', () => {
+  it('"tengo papa, pollo y ají amarillo" agrega a la despensa y lo avisa (CA-03.1)', async () => {
+    const service = createProfileService();
+    await service.ready;
+    const notices: string[] = [];
+    service.onNotice((m) => notices.push(m));
+    commandBus.emit({ type: 'addPantry', items: ['papa', 'pollo', 'ají amarillo'] }, 'voice');
+    await vi.waitFor(() => expect(notices).toHaveLength(1));
+    expect(service.getProfile().pantry).toEqual(expect.arrayContaining(['papa', 'pollo']));
+    expect(notices[0]).toBe('Agregué papa, pollo y ají amarillo a tu despensa.');
+  });
+
+  it('"estoy nervioso" registra la emoción (CA-24.3)', async () => {
+    const service = createProfileService();
+    await service.ready;
+    commandBus.emit({ type: 'feeling', feeling: 'nervous' }, 'voice');
+    await vi.waitFor(() =>
+      expect(service.getProfile().emotional.lastFeeling?.feeling).toBe('nervous'),
+    );
   });
 });
