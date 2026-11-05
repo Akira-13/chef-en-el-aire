@@ -205,13 +205,15 @@ export function CookingScreen() {
       background="cork"
       fixed
       header={
-        <>
-          <IconButton aria-label="Salir del modo cocina" onClick={() => navigate('/')}>
-            ✕
-          </IconButton>
+        <div className={styles.cookingHeader}>
+          <div className={styles.cookingTopBar}>
+            <IconButton aria-label="Salir del modo cocina" onClick={() => navigate('/')}>
+              ✕
+            </IconButton>
+            <ChannelStatus />
+          </div>
           <TimerBar />
-          <ChannelStatus />
-        </>
+        </div>
       }
       footer={
         <>
