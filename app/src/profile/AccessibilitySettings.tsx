@@ -20,13 +20,13 @@ export const INPUT_LABELS: Record<InputChannel, string> = {
   tactil: '👆 Táctil',
 };
 
-const FONT_LABELS: Record<FontSize, string> = {
+export const FONT_LABELS: Record<FontSize, string> = {
   normal: 'Normal',
   grande: 'Grande',
   extragrande: 'Muy grande',
 };
 
-const VERBOSITY_LABELS: Record<Verbosity, string> = {
+export const VERBOSITY_LABELS: Record<Verbosity, string> = {
   breve: 'Breve',
   detallada: 'Detallada',
 };
@@ -44,7 +44,7 @@ export function updateAccessibility(patch: Partial<AccessibilityPrefs>): Promise
   return profileService.update((p) => ({ ...p, accessibility: { ...p.accessibility, ...patch } }));
 }
 
-function Choice<T extends string>({
+export function Choice<T extends string>({
   legend,
   name,
   value,
@@ -80,7 +80,7 @@ function Choice<T extends string>({
   );
 }
 
-function Toggle({
+export function Toggle({
   checked,
   onChange,
   disabled,
@@ -104,7 +104,7 @@ function Toggle({
   );
 }
 
-function Range({
+export function Range({
   label,
   value,
   min,
@@ -139,7 +139,7 @@ function Range({
   );
 }
 
-const seconds = (ms: number) => `${(ms / 1000).toLocaleString('es-PE')} s`;
+export const seconds = (ms: number) => `${(ms / 1000).toLocaleString('es-PE')} s`;
 
 export function AccessibilitySettings() {
   const a = useProfile().accessibility;

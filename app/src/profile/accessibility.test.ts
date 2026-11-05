@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toggleInput } from './accessibility';
+import { generousDefaults, toggleInput } from './accessibility';
 
 describe('canales de entrada', () => {
   it('se puede desactivar el táctil si quedan voz y gestos (CA-18.3)', () => {
@@ -19,5 +19,15 @@ describe('canales de entrada', () => {
   it('activar un canal respeta el orden voz, gestos, táctil', () => {
     const next = toggleInput({ activeInputs: ['tactil'], preferredInput: 'tactil' }, 'voz');
     expect(next).toEqual({ activeInputs: ['voz', 'tactil'], preferredInput: 'tactil' });
+  });
+});
+
+describe('primera configuración', () => {
+  it('parte de letra grande y volumen alto (CA-22.2)', () => {
+    const prefs = { fontSize: 'normal', volume: undefined } as unknown as Parameters<
+      typeof generousDefaults
+    >[0];
+    expect(generousDefaults(prefs)).toEqual({ fontSize: 'grande', volume: 1 });
+    expect(generousDefaults({ ...prefs, fontSize: 'extragrande' }).fontSize).toBe('extragrande');
   });
 });

@@ -7,6 +7,7 @@ import rawRecipes from '../../../datos/recetas.json';
 import { toRecipes, type RawRecipeBook } from '@chef/shared';
 import { profileService } from '../core/services';
 import { SubstitutionHints } from '../personalization/SubstitutionHints';
+import { AccessibilitySetup } from './AccessibilitySetup';
 import { ProfileScreen } from './ProfileScreen';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -129,5 +130,20 @@ describe('SubstitutionHints', () => {
     await click([...card.querySelectorAll('button')].find((b) => b.textContent === 'No, gracias'));
     expect(container.textContent).not.toContain('leche evaporada');
     expect(profileService.getProfile().learned.rejectedSubstitutions).toHaveLength(1);
+  });
+});
+
+describe('AccessibilitySetup', () => {
+  it('se completa en 3 pantallas con letra grande y volumen alto (CA-22.2)', async () => {
+    const onDone = vi.fn();
+    await render(<AccessibilitySetup onDone={onDone} />);
+    const { fontSize, volume } = profileService.getProfile().accessibility;
+    expect(fontSize).not.toBe('normal');
+    expect(volume).toBe(1);
+    await click(button('Siguiente'));
+    await click(button('Siguiente'));
+    expect(container.textContent).toContain('Paso 3 de 3');
+    await click(button('Listo'));
+    expect(onDone).toHaveBeenCalledOnce();
   });
 });

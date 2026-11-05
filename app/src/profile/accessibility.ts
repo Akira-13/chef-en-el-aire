@@ -18,3 +18,18 @@ export function toggleInput(prefs: InputPrefs, channel: InputChannel): InputPref
   const preferredInput = active.includes(prefs.preferredInput) ? prefs.preferredInput : active[0]!;
   return { activeInputs: active, preferredInput };
 }
+
+export const GENEROUS_VOLUME = 1;
+
+/**
+ * Valores por defecto generosos para la primera configuración (CA-22.2): letra al menos
+ * grande y volumen alto. No reduce nada que el usuario ya haya agrandado.
+ */
+export function generousDefaults(
+  prefs: AccessibilityPrefs,
+): Pick<AccessibilityPrefs, 'fontSize' | 'volume'> {
+  return {
+    fontSize: prefs.fontSize === 'normal' ? 'grande' : prefs.fontSize,
+    volume: Math.max(prefs.volume ?? 0, GENEROUS_VOLUME),
+  };
+}
