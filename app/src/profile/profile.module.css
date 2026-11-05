@@ -1,0 +1,233 @@
+/* Pantalla de perfil: tarjetas de persona, ajustes, despensa y datos (RF-25, RF-30). */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 72px;
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Personas ---------- */
+
+.personas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.persona {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: var(--touch-min);
+  padding: 14px 16px;
+  border: 3px solid transparent;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.persona[aria-pressed='true'] {
+  border-color: var(--color-primary);
+}
+
+.personaName {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.personaCheck {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+/* ---------- Ajustes ---------- */
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 700;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Opción con forma de píldora: el control nativo queda dentro para el teclado y el lector. */
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+  padding: 8px 14px;
+  border: 2px solid var(--color-chip);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: var(--color-primary);
+  font-weight: 700;
+}
+
+.option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.option input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.range {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.range input {
+  width: 100%;
+  min-height: var(--touch-min);
+  accent-color: var(--color-primary);
+}
+
+.warning {
+  padding: 10px 14px;
+  border-left: 4px solid var(--color-substitute);
+  border-radius: 8px;
+  background: var(--color-chip);
+  color: var(--color-text);
+}
+
+/* ---------- Despensa ---------- */
+
+.pantryForm {
+  display: flex;
+  gap: 8px;
+}
+
+.pantryField {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.textInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 2px solid var(--color-chip);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-md);
+}
+
+.textInput::placeholder {
+  color: var(--color-text-2);
+  opacity: 1;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.removableChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--touch-min);
+  padding: 4px 4px 4px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+}
+
+.chipRemove {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+/* ---------- Listas ---------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.listText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stars {
+  color: var(--color-primary);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
