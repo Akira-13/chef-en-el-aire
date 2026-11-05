@@ -3,7 +3,7 @@ import rawRecipes from '../../../datos/recetas.json';
 import rawProfiles from '../../../datos/perfiles.json';
 import { ALLERGEN_CATEGORIES } from '../types/recipe';
 import { toProfile, toRawProfile, toRawRecipe, toRecipe, toRecipes } from './mappers';
-import type { RawProfileBook, RawRecipeBook } from './raw';
+import type { RawProfile, RawProfileBook, RawRecipeBook } from './raw';
 
 const recipeBook = rawRecipes as unknown as RawRecipeBook;
 const profileBook = rawProfiles as unknown as RawProfileBook;
@@ -53,5 +53,21 @@ describe('perfiles', () => {
     for (const raw of profileBook.perfiles) {
       expect(toRawProfile(toProfile(raw))).toEqual(raw);
     }
+  });
+
+  it('conserva lo aprendido con el uso y su origen (RF-29, CA-25.1)', () => {
+    const base = profileBook.perfiles[0]!;
+    const raw: RawProfile = {
+      ...base,
+      aprendido: {
+        ...base.aprendido,
+        sustituciones_rechazadas: [{ original: 'pan de molde', sustituto: 'pan sin gluten' }],
+        pasos_dificiles: [{ receta_id: 'REC-001', paso: 3 }],
+        lecturas_saltadas_seguidas: ['REC-001', 'REC-003'],
+        origenes: [{ clave: 'skipsFullReading', evento: 'readingSkipped', fecha: '2026-10-05' }],
+      },
+      emocional: { ...base.emocional, ultima_emocion: { emocion: 'nervous', fecha: '2026-10-05' } },
+    };
+    expect(toRawProfile(toProfile(raw))).toEqual(raw);
   });
 });
