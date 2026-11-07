@@ -18,6 +18,7 @@ import {
 import { GESTURE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
 import { HelpPanel } from './HelpPanel';
 import { createConfirmation } from './voice/confirmation';
+import { resolveMicrophone } from './voice/permission';
 import { DEFAULT_SILENCE_MS, startVoice } from './voice/recognizer';
 
 // Voz y cámara compiten por batería: solo corren donde se cocina.
@@ -51,16 +52,25 @@ export function InputLayer() {
   const gesturesAllowed = prefs.activeInputs.includes('gestos');
   const gesturesRun = gesturesAllowed && !cameraUserOff && GESTURE_SCREENS.includes(screen);
 
-  // Si el micrófono ya tenía permiso, la voz se activa sin volver a preguntar.
+  // El micrófono se pide al llegar a una pantalla con voz; si ya tenía permiso, se activa sin
+  // preguntar. Si el usuario lo rechaza, se avisa una vez y el botón permite reintentar.
+  const onVoiceScreen = VOICE_SCREENS.includes(screen);
   useEffect(() => {
     if (!voiceAllowed || useChannelStore.getState().voiceEnabled) return;
-    void navigator.permissions
-      ?.query({ name: 'microphone' as PermissionName })
-      .then((status) => {
-        if (status.state === 'granted') setChannels({ voiceEnabled: true });
-      })
-      .catch(() => {});
-  }, [voiceAllowed]);
+    let cancelled = false;
+    const askedAt = performance.now();
+    void resolveMicrophone(onVoiceScreen).then(({ granted, asked }) => {
+      if (cancelled) return;
+      if (granted) setChannels({ voiceEnabled: true });
+      else if (asked) {
+        setChannels({ voice: 'error' });
+        reportFallback('not-allowed', askedAt);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [voiceAllowed, onVoiceScreen]);
 
   useEffect(() => {
     const update = () => setChannels({ online: navigator.onLine });
@@ -115,7 +125,7 @@ export function InputLayer() {
         onPhrase: (transcript) => confirmation.phrase(transcript),
         onWake() {
           setChannels({ wakeArmed: true });
-          output.cue('navigate');
+          output.cue('listening');
           window.clearTimeout(wakeTimer);
           wakeTimer = window.setTimeout(() => setChannels({ wakeArmed: false }), WAKE_TIMEOUT_MS);
         },

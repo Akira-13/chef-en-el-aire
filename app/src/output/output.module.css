@@ -62,7 +62,12 @@
 }
 
 .gesture,
-.navigate,
+.next,
+.previous,
+.repeat,
+.listening,
+.pause,
+.resume,
 .celebration {
   --flash-color: var(--color-primary);
 }

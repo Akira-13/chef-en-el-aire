@@ -15,7 +15,9 @@ import {
   findStepTimer,
   findTimer,
   formatSpokenDuration,
+  pauseTimers,
   remainingSeconds,
+  resumeTimers,
   startTimer,
   useTimers,
 } from '../cooking/timers';
@@ -27,6 +29,7 @@ import { enterScreen } from '../core/commandContext';
 import { clearAdaptedRecipe, useRecipe } from '../core/recipes';
 import { output, profileService, useProfile } from '../core/services';
 import { ChannelStatus } from '../input';
+import { useVoiceSubstitution } from '../personalization/useVoiceSubstitution';
 import { Button, Card, Chip, IconButton, Screen } from '../ui';
 import { formatDuration, recipeArt } from '../ui/labels';
 import styles from './screens.module.css';
@@ -77,6 +80,7 @@ export function CookingScreen() {
   }, [navigate, original, recipe]);
 
   const nav = useStepNavigation(recipeId, recipe, finish);
+  useVoiceSubstitution(recipe, true);
   const { step } = nav;
 
   useEffect(() => {
@@ -96,6 +100,13 @@ export function CookingScreen() {
       kind: 'step',
     });
   }, [recipe, step, nav.repeatCount]);
+
+  // La pausa congela los temporizadores. Se reanudan al salir de ella, sea con «continuar» o al
+  // cambiar de paso, y al dejar el modo cocina para que ninguno se quede detenido sin pantalla.
+  useEffect(() => {
+    if (!nav.paused) resumeTimers();
+  }, [nav.paused]);
+  useEffect(() => resumeTimers, []);
 
   /** Avanzar antes de que termine la lectura completa es una señal para el perfil (CA-24.1). */
   function noteSkippedReading() {
@@ -134,13 +145,13 @@ export function CookingScreen() {
       case 'next':
         noteSkippedReading();
         output.stop();
-        output.cue('navigate');
+        output.cue('next');
         nav.next();
         break;
       case 'previous':
         if (nav.previous()) {
           output.stop();
-          output.cue('navigate');
+          output.cue('previous');
         } else {
           // Distinto al éxito y sin reproche (CA-31.2).
           output.cue('error');
@@ -155,17 +166,20 @@ export function CookingScreen() {
             stepNumber: step.number,
           });
         }
-        output.cue('navigate');
+        output.cue('repeat');
         nav.repeat();
         break;
       case 'pause':
         output.stop();
-        output.cue('success');
+        output.cue('pause');
+        pauseTimers();
         nav.setPaused(true);
         break;
       case 'resume':
-        output.cue('success');
+        output.cue('resume');
         nav.setPaused(false);
+        // La lectura se retoma desde el principio del paso.
+        if (nav.paused) nav.repeat();
         break;
       case 'startTimer':
         if (channel === 'touch') requestAlertPermission();
@@ -286,7 +300,7 @@ export function CookingScreen() {
         {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
         {nav.paused && (
           <p role="status" className={styles.paused}>
-            ⏸️ En pausa. Los temporizadores siguen corriendo.
+            ⏸️ En pausa. Los temporizadores esperan hasta que continúes.
           </p>
         )}
       </Card>
