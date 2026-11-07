@@ -111,6 +111,8 @@ export function startVoice(
       return;
     }
     const command = parseCommand(commandText);
+    // Sin "chef" solo valen los comandos conocidos: una charla de fondo no debe ir al asistente.
+    if (command?.type === 'ask' && gate.isFollowUp()) return;
     if (command)
       handlers.onCommand(command, { confidence, transcript: transcript.trim() }, commandText);
   }
