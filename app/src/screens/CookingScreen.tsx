@@ -29,6 +29,7 @@ import { enterScreen } from '../core/commandContext';
 import { clearAdaptedRecipe, useRecipe } from '../core/recipes';
 import { output, profileService, useProfile } from '../core/services';
 import { ChannelStatus } from '../input';
+import { useVoiceSubstitution } from '../personalization/useVoiceSubstitution';
 import { Button, Card, Chip, IconButton, Screen } from '../ui';
 import { formatDuration, recipeArt } from '../ui/labels';
 import styles from './screens.module.css';
@@ -79,6 +80,7 @@ export function CookingScreen() {
   }, [navigate, original, recipe]);
 
   const nav = useStepNavigation(recipeId, recipe, finish);
+  useVoiceSubstitution(recipe, true);
   const { step } = nav;
 
   useEffect(() => {
