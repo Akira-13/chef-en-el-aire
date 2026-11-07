@@ -13,6 +13,8 @@ export interface Timer {
   durationSeconds: number;
   /** Hora de fin, en milisegundos de Date.now(). */
   endsAt: number;
+  /** Milisegundos que faltaban al pausar; solo existe mientras está en pausa. */
+  pausedRemainingMs?: number;
 }
 
 interface TimerState {
@@ -65,14 +67,38 @@ export function stopTimer(name: string): Timer | undefined {
 /** Pasa a la cola de alertas los temporizadores vencidos y devuelve los nuevos. */
 export function collectExpired(now = Date.now()): Timer[] {
   const { running, expired } = useTimers.getState();
-  const due = running.filter((timer) => timer.endsAt <= now).sort((a, b) => a.endsAt - b.endsAt);
+  const due = running
+    .filter((timer) => timer.pausedRemainingMs === undefined && timer.endsAt <= now)
+    .sort((a, b) => a.endsAt - b.endsAt);
   if (due.length === 0) return [];
   const fresh = due.filter((timer) => now - timer.endsAt < STALE_AFTER_MS);
   useTimers.setState({
-    running: running.filter((timer) => timer.endsAt > now),
+    running: running.filter((timer) => !due.includes(timer)),
     expired: [...expired, ...fresh],
   });
   return fresh;
+}
+
+/** Congela los temporizadores que corren; los que ya estaban en pausa no pierden tiempo. */
+export function pauseTimers(now = Date.now()): void {
+  useTimers.setState((state) => ({
+    running: state.running.map((timer) =>
+      timer.pausedRemainingMs === undefined
+        ? { ...timer, pausedRemainingMs: Math.max(0, timer.endsAt - now) }
+        : timer,
+    ),
+  }));
+}
+
+/** Reanuda los temporizadores en pausa con el tiempo que les quedaba. */
+export function resumeTimers(now = Date.now()): void {
+  const { running } = useTimers.getState();
+  if (running.every((timer) => timer.pausedRemainingMs === undefined)) return;
+  useTimers.setState({
+    running: running.map(({ pausedRemainingMs, ...timer }) =>
+      pausedRemainingMs === undefined ? timer : { ...timer, endsAt: now + pausedRemainingMs },
+    ),
+  });
 }
 
 /** Confirma la alerta más antigua; si hay otra en cola, pasa a mostrarse. */
@@ -85,7 +111,8 @@ export function clearTimers(): void {
 }
 
 export function remainingSeconds(timer: Timer, now = Date.now()): number {
-  return Math.max(0, Math.ceil((timer.endsAt - now) / 1000));
+  const remainingMs = timer.pausedRemainingMs ?? timer.endsAt - now;
+  return Math.max(0, Math.ceil(remainingMs / 1000));
 }
 
 function plural(count: number, word: string): string {

@@ -15,7 +15,9 @@ import {
   findStepTimer,
   findTimer,
   formatSpokenDuration,
+  pauseTimers,
   remainingSeconds,
+  resumeTimers,
   startTimer,
   useTimers,
 } from '../cooking/timers';
@@ -97,6 +99,13 @@ export function CookingScreen() {
     });
   }, [recipe, step, nav.repeatCount]);
 
+  // La pausa congela los temporizadores. Se reanudan al salir de ella, sea con «continuar» o al
+  // cambiar de paso, y al dejar el modo cocina para que ninguno se quede detenido sin pantalla.
+  useEffect(() => {
+    if (!nav.paused) resumeTimers();
+  }, [nav.paused]);
+  useEffect(() => resumeTimers, []);
+
   /** Avanzar antes de que termine la lectura completa es una señal para el perfil (CA-24.1). */
   function noteSkippedReading() {
     if (!recipe || !step) return;
@@ -161,11 +170,14 @@ export function CookingScreen() {
       case 'pause':
         output.stop();
         output.cue('success');
+        pauseTimers();
         nav.setPaused(true);
         break;
       case 'resume':
         output.cue('success');
         nav.setPaused(false);
+        // La lectura se retoma desde el principio del paso.
+        if (nav.paused) nav.repeat();
         break;
       case 'startTimer':
         if (channel === 'touch') requestAlertPermission();
@@ -286,7 +298,7 @@ export function CookingScreen() {
         {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
         {nav.paused && (
           <p role="status" className={styles.paused}>
-            ⏸️ En pausa. Los temporizadores siguen corriendo.
+            ⏸️ En pausa. Los temporizadores esperan hasta que continúes.
           </p>
         )}
       </Card>
