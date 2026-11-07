@@ -125,7 +125,7 @@ export function InputLayer() {
         onPhrase: (transcript) => confirmation.phrase(transcript),
         onWake() {
           setChannels({ wakeArmed: true });
-          output.cue('navigate');
+          output.cue('listening');
           window.clearTimeout(wakeTimer);
           wakeTimer = window.setTimeout(() => setChannels({ wakeArmed: false }), WAKE_TIMEOUT_MS);
         },

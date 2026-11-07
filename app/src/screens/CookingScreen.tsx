@@ -145,13 +145,13 @@ export function CookingScreen() {
       case 'next':
         noteSkippedReading();
         output.stop();
-        output.cue('navigate');
+        output.cue('next');
         nav.next();
         break;
       case 'previous':
         if (nav.previous()) {
           output.stop();
-          output.cue('navigate');
+          output.cue('previous');
         } else {
           // Distinto al éxito y sin reproche (CA-31.2).
           output.cue('error');
@@ -166,17 +166,17 @@ export function CookingScreen() {
             stepNumber: step.number,
           });
         }
-        output.cue('navigate');
+        output.cue('repeat');
         nav.repeat();
         break;
       case 'pause':
         output.stop();
-        output.cue('success');
+        output.cue('pause');
         pauseTimers();
         nav.setPaused(true);
         break;
       case 'resume':
-        output.cue('success');
+        output.cue('resume');
         nav.setPaused(false);
         // La lectura se retoma desde el principio del paso.
         if (nav.paused) nav.repeat();

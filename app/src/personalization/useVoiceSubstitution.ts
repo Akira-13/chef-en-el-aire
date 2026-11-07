@@ -83,7 +83,7 @@ export function useVoiceSubstitution(recipe: Recipe | undefined, askAssistant = 
           pending.current = null;
         }, CONFIRM_TIMEOUT_MS);
         pending.current = { proposal, timer };
-        output.cue('navigate');
+        output.cue('listening');
         output.announce({
           text: isOmission(proposal)
             ? `¿Quito ${proposal.original}? Di «confirmo» o «cancelar».`
