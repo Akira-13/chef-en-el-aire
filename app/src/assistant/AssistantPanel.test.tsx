@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ASSISTANT_UNAVAILABLE_MESSAGE,
   toRecipes,
+  type Recipe,
+  type Step,
   type AskResponse,
   type ExplainResponse,
   type RawRecipeBook,
@@ -44,6 +46,12 @@ import { AssistantPanel } from './AssistantPanel';
 
 const recipe = toRecipes(rawRecipes as unknown as RawRecipeBook).find((r) => r.id === 'REC-008')!;
 const step = recipe.steps[3]!;
+const shownStep = {
+  servings: recipe.servings,
+  text: step.text,
+  ...(step.warning && { warning: step.warning }),
+  ...(step.readyCue && { readyCue: step.readyCue }),
+};
 const anything = expect.anything();
 const OFFLINE_MESSAGE = 'Sin conexión: el asistente no está disponible';
 
@@ -83,8 +91,8 @@ afterEach(() => {
 const button = (label: string) =>
   [...container.querySelectorAll('button')].find((b) => b.textContent?.includes(label));
 
-async function render() {
-  await act(async () => root.render(<AssistantPanel recipe={recipe} step={step} />));
+async function render(shown: Step = step, shownRecipe: Recipe = recipe) {
+  await act(async () => root.render(<AssistantPanel recipe={shownRecipe} step={shown} />));
 }
 
 async function type(text: string) {
@@ -113,6 +121,7 @@ describe('AssistantPanel: preguntar', () => {
       skillLevel: 'novato',
       tone: 'calmado',
       constraints: { allergies: ['mani'], dinerRestrictions: [], diet: 'omnivora' },
+      stepView: shownStep,
     });
   });
 
@@ -231,6 +240,32 @@ describe('AssistantPanel: preguntar', () => {
   });
 });
 
+describe('AssistantPanel: receta adaptada', () => {
+  // Con una sustitución, el paso y las porciones que ve el usuario ya no son los de los datos.
+  const adaptedStep: Step = {
+    ...step,
+    text: 'Licúa las semillas de girasol.',
+    readyCue: undefined,
+  };
+  const adaptedRecipe: Recipe = { ...recipe, servings: 2 };
+  const adaptedView = { servings: 2, text: adaptedStep.text };
+
+  it('"Más" explica el paso adaptado, no el original', async () => {
+    mocks.explain.mockResolvedValueOnce(explanation);
+    await render(adaptedStep, adaptedRecipe);
+    await act(async () => button('Más')!.click());
+    expect(mocks.explain).toHaveBeenCalledWith(expect.objectContaining({ stepView: adaptedView }));
+  });
+
+  it('la pregunta también viaja con el paso adaptado', async () => {
+    mocks.ask.mockResolvedValueOnce(answer);
+    await render(adaptedStep, adaptedRecipe);
+    await type('¿Cuánto licúo?');
+    await act(async () => button('Preguntar')!.click());
+    expect(mocks.ask).toHaveBeenCalledWith(expect.objectContaining({ stepView: adaptedView }));
+  });
+});
+
 describe('AssistantPanel: explicar el paso', () => {
   it('"Más" pide la explicación y registra el evento de aprendizaje (CA-10.1, RF-29)', async () => {
     mocks.explain.mockResolvedValueOnce(explanation);
@@ -241,6 +276,7 @@ describe('AssistantPanel: explicar el paso', () => {
       stepNumber: step.number,
       skillLevel: 'novato',
       constraints: { allergies: ['mani'], dinerRestrictions: [], diet: 'omnivora' },
+      stepView: shownStep,
     });
     expect(mocks.recordEvent).toHaveBeenCalledWith({
       type: 'explanationRequested',

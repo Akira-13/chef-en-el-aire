@@ -162,7 +162,32 @@ chef-en-el-aire/
 
 ## Instalación
 
-Ver [INSTALACION.md](INSTALACION.md). En resumen: `npm install` y `npm run dev`.
+Requisitos: Node.js 22.12 o superior y, para probar en el celular, [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (túnel HTTPS gratuito, sin cuenta). Detalles y configuración del asistente en [INSTALACION.md](INSTALACION.md).
+
+### 1. Instalar y ejecutar en la computadora
+
+```bash
+npm install
+cp server/.env.example server/.env   # opcional: completa DEEPSEEK_API_KEY para el asistente
+npm run dev
+```
+
+- App: http://localhost:5173
+- API: http://localhost:3001 (la app le redirige `/api`)
+
+### 2. Abrirla en el celular con Cloudflare Tunnel
+
+La cámara, el micrófono y la instalación de la PWA exigen HTTPS, por eso el celular no puede usar la IP local. Con `npm run dev` corriendo, abre **otra terminal** y crea el túnel hacia la app:
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+1. `cloudflared` imprime una URL como `https://algo-aleatorio.trycloudflare.com`.
+2. Ábrela en Chrome del celular y concede los permisos de cámara y micrófono cuando se pidan.
+3. Los cambios en el código se recargan en caliente también en el celular.
+
+> La URL cambia cada vez que reinicias `cloudflared`. Para probar la versión compilada (PWA instalable y modo sin conexión), usa `npm run demo` (compila y sirve todo en el puerto 3000) y abre el túnel con `cloudflared tunnel --url http://localhost:3000`.
 
 ## Licencia
 

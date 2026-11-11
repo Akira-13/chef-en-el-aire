@@ -13,6 +13,7 @@ import { useRecipe } from '../core/recipes';
 import { output, useProfile } from '../core/services';
 import { pantryStatus, type IngredientStatus } from '../personalization';
 import { SubstitutionHints } from '../personalization/SubstitutionHints';
+import { useVoiceSubstitution } from '../personalization/useVoiceSubstitution';
 import { Button, Chip, IconButton, Screen } from '../ui';
 import { DIFFICULTY_LABELS, recipeArt } from '../ui/labels';
 import styles from './screens.module.css';
@@ -35,6 +36,7 @@ export function RecipeScreen() {
   const { status, recipe, isAdapted } = useRecipe(recipeId);
   const session = useCookingSession();
   const [riskAccepted, setRiskAccepted] = useState(false);
+  useVoiceSubstitution(recipe);
 
   const resumeStep = session.recipeId === recipeId ? session.stepIndex : 0;
   const warnings = recipe ? findAllergens(recipe, profile.explicit).map(describeFinding) : [];

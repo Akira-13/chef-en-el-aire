@@ -20,7 +20,10 @@ import {
   type DietaryConstraints,
   type ExplainRequest,
   type ExplainResponse,
+  type Recipe,
   type RecipeChange,
+  type Step,
+  type StepView,
 } from '@chef/shared';
 import { getRecipe } from '../data/recipes';
 import { AssistantUnavailableError, type ProviderSelector } from '../llm/ProviderSelector';
@@ -67,6 +70,28 @@ function findAnswerWarnings(
 
 // Las restricciones son opcionales: sin ellas el modelo no sabe qué alérgenos evitar, por eso la
 // interfaz las envía siempre que conoce el perfil (RF-07).
+const stepViewSchema = z.object({
+  servings: z.number().int().positive().max(100),
+  text: z.string().trim().min(1).max(2000),
+  warning: z.string().max(500).optional(),
+  readyCue: z.string().max(500).optional(),
+});
+
+// Si el usuario adaptó la receta, el paso que ve difiere del de los datos (RF-06).
+function withStepView(recipe: Recipe, step: Step, view?: StepView): { recipe: Recipe; step: Step } {
+  if (!view) return { recipe, step };
+  const { warning, readyCue, ...rest } = step;
+  return {
+    recipe: { ...recipe, servings: view.servings },
+    step: {
+      ...rest,
+      text: view.text,
+      ...(view.warning && { warning: view.warning }),
+      ...(view.readyCue && { readyCue: view.readyCue }),
+    },
+  };
+}
+
 const askRequestSchema = z.object({
   recipeId: z.string().min(1),
   stepNumber: z.number().int().positive(),
@@ -75,6 +100,7 @@ const askRequestSchema = z.object({
   tone: z.string().max(100).optional(),
   feeling: z.enum(['nervous', 'tired', 'confused', 'happy']).optional(),
   constraints: constraintsSchema.optional(),
+  stepView: stepViewSchema.optional(),
 });
 
 const explainRequestSchema = z.object({
@@ -82,6 +108,7 @@ const explainRequestSchema = z.object({
   stepNumber: z.number().int().positive(),
   skillLevel: skillLevelSchema,
   constraints: constraintsSchema.optional(),
+  stepView: stepViewSchema.optional(),
 });
 
 // Respuestas cortas: la voz las lee en voz alta y RNF-03 pide ≤ 8 s con el proveedor remoto.
@@ -178,12 +205,6 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
       return;
     }
     const request: AskRequest = parsed.data;
-<<<<<<< Updated upstream
-    const recipe = getRecipe(request.recipeId);
-    const step = recipe?.steps.find((s) => s.number === request.stepNumber);
-    if (!recipe || !step) {
-      res.status(404).json({ error: 'Receta o paso no encontrado' });
-=======
     const stored = getRecipe(request.recipeId);
     const storedStep = stored?.steps.find((s) => s.number === request.stepNumber);
     if (!stored || !storedStep) {
@@ -194,9 +215,9 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
         'Receta o paso no encontrado',
         `${request.recipeId} paso ${request.stepNumber}`,
       );
->>>>>>> Stashed changes
       return;
     }
+    const { recipe, step } = withStepView(stored, storedStep, request.stepView);
 
     try {
       const prompt = buildAskPrompt(recipe, step, request);
@@ -233,12 +254,6 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
       return;
     }
     const request: ExplainRequest = parsed.data;
-<<<<<<< Updated upstream
-    const recipe = getRecipe(request.recipeId);
-    const step = recipe?.steps.find((s) => s.number === request.stepNumber);
-    if (!recipe || !step) {
-      res.status(404).json({ error: 'Receta o paso no encontrado' });
-=======
     const stored = getRecipe(request.recipeId);
     const storedStep = stored?.steps.find((s) => s.number === request.stepNumber);
     if (!stored || !storedStep) {
@@ -249,9 +264,9 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
         'Receta o paso no encontrado',
         `${request.recipeId} paso ${request.stepNumber}`,
       );
->>>>>>> Stashed changes
       return;
     }
+    const { recipe, step } = withStepView(stored, storedStep, request.stepView);
 
     if (step.readyCue) {
       // El texto del paso es de la receta, pero también puede nombrar un alérgeno vigilado.

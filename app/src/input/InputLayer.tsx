@@ -18,11 +18,8 @@ import {
 import { GESTURE_SCREENS, VOICE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
 import { HelpPanel } from './HelpPanel';
 import { createConfirmation } from './voice/confirmation';
-<<<<<<< Updated upstream
-=======
 import { isEcho } from './voice/echo';
 import { resolveMicrophone } from './voice/permission';
->>>>>>> Stashed changes
 import { DEFAULT_SILENCE_MS, startVoice } from './voice/recognizer';
 
 // Pantallas donde se puede mostrar la pregunta del navegador por el micrófono. No son todas las
@@ -59,18 +56,6 @@ export function InputLayer() {
   const gesturesAllowed = prefs.activeInputs.includes('gestos');
   const gesturesRun = gesturesAllowed && !cameraUserOff && GESTURE_SCREENS.includes(screen);
 
-<<<<<<< Updated upstream
-  // Si el micrófono ya tenía permiso, la voz se activa sin volver a preguntar.
-  useEffect(() => {
-    if (!voiceAllowed || useChannelStore.getState().voiceEnabled) return;
-    void navigator.permissions
-      ?.query({ name: 'microphone' as PermissionName })
-      .then((status) => {
-        if (status.state === 'granted') setChannels({ voiceEnabled: true });
-      })
-      .catch(() => {});
-  }, [voiceAllowed]);
-=======
   // El micrófono se pide al llegar a una pantalla con voz; si ya tenía permiso, se activa sin
   // preguntar. Si el usuario lo rechaza, se avisa una vez y el botón permite reintentar.
   const mayAskMic = MIC_PROMPT_SCREENS.includes(screen);
@@ -90,7 +75,6 @@ export function InputLayer() {
       cancelled = true;
     };
   }, [voiceAllowed, mayAskMic]);
->>>>>>> Stashed changes
 
   useEffect(() => {
     const update = () => setChannels({ online: navigator.onLine });
@@ -159,7 +143,7 @@ export function InputLayer() {
         onPhrase: (transcript) => confirmation.phrase(transcript),
         onWake() {
           setChannels({ wakeArmed: true });
-          output.cue('navigate');
+          output.cue('listening');
           window.clearTimeout(wakeTimer);
           wakeTimer = window.setTimeout(() => setChannels({ wakeArmed: false }), WAKE_TIMEOUT_MS);
         },

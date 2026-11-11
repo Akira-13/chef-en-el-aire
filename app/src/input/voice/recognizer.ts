@@ -173,10 +173,6 @@ export function startVoice(
       return false;
     }
     const command = parseCommand(commandText);
-<<<<<<< Updated upstream
-    if (command)
-      handlers.onCommand(command, { confidence, transcript: transcript.trim() }, commandText);
-=======
     // Sin "chef" solo valen los comandos conocidos: una charla de fondo no debe ir al asistente.
     if (!command) return false;
     if (command.type === 'ask') {
@@ -224,7 +220,6 @@ export function startVoice(
     trace('  →', command, 'de', JSON.stringify(commandText));
     handlers.onCommand(command, { confidence, transcript }, commandText);
     return true;
->>>>>>> Stashed changes
   }
 
   recognition.onresult = (event) => {
