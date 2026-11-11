@@ -29,7 +29,9 @@ const STEPS: OnboardingStep[] = [
   {
     art: '🎙️',
     title: 'Prueba con la voz',
-    text: 'Di «chef, siguiente». La palabra «chef» evita que la app reaccione a otras conversaciones.',
+    // La instrucción va al final: si viene antes, el usuario habla mientras la app sigue leyendo
+    // y el micrófono pierde «chef» por la voz del altavoz.
+    text: 'La palabra «chef» evita que la app reaccione a otras conversaciones. Di «chef, siguiente».',
     channel: 'voice',
   },
   {
@@ -71,7 +73,9 @@ export function OnboardingScreen() {
   useEffect(() => enterScreen('onboarding'), []);
   useEffect(() => () => window.clearTimeout(pause.current), []);
 
+  // Cada paso corta la lectura del anterior: si se acumulan, el usuario termina hablando encima.
   useEffect(() => {
+    output.stop();
     output.announce({ text: `${step.title}. ${step.text}`, kind: 'info' });
   }, [step]);
 

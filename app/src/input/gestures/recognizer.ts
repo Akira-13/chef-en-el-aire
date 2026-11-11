@@ -68,6 +68,7 @@ export function startGestures(handlers: GestureHandlers): () => void {
         {
           category: top && top.score >= MIN_GESTURE_SCORE ? top.categoryName : null,
           wristX: wrist ? wrist.x : null,
+          wristY: wrist ? wrist.y : null,
         },
         now,
       );

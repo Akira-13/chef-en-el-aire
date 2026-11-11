@@ -2,6 +2,7 @@
 // Esta versión es mínima (filtra alérgenos y busca por texto); los criterios completos de
 // CA-01.1 a CA-01.3, CA-02.3 y CA-03.2 se implementan aquí.
 
+<<<<<<< Updated upstream
 import type { Profile, Recipe } from '@chef/shared';
 
 export interface SuggestionResult {
@@ -60,3 +61,30 @@ export function pantryStatus(recipe: Recipe, profile: Profile): Record<string, I
   }
   return status;
 }
+=======
+export { normalizeText, phrasesMatch } from './text';
+export {
+  addToPantry,
+  inPantry,
+  pantryMatches,
+  pantryStatus,
+  type IngredientStatus,
+} from './pantry';
+export {
+  SUGGESTION_COUNT,
+  fitsDiet,
+  suggestRecipes,
+  type SuggestOptions,
+  type SuggestionResult,
+} from './suggest';
+export { findSimilarRecipes, searchRecipes } from './search';
+export { answerHomeQuestion, isPantryQuestion, type HomeAnswer } from './homeQuestion';
+export {
+  applySubstitution,
+  hasBlockedAllergens,
+  proposeSubstitutions,
+  rankSubstitutes,
+  substituteFor,
+  type SubstitutionProposal,
+} from './substitutions';
+>>>>>>> Stashed changes

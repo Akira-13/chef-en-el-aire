@@ -7,7 +7,7 @@ import { commandBus, useCommands } from '../core/commandBus';
 import { getCommandContext, useCommandContext } from '../core/commandContext';
 import { metrics } from '../core/metrics';
 import { output, profileService, useProfile } from '../core/services';
-import { showGestureNotice } from '../output';
+import { showGestureNotice, speechAt } from '../output';
 import { setChannels, useChannelStore } from './channelStore';
 import { reportFallback } from './fallback';
 import {
@@ -15,13 +15,21 @@ import {
   createHandWatcher,
   SENSITIVITY,
 } from './gestures/interpretGestures';
-import { GESTURE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
+import { GESTURE_SCREENS, VOICE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
 import { HelpPanel } from './HelpPanel';
 import { createConfirmation } from './voice/confirmation';
+<<<<<<< Updated upstream
+=======
+import { isEcho } from './voice/echo';
+import { resolveMicrophone } from './voice/permission';
+>>>>>>> Stashed changes
 import { DEFAULT_SILENCE_MS, startVoice } from './voice/recognizer';
 
-// Voz y cámara compiten por batería: solo corren donde se cocina.
-const VOICE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
+// Pantallas donde se puede mostrar la pregunta del navegador por el micrófono. No son todas las
+// de `VOICE_SCREENS`: pedirlo al abrir la app, sin que el usuario haya hecho nada, es la forma más
+// segura de que lo rechace y se quede sin voz. Se pide donde la voz es el centro de la pantalla
+// (la bienvenida lo pide la primera vez) y después ya está concedido para Inicio y Receta.
+const MIC_PROMPT_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
 
 const WAKE_TIMEOUT_MS = 5000;
 const DEFAULT_LOCK_SECONDS = 30;
@@ -51,6 +59,7 @@ export function InputLayer() {
   const gesturesAllowed = prefs.activeInputs.includes('gestos');
   const gesturesRun = gesturesAllowed && !cameraUserOff && GESTURE_SCREENS.includes(screen);
 
+<<<<<<< Updated upstream
   // Si el micrófono ya tenía permiso, la voz se activa sin volver a preguntar.
   useEffect(() => {
     if (!voiceAllowed || useChannelStore.getState().voiceEnabled) return;
@@ -61,6 +70,27 @@ export function InputLayer() {
       })
       .catch(() => {});
   }, [voiceAllowed]);
+=======
+  // El micrófono se pide al llegar a una pantalla con voz; si ya tenía permiso, se activa sin
+  // preguntar. Si el usuario lo rechaza, se avisa una vez y el botón permite reintentar.
+  const mayAskMic = MIC_PROMPT_SCREENS.includes(screen);
+  useEffect(() => {
+    if (!voiceAllowed || useChannelStore.getState().voiceEnabled) return;
+    let cancelled = false;
+    const askedAt = performance.now();
+    void resolveMicrophone(mayAskMic).then(({ granted, asked }) => {
+      if (cancelled) return;
+      if (granted) setChannels({ voiceEnabled: true });
+      else if (asked) {
+        setChannels({ voice: 'error' });
+        reportFallback('not-allowed', askedAt);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [voiceAllowed, mayAskMic]);
+>>>>>>> Stashed changes
 
   useEffect(() => {
     const update = () => setChannels({ online: navigator.onLine });
@@ -94,11 +124,25 @@ export function InputLayer() {
 
   // ---------- Voz (RF-18, RF-19) ----------
   const silenceMs = prefs.voiceTimeoutMs ?? DEFAULT_SILENCE_MS;
+  // Ahora que la voz vive en cinco pantallas, el aviso de «sin internet» se da una sola vez
+  // mientras no haya red, y no en cada pantalla por la que pase el usuario.
+  const offlineNoticed = useRef(false);
   useEffect(() => {
-    if (!voiceWanted || online) return;
+    if (online) {
+      offlineNoticed.current = false;
+      return;
+    }
+    if (!voiceWanted || offlineNoticed.current) return;
+    offlineNoticed.current = true;
     setChannels({ voice: 'error' });
     reportFallback('offline', performance.now());
   }, [voiceWanted, online]);
+
+  // Rastro en la consola de por qué la voz no escucha en una pantalla que la usa.
+  useEffect(() => {
+    if (!VOICE_SCREENS.includes(screen) || voiceRuns) return;
+    console.debug('[voz] apagada en', screen, { voiceAllowed, voiceEnabled, online });
+  }, [screen, voiceRuns, voiceAllowed, voiceEnabled, online]);
 
   useEffect(() => {
     if (!voiceRuns) return;
@@ -125,7 +169,10 @@ export function InputLayer() {
           reportFallback(kind, startedAt);
         },
       },
-      { silenceMs },
+      {
+        silenceMs,
+        isEcho: (transcript, heardAt) => isEcho(transcript, speechAt(heardAt)),
+      },
     );
     return () => {
       stop();
@@ -173,8 +220,9 @@ export function InputLayer() {
             profileService.getProfile().accessibility,
           );
           if (!command) return;
-          if (confirmation.gesture(command)) {
-            showGestureNotice('Gesto: Sí');
+          const confirmed = confirmation.gesture(command);
+          if (confirmed) {
+            showGestureNotice(`Gesto: Sí, ${gestureLabel(confirmed).toLowerCase()}`);
             output.cue('gesture');
             return;
           }

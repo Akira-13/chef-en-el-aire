@@ -91,6 +91,18 @@ function sendUnavailable(res: Response): void {
   res.status(503).json(unavailable);
 }
 
+// La interfaz muestra "no disponible" ante cualquier error; el motivo real queda en la consola.
+function reject(
+  res: Response,
+  route: string,
+  status: 400 | 404,
+  error: string,
+  detail?: unknown,
+): void {
+  console.warn(`[assistant] ${route} ${status}: ${error}`, detail ?? '');
+  res.status(status).json({ error });
+}
+
 /**
  * Router del asistente. Recibe una fábrica del selector para releer la configuración en cada
  * pedido y para probar las rutas con proveedores falsos.
@@ -103,13 +115,13 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
   router.post('/adapt', async (req, res) => {
     const parsed = adaptRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'Pedido de adaptación inválido' });
+      reject(res, '/adapt', 400, 'Pedido de adaptación inválido', parsed.error.issues);
       return;
     }
     const request: AdaptRequest = parsed.data;
     const original = getRecipe(request.recipeId);
     if (!original) {
-      res.status(404).json({ error: 'Receta no encontrada' });
+      reject(res, '/adapt', 404, 'Receta no encontrada', request.recipeId);
       return;
     }
 
@@ -162,14 +174,27 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
   router.post('/ask', async (req, res) => {
     const parsed = askRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'Pedido de pregunta inválido' });
+      reject(res, '/ask', 400, 'Pedido de pregunta inválido', parsed.error.issues);
       return;
     }
     const request: AskRequest = parsed.data;
+<<<<<<< Updated upstream
     const recipe = getRecipe(request.recipeId);
     const step = recipe?.steps.find((s) => s.number === request.stepNumber);
     if (!recipe || !step) {
       res.status(404).json({ error: 'Receta o paso no encontrado' });
+=======
+    const stored = getRecipe(request.recipeId);
+    const storedStep = stored?.steps.find((s) => s.number === request.stepNumber);
+    if (!stored || !storedStep) {
+      reject(
+        res,
+        '/ask',
+        404,
+        'Receta o paso no encontrado',
+        `${request.recipeId} paso ${request.stepNumber}`,
+      );
+>>>>>>> Stashed changes
       return;
     }
 
@@ -204,14 +229,27 @@ export function createAssistantRouter(getSelector: () => ProviderSelector): Rout
   router.post('/explain', async (req, res) => {
     const parsed = explainRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: 'Pedido de explicación inválido' });
+      reject(res, '/explain', 400, 'Pedido de explicación inválido', parsed.error.issues);
       return;
     }
     const request: ExplainRequest = parsed.data;
+<<<<<<< Updated upstream
     const recipe = getRecipe(request.recipeId);
     const step = recipe?.steps.find((s) => s.number === request.stepNumber);
     if (!recipe || !step) {
       res.status(404).json({ error: 'Receta o paso no encontrado' });
+=======
+    const stored = getRecipe(request.recipeId);
+    const storedStep = stored?.steps.find((s) => s.number === request.stepNumber);
+    if (!stored || !storedStep) {
+      reject(
+        res,
+        '/explain',
+        404,
+        'Receta o paso no encontrado',
+        `${request.recipeId} paso ${request.stepNumber}`,
+      );
+>>>>>>> Stashed changes
       return;
     }
 

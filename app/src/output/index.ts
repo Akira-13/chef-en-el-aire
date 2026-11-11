@@ -7,7 +7,8 @@ import { playCue } from './sounds';
 import { speak, stopSpeaking, textFor, wantsAudio, wantsSubtitles } from './speech';
 import { clear, showCaption, showFlash } from './store';
 
-export { showGestureNotice, showHint } from './store';
+export { speechAt } from './speech';
+export { clearHint, showGestureNotice, showHint } from './store';
 
 type Politeness = 'polite' | 'assertive';
 

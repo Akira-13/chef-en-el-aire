@@ -38,7 +38,18 @@ describe('parseCommand (CA-13.1)', () => {
     ['estoy nerviosa', { type: 'feeling', feeling: 'nervous' }],
     ['estoy cansada', { type: 'feeling', feeling: 'tired' }],
     ['busca lomo saltado', { type: 'search', query: 'lomo saltado' }],
+    ['desactiva temporizador cebolla', { type: 'stopTimer', name: 'cebolla' }],
+    ['apaga el temporizador', { type: 'stopTimer' }],
+    ['cancela el temporizador del arroz', { type: 'stopTimer', name: 'arroz' }],
+    ['quita el temporizador', { type: 'stopTimer' }],
+    ['activa el temporizador', { type: 'startTimer' }],
+    ['comienza el temporizador de la pasta', { type: 'startTimer', name: 'pasta' }],
+    ['apaga la alarma', { type: 'dismissAlert' }],
+    ['cancela', { type: 'cancel' }],
+    ['apaga la cámara', { type: 'cameraOff' }],
     ['tengo arroz, huevos y cebolla', { type: 'addPantry', items: ['arroz', 'huevos', 'cebolla'] }],
+    // Frase cortada a la mitad: la "y" suelta del final no es parte del ingrediente.
+    ['tengo arroz, huevo y', { type: 'addPantry', items: ['arroz', 'huevo'] }],
   ];
 
   it.each(cases)('"%s"', (text, expected) => {

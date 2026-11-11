@@ -6,7 +6,43 @@ export const WAKE_WORD = 'chef';
 export const WAKE_WINDOW_MS = 5000;
 
 // Variantes que el reconocimiento en español suele devolver para "chef".
-const WAKE_VARIANTS = new Set([WAKE_WORD, 'chefs', 'shef', 'sheff', 'chet', 'jef']);
+const WAKE_VARIANTS = new Set([
+  WAKE_WORD,
+  'chefs',
+  'cheff',
+  'chief',
+  'shef',
+  'sheff',
+  'chet',
+  'jef',
+  'jeff',
+  'jefe',
+  'yef',
+]);
+
+// Palabras cortas en las que Android a veces convierte "chef" ("se busca pollo", "qué ayuda").
+// Son palabras comunes, así que solo cuentan si lo que sigue es un comando conocido.
+const MISHEARD_WAKE = new Set(['se', 'que', 'ese', 'she']);
+
+/**
+ * Si la frase empieza con un "chef" mal oído y el resto es un comando conocido, devuelve ese
+ * resto; si no, null.
+ */
+export function misheardWake(
+  transcript: string,
+  isKnownCommand: (text: string) => boolean,
+): string | null {
+  const [first = '', ...rest] = transcript.trim().split(/\s+/);
+  if (!MISHEARD_WAKE.has(normalizeSpeech(first))) return null;
+  const text = rest.join(' ');
+  return normalizeSpeech(text) && isKnownCommand(text) ? text : null;
+}
+
+/** True si la frase empieza con "chef" o una de sus variantes. */
+export function startsWithWakeWord(transcript: string): boolean {
+  const first = normalizeSpeech(transcript.trim().split(/\s+/)[0] ?? '');
+  return WAKE_VARIANTS.has(first);
+}
 
 export interface WakeGate {
   /** Devuelve el comando sin la palabra de activación, o null si se ignora. */

@@ -43,16 +43,31 @@ function run(
   return out;
 }
 
-function hold(category: string, count: number, x = 0.5): GestureFrame[] {
-  return Array.from({ length: count }, () => ({ category, wristX: x }));
+function hold(category: string | null, count: number, x = 0.5): GestureFrame[] {
+  return Array.from({ length: count }, () => ({ category, wristX: x, wristY: 0.5 }));
 }
 
-/** Mueve la muñeca de `from` a `to` en `count` cuadros. */
-function move(from: number, to: number, count: number, category = 'None'): GestureFrame[] {
-  return Array.from({ length: count }, (_, i) => ({
-    category,
-    wristX: from + ((to - from) * i) / (count - 1),
-  }));
+/** Con la mano ya quieta en `from`, mueve la muñeca hasta `to` en `count` cuadros. */
+function move(
+  from: number,
+  to: number,
+  count: number,
+  category = 'None',
+  { fromY = 0.5, toY = 0.5 } = {},
+): GestureFrame[] {
+  const still = hold('None', 5, from);
+  return still.concat(
+    Array.from({ length: count }, (_, i) => ({
+      category,
+      wristX: from + ((to - from) * i) / (count - 1),
+      wristY: fromY + ((toY - fromY) * i) / (count - 1),
+    })),
+  );
+}
+
+/** Mueve la muñeca sin dejar que la mano se asiente antes. */
+function enterMoving(from: number, to: number, count: number): GestureFrame[] {
+  return move(from, to, count).slice(5);
 }
 
 const userLeft = USER_LEFT_IS_POSITIVE_X ? [0.3, 0.7] : [0.7, 0.3];
@@ -109,7 +124,51 @@ describe('interpretación de gestos (CA-15.1, CA-15.2)', () => {
   });
 
   it('sin mano visible no hace nada', () => {
-    expect(run([{ category: null, wristX: null }])).toEqual([]);
+    expect(run([{ category: null, wristX: null, wristY: null }])).toEqual([]);
+  });
+});
+
+describe('robustez ante cuadros dudosos y movimientos que no son gestos', () => {
+  const [from, to] = userLeft as [number, number];
+
+  it('sostener tolera cuadros sueltos sin gesto', () => {
+    const flicker = hold('Thumb_Up', 30).map((frame, i) =>
+      i % 3 === 2 ? { ...frame, category: 'None' } : frame,
+    );
+    expect(run(flicker)).toEqual([{ type: 'confirm' }]);
+    expect(run(flicker.map((frame, i) => (i % 3 === 2 ? { ...frame, category: null } : frame))))
+      .toEqual([{ type: 'confirm' }]);
+  });
+
+  it('un cuadro dudoso no repite un gesto que sigue sostenido', () => {
+    const frames = hold('Thumb_Up', 40);
+    frames[12] = { ...frames[12]!, category: 'None' };
+    expect(run(frames)).toEqual([{ type: 'confirm' }]);
+  });
+
+  it('soltar el gesto y repetirlo sí vuelve a dispararlo', () => {
+    const frames = [...hold('Thumb_Up', 8), ...hold('None', 20), ...hold('Thumb_Up', 8)];
+    expect(run(frames)).toEqual([{ type: 'confirm' }, { type: 'confirm' }]);
+  });
+
+  it('el temblor alrededor del mismo punto no impide sostener', () => {
+    const tremor = hold('Thumb_Up', 20).map((frame, i) => ({
+      ...frame,
+      wristX: 0.5 + (i % 2 ? 0.035 : -0.035),
+    }));
+    expect(run(tremor)).toEqual([{ type: 'confirm' }]);
+  });
+
+  it('la mano que entra moviéndose no desliza', () => {
+    expect(run(enterMoving(from, to, 6))).toEqual([]);
+  });
+
+  it('bajar la mano en diagonal no desliza', () => {
+    expect(run(move(from, to, 6, 'None', { fromY: 0.4, toY: 0.9 }))).toEqual([]);
+  });
+
+  it('mover la mano con el pulgar levantado no desliza', () => {
+    expect(run(move(from, to, 6, 'Thumb_Up'))).toEqual([]);
   });
 });
 
@@ -142,7 +201,7 @@ describe('gesto de activación y movilidad (CA-17.1, CA-18.1, CA-18.2)', () => {
 
   it('avisa si la mano no se ve bien por 3 s, como máximo cada 30 s', () => {
     const watcher = createHandWatcher();
-    const unclear: GestureFrame = { category: null, wristX: 0.5 };
+    const unclear: GestureFrame = { category: null, wristX: 0.5, wristY: 0.5 };
     const warnings = (from: number, to: number) => {
       let count = 0;
       for (let t = from; t <= to; t += 100) if (watcher.update(unclear, t)) count++;
@@ -151,7 +210,16 @@ describe('gesto de activación y movilidad (CA-17.1, CA-18.1, CA-18.2)', () => {
     expect(warnings(0, 2900)).toBe(0);
     expect(warnings(3000, 20000)).toBe(1);
     expect(warnings(20100, 40000)).toBe(1);
-    expect(watcher.update({ category: null, wristX: null }, 40100)).toBe(false);
-    expect(watcher.update({ category: 'None', wristX: 0.5 }, 40200)).toBe(false);
+    expect(watcher.update({ category: null, wristX: null, wristY: null }, 40100)).toBe(false);
+    expect(watcher.update({ category: 'Open_Palm', wristX: 0.5, wristY: 0.5 }, 40200)).toBe(false);
+  });
+
+  it('la mano sin gesto reconocible ("None") también cuenta como que no se ve bien', () => {
+    const watcher = createHandWatcher();
+    let warned = false;
+    for (let t = 0; t <= 3000; t += 100) {
+      warned ||= watcher.update({ category: 'None', wristX: 0.5, wristY: 0.5 }, t);
+    }
+    expect(warned).toBe(true);
   });
 });

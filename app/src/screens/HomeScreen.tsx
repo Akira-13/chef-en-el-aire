@@ -8,7 +8,7 @@ import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { useRecipes } from '../core/recipes';
 import { output, useProfile } from '../core/services';
-import { searchRecipes, suggestRecipes } from '../personalization';
+import { answerHomeQuestion, searchRecipes, suggestRecipes } from '../personalization';
 import { useInstallPrompt } from '../pwa/install';
 import { Button, IconButton, Screen } from '../ui';
 import { DIFFICULTY_LABELS, recipeArt } from '../ui/labels';
@@ -62,9 +62,15 @@ export function HomeScreen() {
     suggestion.recipes.length < SUGGESTION_COUNT;
   const inProgress = recipes.find((recipe) => recipe.id === inProgressId);
 
-  // RF-02: la búsqueda también funciona por voz.
+  // RF-02: la búsqueda también funciona por voz. Las preguntas se contestan con la despensa y
+  // muestran las recetas sugeridas, que son las que nombra la respuesta.
   useCommands(({ command }) => {
     if (command.type === 'search') setQuery(command.query);
+    if (command.type === 'ask') {
+      const answer = answerHomeQuestion(command.question, suggestion.recipes, profile);
+      setQuery('');
+      output.announce({ ...answer, kind: 'answer' });
+    }
   });
 
   // CA-02.3: si no hay resultados, también se dice en voz.

@@ -6,7 +6,7 @@ import { commandBus } from '../../core/commandBus';
 import { getCommandContext } from '../../core/commandContext';
 import { metrics } from '../../core/metrics';
 import { output, profileService } from '../../core/services';
-import { showHint } from '../../output';
+import { clearHint, showHint } from '../../output';
 import { gestureFor } from '../help';
 import { isNo, isYes, needsConfirmation } from './answers';
 import type { VoiceExtra } from './recognizer';
@@ -25,6 +25,8 @@ interface Pending {
   command: Command;
   extra: VoiceExtra;
   timer: number;
+  /** Aviso en pantalla de qué orden confirma el pulgar arriba. */
+  hintId?: number;
 }
 
 export function createConfirmation() {
@@ -33,7 +35,10 @@ export function createConfirmation() {
 
   function clearPending(): Pending | null {
     const current = pending;
-    if (current) window.clearTimeout(current.timer);
+    if (current) {
+      window.clearTimeout(current.timer);
+      if (current.hintId !== undefined) clearHint(current.hintId);
+    }
     pending = null;
     return current;
   }
@@ -88,6 +93,8 @@ export function createConfirmation() {
       }
       const gestures = profileService.getProfile().accessibility.activeInputs.includes('gestos');
       pending = { command, extra, timer: window.setTimeout(fail, CONFIRM_TIMEOUT_MS) };
+      // Un pulgar arriba confirma esta orden de voz, no la del paso: que se vea cuál es.
+      if (gestures) pending.hintId = showHint('👍', `Pulgar arriba: ${COMMAND_LABELS[command.type]}`);
       output.announce({
         text: `¿Dijiste «${text}»? Di «sí»${gestures ? ' o haz pulgar arriba' : ''}.`,
         short: `¿Dijiste «${text}»?`,
@@ -104,16 +111,17 @@ export function createConfirmation() {
       return true;
     },
 
-    /** Pulgar arriba mientras se espera la confirmación; true si la consumió. */
-    gesture(command: Command): boolean {
-      if (!pending) return false;
+    /** Pulgar arriba mientras se espera la confirmación; devuelve la orden de voz que confirmó. */
+    gesture(command: Command): Command | null {
+      if (!pending) return null;
       const thumbUp =
         command.type === 'confirm' ||
         command.type === 'dismissAlert' ||
         (command.type === 'rate' && command.value === 'up');
-      if (!thumbUp) return false;
+      if (!thumbUp) return null;
+      const confirmed = pending.command;
       accept();
-      return true;
+      return confirmed;
     },
 
     dispose(): void {
