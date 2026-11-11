@@ -21,7 +21,22 @@ const CUES: Record<CueKind, Note[]> = {
   ],
   error: [{ freq: 330, to: 180, at: 0, dur: 0.35, wave: 'sawtooth' }],
   gesture: [{ freq: 1400, at: 0, dur: 0.05, wave: 'square' }],
-  navigate: [{ freq: 520, to: 700, at: 0, dur: 0.1 }],
+  // Subir al avanzar y bajar al retroceder, para distinguirlos sin mirar.
+  next: [{ freq: 520, to: 700, at: 0, dur: 0.1 }],
+  previous: [{ freq: 700, to: 520, at: 0, dur: 0.1 }],
+  repeat: [
+    { freq: 600, at: 0, dur: 0.07 },
+    { freq: 600, at: 0.11, dur: 0.07 },
+  ],
+  listening: [{ freq: 880, at: 0, dur: 0.08 }],
+  pause: [
+    { freq: 660, at: 0, dur: 0.1 },
+    { freq: 440, at: 0.1, dur: 0.14 },
+  ],
+  resume: [
+    { freq: 440, at: 0, dur: 0.1 },
+    { freq: 660, at: 0.1, dur: 0.14 },
+  ],
   timer: [
     { freq: 880, at: 0, dur: 0.15, wave: 'square' },
     { freq: 880, at: 0.25, dur: 0.15, wave: 'square' },

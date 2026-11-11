@@ -213,11 +213,29 @@ export function toProfile(raw: RawProfile): Profile {
       skipsFullReading: raw.aprendido.salta_lectura_completa,
       frequentQueries: raw.aprendido.consulta_frecuente,
       frequentExplanations: raw.aprendido.pide_explicacion_frecuente,
+      rejectedSubstitutions: raw.aprendido.sustituciones_rechazadas?.map((s) => ({
+        original: s.original,
+        substitute: s.sustituto,
+      })),
+      difficultSteps: raw.aprendido.pasos_dificiles?.map((s) => ({
+        recipeId: s.receta_id,
+        stepNumber: s.paso,
+      })),
+      readingSkipStreak: raw.aprendido.lecturas_saltadas_seguidas?.slice(),
+      origins: raw.aprendido.origenes?.map((o) => ({
+        key: o.clave,
+        event: o.evento,
+        date: o.fecha,
+      })),
     },
     emotional: {
       assistantTone: raw.emocional.tono_asistente,
       celebration: raw.emocional.celebracion,
       ambientMusic: raw.emocional.musica_ambiente,
+      lastFeeling: raw.emocional.ultima_emocion && {
+        feeling: raw.emocional.ultima_emocion.emocion,
+        date: raw.emocional.ultima_emocion.fecha,
+      },
     },
     pantry: [...raw.despensa],
     history: raw.historial.map(toHistoryEntry),
@@ -252,11 +270,29 @@ export function toRawProfile(profile: Profile): RawProfile {
       salta_lectura_completa: profile.learned.skipsFullReading,
       consulta_frecuente: profile.learned.frequentQueries,
       pide_explicacion_frecuente: profile.learned.frequentExplanations,
+      sustituciones_rechazadas: profile.learned.rejectedSubstitutions?.map((s) => ({
+        original: s.original,
+        sustituto: s.substitute,
+      })),
+      pasos_dificiles: profile.learned.difficultSteps?.map((s) => ({
+        receta_id: s.recipeId,
+        paso: s.stepNumber,
+      })),
+      lecturas_saltadas_seguidas: profile.learned.readingSkipStreak?.slice(),
+      origenes: profile.learned.origins?.map((o) => ({
+        clave: o.key,
+        evento: o.event,
+        fecha: o.date,
+      })),
     },
     emocional: {
       tono_asistente: profile.emotional.assistantTone,
       celebracion: profile.emotional.celebration,
       musica_ambiente: profile.emotional.ambientMusic,
+      ultima_emocion: profile.emotional.lastFeeling && {
+        emocion: profile.emotional.lastFeeling.feeling,
+        fecha: profile.emotional.lastFeeling.date,
+      },
     },
     despensa: [...profile.pantry],
     historial: profile.history.map(toRawHistoryEntry),

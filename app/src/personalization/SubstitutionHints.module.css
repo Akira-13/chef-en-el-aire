@@ -1,0 +1,45 @@
+/* Sustituciones propuestas en la pantalla Receta (CA-23.1). */
+
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hint {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.change {
+  font-size: var(--text-md);
+}
+
+.reason {
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions > * {
+  flex: 1;
+}

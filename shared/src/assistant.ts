@@ -74,6 +74,17 @@ export type AdaptResponse =
   | (AdaptResult & { status: 'blocked'; findings: AllergenFinding[] })
   | AssistantUnavailable;
 
+/**
+ * Paso tal como lo ve el usuario. Una receta adaptada solo existe en su dispositivo, así que el
+ * servidor, que tiene la original, no sabría de las sustituciones sin esto.
+ */
+export interface StepView {
+  servings: number;
+  text: string;
+  warning?: string;
+  readyCue?: string;
+}
+
 export interface AskRequest {
   recipeId: string;
   stepNumber: number;
@@ -83,6 +94,8 @@ export interface AskRequest {
   feeling?: Feeling;
   /** Alergias y restricciones del perfil, para que el asistente no sugiera un alérgeno (RF-07). */
   constraints?: DietaryConstraints;
+  /** Paso adaptado; si falta, se usa el de la receta original. */
+  stepView?: StepView;
 }
 
 export type AskResponse =
@@ -104,6 +117,8 @@ export interface ExplainRequest {
   skillLevel: SkillLevel;
   /** Alergias y restricciones del perfil, para que el asistente no sugiera un alérgeno (RF-07). */
   constraints?: DietaryConstraints;
+  /** Paso adaptado; si falta, se usa el de la receta original. */
+  stepView?: StepView;
 }
 
 export type ExplainResponse =

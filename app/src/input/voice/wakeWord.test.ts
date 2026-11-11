@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWakeGate, WAKE_WINDOW_MS } from './wakeWord';
+import { createWakeGate, FOLLOW_UP_WINDOW_MS, WAKE_WINDOW_MS } from './wakeWord';
 
 function gateWithClock() {
   let now = 0;
@@ -36,10 +36,43 @@ describe('palabra de activación (CA-13.2)', () => {
     expect(gate.feed('siguiente')).toBeNull();
   });
 
-  it('cada "chef" vale para un solo comando', () => {
-    const { gate } = gateWithClock();
+  it('tras un comando acepta los siguientes sin repetir "chef"', () => {
+    const { gate, advance } = gateWithClock();
     gate.feed('chef');
     expect(gate.feed('siguiente')).toBe('siguiente');
+    advance(FOLLOW_UP_WINDOW_MS - 1000);
+    expect(gate.feed('anterior')).toBe('anterior');
+    // Cada comando aceptado renueva la ventana.
+    advance(FOLLOW_UP_WINDOW_MS - 1000);
+    expect(gate.feed('repite')).toBe('repite');
+  });
+
+  it('la ventana de seguimiento se cierra tras un silencio largo', () => {
+    const { gate, advance } = gateWithClock();
+    expect(gate.feed('chef siguiente')).toBe('siguiente');
+    advance(FOLLOW_UP_WINDOW_MS + 1000);
     expect(gate.feed('anterior')).toBeNull();
+  });
+
+  it('un "chef" explícito sigue funcionando dentro de la ventana', () => {
+    const { gate } = gateWithClock();
+    gate.feed('chef siguiente');
+    expect(gate.feed('chef anterior')).toBe('anterior');
+  });
+
+  it('indica si el comando llegó sin "chef"', () => {
+    const { gate } = gateWithClock();
+    expect(gate.feed('chef siguiente')).toBe('siguiente');
+    expect(gate.isFollowUp()).toBe(false);
+    expect(gate.feed('anterior')).toBe('anterior');
+    expect(gate.isFollowUp()).toBe(true);
+    expect(gate.feed('chef repite')).toBe('repite');
+    expect(gate.isFollowUp()).toBe(false);
+  });
+
+  it('seguir en la ventana no cuenta como esperar el comando', () => {
+    const { gate } = gateWithClock();
+    gate.feed('chef siguiente');
+    expect(gate.isArmed()).toBe(false);
   });
 });

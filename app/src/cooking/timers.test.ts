@@ -8,7 +8,9 @@ import {
   findStepTimer,
   findTimer,
   formatSpokenDuration,
+  pauseTimers,
   remainingSeconds,
+  resumeTimers,
   startTimer,
   stopTimer,
   stopTimerByRequest,
@@ -118,6 +120,68 @@ describe('temporizadores', () => {
   it('se guarda en el dispositivo para sobrevivir a una recarga (RF-44)', () => {
     startTimer('pollo', 60, T0);
     expect(localStorage.getItem('chef.timers')).toContain('pollo');
+  });
+});
+
+describe('pausa de temporizadores', () => {
+  beforeEach(clearTimers);
+
+  it('congela lo que falta mientras dura la pausa', () => {
+    startTimer('pollo', 600, T0);
+    pauseTimers(T0 + 2 * MINUTE);
+    const [timer] = useTimers.getState().running;
+    expect(remainingSeconds(timer!, T0 + 2 * MINUTE)).toBe(480);
+    expect(remainingSeconds(timer!, T0 + 30 * MINUTE)).toBe(480);
+    expect(describeTimers('pollo', T0 + 30 * MINUTE)).toBe('Pollo: faltan 8 minutos.');
+  });
+
+  it('no vence mientras está en pausa', () => {
+    startTimer('pollo', 60, T0);
+    pauseTimers(T0 + 30_000);
+    expect(collectExpired(T0 + 10 * MINUTE)).toEqual([]);
+    expect(useTimers.getState().running).toHaveLength(1);
+    expect(useTimers.getState().expired).toEqual([]);
+  });
+
+  it('al continuar retoma con el tiempo que quedaba', () => {
+    startTimer('pollo', 600, T0);
+    pauseTimers(T0 + 2 * MINUTE);
+    resumeTimers(T0 + 20 * MINUTE);
+    const [timer] = useTimers.getState().running;
+    expect(timer!.endsAt).toBe(T0 + 20 * MINUTE + 8 * MINUTE);
+    expect(timer!.pausedRemainingMs).toBeUndefined();
+    expect(collectExpired(T0 + 27 * MINUTE)).toEqual([]);
+    expect(collectExpired(T0 + 28 * MINUTE).map((t) => t.name)).toEqual(['pollo']);
+  });
+
+  it('pausar dos veces no pierde tiempo', () => {
+    startTimer('pollo', 600, T0);
+    pauseTimers(T0 + MINUTE);
+    pauseTimers(T0 + 5 * MINUTE);
+    resumeTimers(T0 + 5 * MINUTE);
+    expect(remainingSeconds(useTimers.getState().running[0]!, T0 + 5 * MINUTE)).toBe(540);
+  });
+
+  it('continuar sin pausa no cambia nada', () => {
+    const { timer } = startTimer('pollo', 600, T0);
+    resumeTimers(T0 + MINUTE);
+    expect(useTimers.getState().running).toEqual([timer]);
+  });
+
+  it('un temporizador iniciado durante la pausa sigue corriendo', () => {
+    startTimer('pollo', 600, T0);
+    pauseTimers(T0);
+    startTimer('huevo', 60, T0 + MINUTE);
+    resumeTimers(T0 + 2 * MINUTE);
+    const [pollo, huevo] = useTimers.getState().running;
+    expect(pollo!.endsAt).toBe(T0 + 2 * MINUTE + 10 * MINUTE);
+    expect(huevo!.endsAt).toBe(T0 + 2 * MINUTE);
+  });
+
+  it('se guarda pausado para sobrevivir a una recarga (RF-44)', () => {
+    startTimer('pollo', 600, T0);
+    pauseTimers(T0 + MINUTE);
+    expect(localStorage.getItem('chef.timers')).toContain('pausedRemainingMs');
   });
 });
 

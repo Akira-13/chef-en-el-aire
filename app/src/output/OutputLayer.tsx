@@ -1,18 +1,9 @@
 // Capa visual de la salida (subtítulos, destellos, avisos de gesto reconocido). Se monta una
 // sola vez sobre todas las pantallas. Es aria-hidden: el servicio ya anuncia por ARIA.
 
-import type { CueKind } from '../core/contracts';
+import { CUE_ICONS } from './cueIcons';
 import styles from './output.module.css';
 import { useOutputStore } from './store';
-
-const CUE_ICONS: Record<CueKind, string> = {
-  success: '✅',
-  error: '❌',
-  gesture: '✋',
-  navigate: '➡️',
-  timer: '⏱',
-  celebration: '🎉',
-};
 
 export function OutputLayer() {
   const caption = useOutputStore((s) => s.caption);

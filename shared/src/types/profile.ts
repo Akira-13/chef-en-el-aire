@@ -2,6 +2,7 @@
 // de lo que el sistema infiere con el uso (`learned`): lo explícito siempre tiene prioridad.
 // Los valores de dominio se conservan como en datos/perfiles.json.
 
+import type { Feeling } from '../commands';
 import type { AllergenCategory } from './recipe';
 
 export type SkillLevel = 'novato' | 'intermedio' | 'avanzado';
@@ -72,6 +73,24 @@ export interface AcceptedSubstitution {
   substitute: string;
 }
 
+/** Paso en el que el usuario tuvo dificultad (CA-24.3). */
+export interface DifficultStep {
+  recipeId: string;
+  stepNumber: number;
+}
+
+/**
+ * De dónde salió un dato aprendido, para mostrarlo en "lo que aprendí de ti" (CA-25.1).
+ * `key` identifica el dato, por ejemplo "acceptedSubstitutions:leche evaporada".
+ */
+export interface LearnedOrigin {
+  key: string;
+  /** Tipo de evento que lo originó, por ejemplo "substitutionAccepted". */
+  event: string;
+  /** Fecha en formato AAAA-MM-DD. */
+  date: string;
+}
+
 export interface LearnedData {
   likes: string[];
   dislikes: string[];
@@ -79,12 +98,25 @@ export interface LearnedData {
   skipsFullReading?: boolean;
   frequentQueries?: string[];
   frequentExplanations?: string[];
+  /** Sustituciones que el usuario rechazó: no se vuelven a proponer primero (CA-24.2). */
+  rejectedSubstitutions?: AcceptedSubstitution[];
+  difficultSteps?: DifficultStep[];
+  /** Recetas seguidas en las que saltó la lectura completa (CA-24.1). */
+  readingSkipStreak?: string[];
+  origins?: LearnedOrigin[];
+}
+
+/** Emoción que el usuario declaró por última vez (CA-24.3). */
+export interface DeclaredFeeling {
+  feeling: Feeling;
+  date: string;
 }
 
 export interface EmotionalPrefs {
   assistantTone: string;
   celebration: CelebrationStyle;
   ambientMusic: string;
+  lastFeeling?: DeclaredFeeling;
 }
 
 export interface HistoryEntry {

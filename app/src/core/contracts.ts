@@ -16,7 +16,18 @@ export interface Announcement {
   kind?: AnnouncementKind;
 }
 
-export type CueKind = 'success' | 'error' | 'gesture' | 'navigate' | 'timer' | 'celebration';
+export type CueKind =
+  | 'success'
+  | 'error'
+  | 'gesture'
+  | 'next'
+  | 'previous'
+  | 'repeat'
+  | 'listening'
+  | 'pause'
+  | 'resume'
+  | 'timer'
+  | 'celebration';
 
 export interface OutputDeps {
   /** Perfil actual, para respetar canales de salida, verbosidad y volumen. */

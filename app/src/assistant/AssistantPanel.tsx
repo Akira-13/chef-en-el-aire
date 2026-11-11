@@ -12,6 +12,7 @@ import {
   type Feeling,
   type Recipe,
   type Step,
+  type StepView,
 } from '@chef/shared';
 import { assistantClient } from '../core/assistantClient';
 import { commandBus, useCommands } from '../core/commandBus';
@@ -88,6 +89,16 @@ function AllergenNotice({ warnings }: { warnings: AllergenCategory[] }) {
       {allergenNotice(warnings)}
     </p>
   );
+}
+
+/** El paso tal como lo ve el usuario, con las sustituciones y porciones de la receta adaptada. */
+function viewOf(recipe: Recipe, step: Step): StepView {
+  return {
+    servings: recipe.servings,
+    text: step.text,
+    ...(step.warning && { warning: step.warning }),
+    ...(step.readyCue && { readyCue: step.readyCue }),
+  };
 }
 
 export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
@@ -172,6 +183,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       tone: profile.emotional.assistantTone,
       ...(declaredFeeling.current && { feeling: declaredFeeling.current }),
       constraints,
+      stepView: viewOf(recipe, step),
     };
     const response = await assistantClient.ask(request);
     if (!finish(id, response.status)) return;
@@ -206,6 +218,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       stepNumber: step.number,
       skillLevel: profile.skillLevel,
       constraints,
+      stepView: viewOf(recipe, step),
     };
     const response = await assistantClient.explain(request);
     if (!finish(id, response.status)) return;

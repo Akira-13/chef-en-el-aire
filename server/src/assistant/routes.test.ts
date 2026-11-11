@@ -424,6 +424,79 @@ describe('POST /api/assistant/ask', () => {
   });
 });
 
+describe('paso adaptado en /ask y /explain', () => {
+  // La receta adaptada solo existe en el dispositivo: el cliente manda el paso tal como lo ve.
+  const original = ocopa.steps[0]!;
+  const stepView = {
+    servings: 2,
+    text: 'Licúa las semillas de girasol con el ají.',
+    warning: 'No calientes demasiado.',
+    readyCue: 'La crema queda espesa.',
+  };
+
+  it('/ask pregunta por el paso adaptado, no por el original', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({
+      remoto: fake('remoto', () => answerJson('Ok.'), prompts),
+    });
+    await ask(baseUrl, { ...question, stepNumber: original.number, stepView });
+    expect(prompts[0]).toContain(stepView.text);
+    expect(prompts[0]).toContain('2 porciones');
+    expect(prompts[0]).toContain(stepView.warning);
+    expect(prompts[0]).not.toContain(original.text);
+  });
+
+  it('/explain devuelve el texto y la pista adaptados cuando el paso trae pista', async () => {
+    const baseUrl = await start({});
+    const { status, body } = await explain(baseUrl, {
+      recipeId: 'REC-008',
+      stepNumber: original.number,
+      skillLevel: 'novato',
+      stepView,
+    });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({
+      explanation: stepView.text,
+      readyCue: stepView.readyCue,
+      readyCueSource: 'recipe',
+    });
+  });
+
+  it('/explain pide la pista al modelo si el paso adaptado no la trae', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({
+      remoto: fake(
+        'remoto',
+        () => JSON.stringify({ explicacion: 'Se explica.', pista_listo: 'Se ve cremoso.' }),
+        prompts,
+      ),
+    });
+    const { text, warning } = stepView;
+    const { body } = await explain(baseUrl, {
+      recipeId: 'REC-008',
+      stepNumber: original.number,
+      skillLevel: 'novato',
+      stepView: { servings: 2, text, warning },
+    });
+    expect(body).toMatchObject({ readyCueSource: 'assistant' });
+    expect(prompts[0]).toContain(text);
+    expect(prompts[0]).not.toContain(original.text);
+  });
+
+  it('sin paso adaptado sigue usando el original', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({ remoto: fake('remoto', () => answerJson('Ok.'), prompts) });
+    await ask(baseUrl, { ...question, stepNumber: original.number });
+    expect(prompts[0]).toContain(original.text);
+  });
+
+  it('rechaza un paso adaptado mal formado', async () => {
+    const baseUrl = await start({});
+    const { status } = await ask(baseUrl, { ...question, stepView: { servings: 0, text: '' } });
+    expect(status).toBe(400);
+  });
+});
+
 describe('POST /api/assistant/explain', () => {
   // En la ocopa el paso 1 trae pista_listo y el 4 no.
   const withCue = ocopa.steps[0]!;
