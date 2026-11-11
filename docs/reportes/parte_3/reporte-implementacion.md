@@ -8,12 +8,12 @@ Se presentan las evidencias de implementación de historias de usuario ([07](../
 
 | Indicador | Total | Implementado | Parcial | No implementado |
 |---|---|---|---|---|
-| Requerimientos funcionales (RF) | 44 | 37 | 1 | 6 |
+| Requerimientos funcionales (RF) | 44 | 36 | 2 | 6 |
 | Requerimientos no funcionales (RNF) | 18 | 11 | 5 | 2 |
-| **Total** | **62** | **48** | **5** | **9** |
+| **Total** | **62** | **47** | **6** | **9** |
 
 - **No implementado:** Funcionalidades multi-usuario, RF-33 a RF-37 y RNF-09 (Inicialmente se pensaban implementar salas de cocina, se consideran foros o lugares de discusión para la siguiente iteración), medición de tasa de aciertos de voz y gestos (RNF-04 y RNF-05)
-- **Parcial:** Funcionalidades de accesibilidad (tono de LLM según emoción, revisión de estándar WCAG 2.1 AA).
+- **Parcial:** Funcionalidades de accesibilidad (tono de LLM según emoción, revisión de estándar WCAG 2.1 AA) y la elección de porciones desde la app (RF-05).
 
 ## 2. Arquitectura y pruebas
 
@@ -49,7 +49,7 @@ Es un monorepo con tres paquetes:
 
 | HU | Req. | Estado | Evidencia |
 |---|---|---|---|
-| HU-04 Adaptar receta | RF-04, RF-05 | ✅ | [`recetas.json`](https://github.com/Akira-13/chef-en-el-aire/blob/main/datos/recetas.json) (10 recetas), [`POST /adapt`](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/routes.ts#L125), [`buildAdaptPrompt`](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/prompts.ts#L59) · [test](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/routes.test.ts) |
+| HU-04 Adaptar receta | RF-04, RF-05 | ✅ / 🟡 | [`recetas.json`](https://github.com/Akira-13/chef-en-el-aire/blob/main/datos/recetas.json) (10 recetas), [`POST /adapt`](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/routes.ts#L125), [`buildAdaptPrompt`](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/prompts.ts#L59), escalado con [`scaleRecipe`](https://github.com/Akira-13/chef-en-el-aire/blob/main/shared/src/scaling/index.ts#L26) · [test](https://github.com/Akira-13/chef-en-el-aire/blob/main/server/src/assistant/routes.test.ts) · *falta elegir las porciones desde la app* |
 | HU-05 Antes / después | RF-06 | ✅ | [`AdaptationPanel`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/assistant/AdaptationPanel.tsx#L65): cambios con su motivo y «Usar original» · [test](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/assistant/AdaptationPanel.test.tsx) |
 | HU-06 Bloqueo de alérgenos | RF-07, RNF-06 | ✅ | [`findAllergens`](https://github.com/Akira-13/chef-en-el-aire/blob/main/shared/src/allergens/index.ts#L126): bloqueo hasta decir «confirmo» o tocar el botón · **[test 10 recetas × 4 perfiles = 100 %](https://github.com/Akira-13/chef-en-el-aire/blob/main/shared/src/allergens/index.test.ts)** |
 | HU-07 Preguntar al asistente | RF-08, RNF-03 | ✅ | [`AssistantPanel`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/assistant/AssistantPanel.tsx#L104): usa el paso actual como contexto; «Pensando…» inmediato y latencia medida |
@@ -150,6 +150,7 @@ HU-27 a HU-29 (RF-33 a RF-37, RNF-09) **no están implementadas**: no hay salas,
 |---|---|---|
 | **Salas multiusuario** | RF-33 a RF-37, RNF-09 | Replantearlas como foros o espacios de discusión en la siguiente iteración |
 | **Medir los aciertos de voz y gestos** | RNF-04, RNF-05 | Pruebas con usuarios |
+| Elegir las porciones desde la app | RF-05 (CA-04.2) | Selector de porciones en la receta que use `scaleRecipe` y envíe `servings` a `/adapt` |
 | Detectar la emoción y adaptar el tono | RF-42 | Implementación |
 | Revisión de WCAG 2.1 AA | RNF-08 | Auditoría |
 | Lighthouse y pruebas entre navegadores | RNF-10, RNF-13 | Auditoría |
