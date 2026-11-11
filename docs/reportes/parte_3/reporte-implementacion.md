@@ -17,6 +17,8 @@ Se presentan las evidencias de implementación de historias de usuario ([07](../
 
 ## 2. Arquitectura y pruebas
 
+Diagramas C4 de lo implementado (contexto, contenedores y componentes): [arquitectura-c4.md](arquitectura-c4.md).
+
 Es un monorepo con tres paquetes:
 
 - **Cliente.** [`app/`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src): PWA en React con las pantallas, la entrada por voz y gestos, la salida en voz, subtítulos y sonidos, los temporizadores y el perfil.
