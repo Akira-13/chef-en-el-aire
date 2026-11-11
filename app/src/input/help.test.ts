@@ -49,6 +49,16 @@ describe('ayuda contextual (RF-14, CA-12.3)', () => {
     expect(helpFor(COOKING, javier).voice).toEqual([]);
   });
 
+  it('ofrece comandos de voz en Inicio y Receta, donde el micrófono ahora corre', () => {
+    expect(helpFor({ ...COOKING, screen: 'home' }, PREFS).voice).toContain('busca…');
+    expect(helpFor({ ...COOKING, screen: 'recipe' }, PREFS).voice).toContain('sustituye…');
+  });
+
+  it('no ofrece comandos de voz en pantallas sin micrófono (RF-14)', () => {
+    // La ayuda no puede prometer «di chef y luego…» donde el reconocimiento no está encendido.
+    expect(helpFor({ ...COOKING, screen: 'profile' }, PREFS).voice).toEqual([]);
+  });
+
   it('avisa del gesto de activación si el perfil lo pide', () => {
     const carmen = { ...PREFS, requiresActivationGesture: true } satisfies Prefs;
     expect(helpFor(COOKING, carmen).gestureNote).toMatch(/índice/);

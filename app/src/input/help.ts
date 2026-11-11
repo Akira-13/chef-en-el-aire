@@ -34,6 +34,11 @@ export interface HelpContent {
 
 export const GESTURE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
 
+// Pantallas donde corre el reconocimiento de voz. Es la única lista: `InputLayer` enciende el
+// micrófono con ella y la ayuda contextual solo ofrece comandos de voz donde está encendido, para
+// no prometer lo que no funciona. La cámara se queda solo en `GESTURE_SCREENS`, que gasta más.
+export const VOICE_SCREENS: ScreenId[] = ['home', 'recipe', 'cooking', 'celebration', 'onboarding'];
+
 const VOICE_BY_SCREEN: Record<ScreenId, CommandType[]> = {
   home: ['search', 'addPantry', 'ask'],
   recipe: ['substitute', 'ask', 'whereAmI'],
@@ -56,6 +61,11 @@ const VOICE_BY_SCREEN: Record<ScreenId, CommandType[]> = {
 
 export function voiceAllowed(prefs: Pick<HelpPrefs, 'activeInputs' | 'voiceDisabled'>): boolean {
   return prefs.activeInputs.includes('voz') && !prefs.voiceDisabled;
+}
+
+/** True si la voz está activa y la pantalla la escucha. */
+function voiceHere(screen: ScreenId, prefs: Pick<HelpPrefs, 'activeInputs' | 'voiceDisabled'>) {
+  return voiceAllowed(prefs) && VOICE_SCREENS.includes(screen);
 }
 
 function voiceCommands(ctx: CommandContext, prefs: HelpPrefs): CommandType[] {
@@ -102,7 +112,9 @@ function gestureHints(ctx: CommandContext, prefs: HelpPrefs): GestureHint[] {
 export function helpFor(ctx: CommandContext, prefs: HelpPrefs): HelpContent {
   const gestures = gestureHints(ctx, prefs);
   return {
-    voice: voiceAllowed(prefs) ? voiceCommands(ctx, prefs).map((c) => COMMAND_LABELS[c]) : [],
+    voice: voiceHere(ctx.screen, prefs)
+      ? voiceCommands(ctx, prefs).map((c) => COMMAND_LABELS[c])
+      : [],
     gestures,
     gestureNote:
       gestures.length > 0 && prefs.requiresActivationGesture

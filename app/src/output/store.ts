@@ -84,6 +84,11 @@ export function showGestureNotice(label: string): void {
 }
 
 /** Gesto ilustrado que se sugiere como canal alterno (CA-14.2). */
-export function showHint(icon: string, text: string): void {
-  show('hint', { icon, text }, HINT_MS);
+export function showHint(icon: string, text: string): number {
+  return show('hint', { icon, text }, HINT_MS);
+}
+
+/** Quita la sugerencia si sigue siendo la que se mostró con `id`. */
+export function clearHint(id: number): void {
+  clear('hint', id);
 }

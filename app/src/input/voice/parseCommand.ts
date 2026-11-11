@@ -13,6 +13,11 @@ function timerName(match: RegExpMatchArray): { name?: string } {
   return name ? { name } : {};
 }
 
+// Verbos con que se pide iniciar o detener un temporizador ("desactiva temporizador cebolla").
+const START_TIMER = 'inicia|iniciar|empieza|empezar|comienza|arranca|activa|activar|prende|pon';
+const STOP_TIMER =
+  'deten|detener|para|parar|desactiva|desactivar|apaga|apagar|quita|quitar|cancela|cancelar|elimina|eliminar|borra|borrar';
+
 const FEELINGS: Record<string, Feeling> = {
   nervios: 'nervous',
   cansad: 'tired',
@@ -24,6 +29,7 @@ const FEELINGS: Record<string, Feeling> = {
 /** Separa "arroz, huevos y cebolla" en ["arroz", "huevos", "cebolla"]. */
 function splitList(text: string): string[] {
   return text
+    .replace(/ (?:y|e)$/, '')
     .split(/,| y | e /)
     .map((item) => item.trim())
     .filter(Boolean);
@@ -37,11 +43,11 @@ const RULES: Rule[] = [
   [/^(?:pausa|pausar)$/, () => ({ type: 'pause' })],
   [/^(?:continua|continuar|sigue|seguir)$/, () => ({ type: 'resume' })],
   [
-    new RegExp(`^(?:inicia|iniciar|empieza|pon) (?:el )?temporizador${TIMER_NAME}$`),
+    new RegExp(`^(?:${START_TIMER}) (?:el )?temporizador${TIMER_NAME}$`),
     (m) => ({ type: 'startTimer', ...timerName(m) }),
   ],
   [
-    new RegExp(`^(?:deten|detener|para|parar) (?:el )?temporizador${TIMER_NAME}$`),
+    new RegExp(`^(?:${STOP_TIMER}) (?:el )?temporizador${TIMER_NAME}$`),
     (m) => ({ type: 'stopTimer', ...timerName(m) }),
   ],
   [
@@ -54,6 +60,7 @@ const RULES: Rule[] = [
   [/^(?:confirmo|confirmar|confirma)$/, () => ({ type: 'confirm' })],
   [/^(?:cancela|cancelar)$/, () => ({ type: 'cancel' })],
   [/^listo$/, () => ({ type: 'dismissAlert' })],
+  [/^(?:apaga|deten|para|silencia|quita) (?:la )?alarma$/, () => ({ type: 'dismissAlert' })],
   [/^(?:saltar|salta|saltalo)(?: el paso)?$/, () => ({ type: 'skip' })],
   [
     /^(?:sustituye|sustituir|reemplaza|cambia) (?:el |la |los |las )?(.+)$/,

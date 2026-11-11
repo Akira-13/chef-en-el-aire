@@ -54,6 +54,28 @@ synth()?.addEventListener?.('voiceschanged', () => {
   cachedVoice = undefined;
 });
 
+// Lo que la app leyó y cuándo sonó. El micrófono sigue abierto y transcribe la voz del altavoz;
+// la entrada de voz pregunta qué sonaba cuando empezó a oír una frase para no tomarla como orden.
+// Lo que el usuario dice después de que la app calló nunca es eco, aunque repita sus palabras
+// (el tutorial dice «chef, siguiente» y el usuario lo repite).
+/** Retraso entre lo que suena y el primer parcial que entrega el reconocimiento. */
+const ECHO_LAG_MS = 400;
+const MS_PER_CHAR = 100;
+const KEEP_MS = 30000;
+const spoken: { text: string; start: number; end: number }[] = [];
+
+/** Textos que sonaban por el altavoz en el instante `at`. */
+export function speechAt(at: number, now = Date.now()): string[] {
+  while (spoken.length > 0 && spoken[0]!.end < now - KEEP_MS) spoken.shift();
+  return spoken
+    .filter((entry) => {
+      // Si el navegador no avisa del final, se estima por el largo del texto.
+      const end = Math.min(entry.end, entry.start + entry.text.length * MS_PER_CHAR);
+      return entry.start <= at && at <= end + ECHO_LAG_MS;
+    })
+    .map((entry) => entry.text);
+}
+
 export interface SpeakOptions {
   volume: number;
   /** Corta lo que se esté leyendo antes de empezar. */
@@ -72,9 +94,20 @@ export function speak(text: string, { volume, interrupt, onStart, onEnd }: Speak
   utterance.lang = voice?.lang ?? 'es-PE';
   if (voice) utterance.voice = voice;
   utterance.volume = Math.min(1, Math.max(0, volume));
-  utterance.onstart = () => onStart?.();
-  utterance.onend = () => onEnd?.();
-  utterance.onerror = () => onEnd?.();
+  // Si va en cola detrás de otra lectura, empieza a sonar recién en `onstart`.
+  const queued = engine.speaking && !interrupt;
+  const entry = { text, start: queued ? Infinity : Date.now(), end: Infinity };
+  spoken.push(entry);
+  const ended = () => {
+    entry.end = Date.now();
+    onEnd?.();
+  };
+  utterance.onstart = () => {
+    entry.start = Math.min(entry.start, Date.now());
+    onStart?.();
+  };
+  utterance.onend = ended;
+  utterance.onerror = ended;
   engine.speak(utterance);
   return true;
 }

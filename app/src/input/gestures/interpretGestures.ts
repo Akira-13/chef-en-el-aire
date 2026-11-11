@@ -7,6 +7,8 @@ export interface GestureFrame {
   category: string | null;
   /** Posición horizontal de la muñeca, de 0 a 1; null si no hay mano. */
   wristX: number | null;
+  /** Posición vertical de la muñeca, de 0 (arriba) a 1; null si no hay mano. */
+  wristY: number | null;
 }
 
 type GesturePrefs = Pick<
@@ -29,6 +31,10 @@ export interface InterpreterOptions {
   holdTolerance?: number;
   /** Tiempo en que se aceptan gestos después del gesto de activación (CA-17.1). */
   activationMs?: number;
+  /** Cuadros dudosos que se toleran sin cortar un gesto sostenido, en ms. */
+  graceMs?: number;
+  /** Tiempo después de entrar la mano en que no se cuentan deslizamientos. */
+  settleMs?: number;
   /** Se llama al reconocer el gesto de activación. */
   onActivate?: () => void;
 }
@@ -45,6 +51,17 @@ export const SENSITIVITY: Record<
 export const ACTIVATION_GESTURE = 'Pointing_Up';
 
 const HOLD_GESTURES = new Set(['Open_Palm', 'Thumb_Up', 'Thumb_Down']);
+
+// Con el pulgar o el índice levantado, mover la mano es acomodarla, no deslizar.
+const POSE_GESTURES = new Set(['Thumb_Up', 'Thumb_Down', 'Pointing_Up']);
+
+// Un deslizamiento es horizontal: bajar la mano en diagonal no cuenta.
+const MAX_SWIPE_SLOPE = 0.8;
+
+/** MediaPipe devuelve "None" cuando ve la mano pero no distingue un gesto. */
+function gestureOf(category: string | null): string | null {
+  return category === 'None' ? null : category;
+}
 
 export interface GestureInterpreter {
   update(frame: GestureFrame, t: number, ctx: GestureContext, prefs: GesturePrefs): Command | null;
@@ -82,19 +99,25 @@ export function createGestureInterpreter({
   cooldownMs = 800,
   holdTolerance = SENSITIVITY.normal.holdTolerance,
   activationMs = 5000,
+  graceMs = 250,
+  settleMs = 250,
   onActivate,
 }: InterpreterOptions = {}): GestureInterpreter {
-  let samples: { x: number; t: number }[] = [];
-  let hold: { category: string; since: number; x: number } | null = null;
-  // Un gesto sostenido se dispara una sola vez.
-  let firedCategory: string | null = null;
+  let samples: { x: number; y: number; t: number; pose: boolean }[] = [];
+  // La posición se compara con el promedio, no con el primer cuadro: así el temblor no la corta.
+  let hold: { category: string; since: number; lastSeen: number; sumX: number; n: number } | null =
+    null;
+  // Un gesto sostenido se dispara una sola vez, hasta que se suelta.
+  let fired: { category: string; lastSeen: number } | null = null;
+  let enteredAt: number | null = null;
   let lastEmit = -Infinity;
   let activeUntil = -Infinity;
 
   function reset(): void {
     samples = [];
     hold = null;
-    firedCategory = null;
+    fired = null;
+    enteredAt = null;
   }
 
   function emit(command: Command | null, t: number): Command | null {
@@ -107,29 +130,49 @@ export function createGestureInterpreter({
 
   /** True cuando `category` lleva sostenida `gestureHoldMs` con la mano quieta. */
   function held(category: string, wristX: number, t: number, prefs: GesturePrefs): boolean {
-    if (category === firedCategory) {
+    if (category === fired?.category) {
       hold = null;
       return false;
     }
-    if (!hold || hold.category !== category || Math.abs(wristX - hold.x) > holdTolerance) {
-      hold = { category, since: t, x: wristX };
+    const steady =
+      hold?.category === category &&
+      Math.abs(wristX - (hold.sumX + wristX) / (hold.n + 1)) <= holdTolerance;
+    if (!hold || !steady) {
+      hold = { category, since: t, lastSeen: t, sumX: wristX, n: 1 };
       return false;
     }
+    hold.lastSeen = t;
+    hold.sumX += wristX;
+    hold.n++;
     if (t - hold.since < prefs.gestureHoldMs) return false;
-    firedCategory = category;
+    fired = { category, lastSeen: t };
     hold = null;
     return true;
+  }
+
+  /** Un cuadro dudoso no corta el gesto sostenido ni deja repetir el que ya se disparó. */
+  function forgetReleased(gesture: string | null, t: number): void {
+    if (fired) {
+      if (gesture === fired.category) fired.lastSeen = t;
+      else if (gesture !== null || t - fired.lastSeen > graceMs) fired = null;
+    }
+    if (hold) {
+      const changed = gesture !== null && gesture !== hold.category;
+      if (changed || (gesture === null && t - hold.lastSeen > graceMs)) hold = null;
+    }
   }
 
   return {
     reset,
 
-    update({ category, wristX }, t, ctx, prefs) {
-      if (wristX === null) {
+    update({ category, wristX, wristY }, t, ctx, prefs) {
+      if (wristX === null || wristY === null) {
         reset();
         return null;
       }
-      if (category !== firedCategory) firedCategory = null;
+      const gesture = gestureOf(category);
+      enteredAt ??= t;
+      forgetReleased(gesture, t);
       if (t - lastEmit < cooldownMs) {
         samples = [];
         hold = null;
@@ -139,7 +182,7 @@ export function createGestureInterpreter({
       // Sin activar, solo cuenta el gesto de activación (CA-17.1).
       if (prefs.requiresActivationGesture && t > activeUntil) {
         samples = [];
-        if (category === ACTIVATION_GESTURE && held(category, wristX, t, prefs)) {
+        if (gesture === ACTIVATION_GESTURE && held(gesture, wristX, t, prefs)) {
           activeUntil = t + activationMs;
           lastEmit = t;
           onActivate?.();
@@ -147,11 +190,20 @@ export function createGestureInterpreter({
         return null;
       }
 
-      // Deslizamiento de la muñeca.
-      samples.push({ x: wristX, t });
+      // Deslizamiento de la muñeca. Al entrar al cuadro la mano se acomoda: eso no cuenta.
+      if (t - enteredAt >= settleMs) {
+        const pose = gesture !== null && POSE_GESTURES.has(gesture);
+        samples.push({ x: wristX, y: wristY, t, pose });
+      }
       samples = samples.filter((s) => t - s.t <= swipeWindowMs);
-      const dx = wristX - samples[0]!.x;
-      if (Math.abs(dx) >= swipeThreshold) {
+      const first = samples[0];
+      const dx = first ? wristX - first.x : 0;
+      const dy = first ? wristY - first.y : 0;
+      const isSwipe =
+        Math.abs(dx) >= swipeThreshold &&
+        Math.abs(dy) <= Math.abs(dx) * MAX_SWIPE_SLOPE &&
+        !samples.some((s) => s.pose);
+      if (isSwipe) {
         const towardPositiveX = dx > 0;
         const userLeft = towardPositiveX === USER_LEFT_IS_POSITIVE_X;
         const command = swipeCommand(userLeft ? 'userLeft' : 'userRight', prefs);
@@ -161,12 +213,9 @@ export function createGestureInterpreter({
       }
 
       // Gesto sostenido.
-      if (!category || !HOLD_GESTURES.has(category)) {
-        hold = null;
-        return null;
-      }
-      if (!held(category, wristX, t, prefs)) return null;
-      return emit(holdCommand(category, ctx, prefs), t);
+      if (!gesture || !HOLD_GESTURES.has(gesture)) return null;
+      if (!held(gesture, wristX, t, prefs)) return null;
+      return emit(holdCommand(gesture, ctx, prefs), t);
     },
   };
 }
@@ -183,7 +232,7 @@ export function createHandWatcher({ unclearMs = 3000, repeatMs = 30000 } = {}): 
 
   return {
     update({ category, wristX }, t) {
-      if (wristX === null || category !== null) {
+      if (wristX === null || gestureOf(category) !== null) {
         unclearSince = null;
         return false;
       }

@@ -249,7 +249,11 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
 
   // La voz, el gesto o el teclado piden lo mismo que los botones (RF-24).
   useCommands((event) => {
-    if (event.command.type === 'ask') void ask(event.command.question);
+    if (event.command.type === 'ask') {
+      // Se ve lo que entendió el reconocimiento, para saber si falló la voz o la pregunta.
+      setQuestion(event.command.question);
+      void ask(event.command.question);
+    }
     if (event.command.type === 'explain') void explain();
     if (event.command.type === 'feeling') support(event.command.feeling);
     if (event.command.type === 'pause') setPaused(true);
