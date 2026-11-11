@@ -1,6 +1,7 @@
 // Reconocedor de gestos con MediaPipe (RF-20). El video no sale del dispositivo (RNF-11).
 
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision';
+import { enqueueMediaRequest } from '../mediaQueue';
 import type { GestureFrame } from './interpretGestures';
 
 const WASM_PATH = '/wasm';
@@ -77,15 +78,20 @@ export function startGestures(handlers: GestureHandlers): () => void {
 
   async function start(): Promise<void> {
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-        audio: false,
-      });
+      // Si se apagó mientras esperaba su turno, ni se abre la cámara (StrictMode monta dos veces).
+      stream = await enqueueMediaRequest(async () =>
+        stopped
+          ? undefined
+          : navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user', width: 640, height: 480 },
+              audio: false,
+            }),
+      );
     } catch (error) {
       if (!stopped) handlers.onError('camera', String(error));
       return;
     }
-    if (stopped) return stop();
+    if (stopped || !stream) return stop();
     video.srcObject = stream;
     try {
       await video.play();

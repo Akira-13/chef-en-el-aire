@@ -1,6 +1,7 @@
 // Reconocimiento de voz continuo (RF-18). Se reinicia solo porque Android lo corta en silencio.
 
 import type { Command } from '@chef/shared';
+import { enqueueMediaRequest } from '../mediaQueue';
 import { createWakeGate } from './wakeWord';
 import { parseCommand } from './parseCommand';
 
@@ -175,14 +176,21 @@ export function startVoice(
   };
 }
 
-/** Pide permiso del micrófono de forma explícita (RNF-11). */
-export async function requestMicrophone(): Promise<boolean> {
-  if (!navigator.mediaDevices?.getUserMedia) return isVoiceSupported();
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    for (const track of stream.getTracks()) track.stop();
-    return true;
-  } catch {
-    return false;
-  }
+let pendingMicrophone: Promise<boolean> | undefined;
+
+/** Pide permiso del micrófono de forma explícita (RNF-11). Los pedidos simultáneos comparten una pregunta. */
+export function requestMicrophone(): Promise<boolean> {
+  if (!navigator.mediaDevices?.getUserMedia) return Promise.resolve(isVoiceSupported());
+  pendingMicrophone ??= enqueueMediaRequest(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      for (const track of stream.getTracks()) track.stop();
+      return true;
+    } catch {
+      return false;
+    }
+  }).finally(() => {
+    pendingMicrophone = undefined;
+  });
+  return pendingMicrophone;
 }

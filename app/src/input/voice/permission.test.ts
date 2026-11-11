@@ -54,6 +54,13 @@ describe('permiso del micrófono desde el inicio (RNF-11)', () => {
     expect(getUserMedia).not.toHaveBeenCalled();
   });
 
+  it('dos pedidos a la vez muestran una sola pregunta (StrictMode)', async () => {
+    const getUserMedia = mockBrowser({ state: 'prompt' });
+    const results = await Promise.all([resolveMicrophone(true), resolveMicrophone(true)]);
+    expect(results.every((r) => r.granted)).toBe(true);
+    expect(getUserMedia).toHaveBeenCalledOnce();
+  });
+
   it('si el navegador no informa el estado, pregunta igual', async () => {
     const getUserMedia = mockBrowser({ state: 'unsupported' });
     expect(await resolveMicrophone(true)).toEqual({ granted: true, asked: true });
