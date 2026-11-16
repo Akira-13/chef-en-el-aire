@@ -76,15 +76,17 @@
 | RF-31 | Al terminar, el usuario califica la receta por gesto (pulgar arriba/abajo) o por voz. | Media | A10 | PER |
 | RF-32 | Un cuidador configura el perfil de otra persona desde otro dispositivo. | Baja | S10 | PER |
 
-### 1.8 Multiusuario
+### 1.8 Multiusuario (Comunidad)
+
+> **Cambio de alcance (16/11/2026).** Las salas en tiempo real (código de sala, pasos sincronizados, avatares y resincronización) se reemplazan por la **Comunidad**, un espacio compartido **asíncrono** donde se publican recetas adaptadas, se comenta y se celebran los platos terminados. Se conservan los ID RF-33 a RF-37 y RNF-09 para no romper la trazabilidad. Motivo: un servidor en tiempo real y las pruebas con varios dispositivos a la vez no caben en el tiempo restante, y cocinar con otros no exige coincidir en el horario. Ver [alcance](06-alcance.md).
 
 | ID | Requerimiento | Prioridad | Origen | Área |
 |---|---|---|---|---|
-| RF-33 | El usuario crea una sala con un código corto y otros participantes se unen con él. | Alta | A8; S09 | MU |
-| RF-34 | Los pasos se sincronizan en modo "juntos" o "a mi ritmo", elegido al crear la sala. | Alta | A8; S09 | MU |
-| RF-35 | La sala muestra el paso en el que va cada participante (avatares con número de paso). | Alta | A8; S09 | MU |
-| RF-36 | Tras una desconexión, el participante se resincroniza con el estado de la sala. | Media | A8; S09 | MU |
-| RF-37 | Los participantes comparten con la sala la receta adaptada y el logro final. | Media | A8, A9 | MU |
+| RF-33 | El usuario entra a la Comunidad con un alias (sin su nombre real ni datos de salud) y ve las publicaciones recientes de otras personas: recetas adaptadas y platos terminados. | Alta | A8; S09 | MU |
+| RF-34 | El usuario publica su receta adaptada con la lista de cambios, tras ver una vista previa de lo que se publicará. Los motivos de salud (alergias, intolerancias, condiciones) solo se publican si lo elige expresamente. | Alta | A8; S09 | MU |
+| RF-35 | Quien abre una receta publicada la recibe como receta adaptada y pasa por su propio validador local de alérgenos antes de cocinarla. | Alta | A8; S03, S09 | MU |
+| RF-36 | Los participantes comentan las publicaciones por texto o por dictado de voz, y aplauden por voz, gesto o toque. | Media | A8; S09 | MU |
+| RF-37 | Al terminar un plato, el usuario comparte su logro (plato y valoración) desde la celebración. Sin conexión, lo que publica o comenta queda en cola y se envía al reconectar. | Media | A8, A9 | MU |
 
 ### 1.9 Diseño emocional (Norman)
 
@@ -120,7 +122,7 @@ Todos tienen una métrica verificable cuyos umbrales se validan en las pruebas d
 | RNF-06 | Seguridad alimentaria | Ninguna receta adaptada con un alérgeno declarado llega al usuario sin advertencia. | 100 % de detección (0 falsos negativos) en el conjunto de prueba: 10 recetas × 4 perfiles. | Alta | A3; S03, S16 |
 | RNF-07 | Legibilidad | El paso actual se lee a distancia y con poca luz. | Texto del paso ≥ 32 px a 1 a 2 m; contraste ≥ 4,5:1 por defecto y ≥ 7:1 en modo alto contraste. | Alta | Contexto físico; S05, S08 |
 | RNF-08 | Accesibilidad | La interfaz cumple pautas de accesibilidad web. | WCAG 2.1 nivel AA; objetivos táctiles ≥ 44 px; navegable por teclado. | Alta | S04–S08 |
-| RNF-09 | Multiusuario | La sala se mantiene sincronizada. | Cambio de paso visible a los demás en ≤ 1 s (percentil 95); resincronización en ≤ 5 s tras reconectar; salas de hasta 4 participantes. | Alta | A8; S09 |
+| RNF-09 | Multiusuario | Lo que se publica en la Comunidad llega a los demás de forma confiable y sin exponer datos personales. | Publicación o comentario visible en otro dispositivo en ≤ 5 s (percentil 95); la cola sin conexión se envía en ≤ 10 s tras reconectar, sin duplicados; 0 datos de salud publicados sin consentimiento explícito. *Umbrales propuestos el 16/11/2026, por validar.* | Alta | A8; S09 |
 | RNF-10 | PWA y rendimiento de carga | Instalación y carga ágiles, uso sin red. | Lighthouse "instalable"; carga inicial ≤ 3 s en 4G; modo cocina completo sin conexión tras la primera carga. | Alta | Contexto técnico |
 | RNF-11 | Privacidad | El video no sale del dispositivo y el usuario controla sus datos. | 100 % del procesamiento de gestos local; permisos de cámara y micrófono pedidos de forma explícita; perfil exportable y borrable en ≤ 2 pasos. | Alta | S13; conflicto privacidad |
 | RNF-12 | Usabilidad (aprendizaje) | Un usuario nuevo aprende a usar el sistema sin manual. | Onboarding ≤ 2 min; ≥ 90 % de los participantes completa una receta de 10 pasos sin ayuda externa. | Alta | S01, S08 |
@@ -143,7 +145,7 @@ Todos tienen una métrica verificable cuyos umbrales se validan en las pruebas d
 | Capa de abstracción del LLM | RF-04 a RF-10, RF-13 | RNF-03, RNF-06, RNF-14 |
 | PWA | RF-43, RF-44 | RNF-10, RNF-13, RNF-15 |
 | Personalización continua (perfil persistente) | RF-01, RF-28 a RF-32 | RNF-17, RNF-11 |
-| Multiusuario (salas, compartición) | RF-33 a RF-37 | RNF-09 |
+| Multiusuario (Comunidad: publicar, comentar y compartir logros) | RF-33 a RF-37 | RNF-09 |
 | Diseño emocional (visceral, conductual, reflexivo) | RF-38 (visceral), RF-39 (conductual), RF-40 (reflexivo), RF-41, RF-42 | RNF-16 |
 | Gestos (GUI no convencional) | RF-20 a RF-23 | RNF-02, RNF-05 |
 | Accesibilidad (discapacidad motriz, visual, auditiva y del habla) | RF-11, RF-12, RF-14, RF-17, RF-24 a RF-27 | RNF-07, RNF-08, RNF-15 |

@@ -18,6 +18,7 @@ export {
   type SuggestionResult,
 } from './suggest';
 export { findSimilarRecipes, searchRecipes } from './search';
+export { answerHomeQuestion, isPantryQuestion, type HomeAnswer } from './homeQuestion';
 export {
   applySubstitution,
   hasBlockedAllergens,
