@@ -4,11 +4,19 @@
 // exporta en el mismo formato de datos/perfiles.json (RNF-11).
 
 import type { Ingredient, Recipe, Step, Substitute } from '../types/recipe';
-import type { AccessibilityPrefs, HistoryEntry, Profile } from '../types/profile';
+import type {
+  AccessibilityPrefs,
+  DeclaredFeeling,
+  HistoryEntry,
+  LearnedOrigin,
+  Profile,
+} from '../types/profile';
 import type {
   RawAccessibilityPrefs,
+  RawEmotionalPrefs,
   RawHistoryEntry,
   RawIngredient,
+  RawLearnedData,
   RawProfile,
   RawRecipe,
   RawRecipeBook,
@@ -186,6 +194,50 @@ function toRawHistoryEntry(entry: HistoryEntry): RawHistoryEntry {
   };
 }
 
+// Los campos opcionales agregados después (origen de la emoción, detalle del origen y alias)
+// solo se escriben si existen, así un perfil sin ellos se exporta idéntico al original.
+type RawFeeling = NonNullable<RawEmotionalPrefs['ultima_emocion']>;
+type RawOrigin = NonNullable<RawLearnedData['origenes']>[number];
+
+const FEELING_SOURCE = { declarada: 'declared', inferida: 'inferred' } as const;
+const RAW_FEELING_SOURCE = { declared: 'declarada', inferred: 'inferida' } as const;
+
+function toFeeling(raw: RawFeeling): DeclaredFeeling {
+  return {
+    feeling: raw.emocion,
+    date: raw.fecha,
+    ...(raw.origen && { source: FEELING_SOURCE[raw.origen] }),
+    ...(raw.fecha_hora && { at: raw.fecha_hora }),
+  };
+}
+
+function toRawFeeling(feeling: DeclaredFeeling): RawFeeling {
+  return {
+    emocion: feeling.feeling,
+    fecha: feeling.date,
+    ...(feeling.source && { origen: RAW_FEELING_SOURCE[feeling.source] }),
+    ...(feeling.at && { fecha_hora: feeling.at }),
+  };
+}
+
+function toOrigin(raw: RawOrigin): LearnedOrigin {
+  return {
+    key: raw.clave,
+    event: raw.evento,
+    date: raw.fecha,
+    ...(raw.detalle && { detail: raw.detalle }),
+  };
+}
+
+function toRawOrigin(origin: LearnedOrigin): RawOrigin {
+  return {
+    clave: origin.key,
+    evento: origin.event,
+    fecha: origin.date,
+    ...(origin.detail && { detalle: origin.detail }),
+  };
+}
+
 export function toProfile(raw: RawProfile): Profile {
   return {
     id: raw.id,
@@ -222,24 +274,18 @@ export function toProfile(raw: RawProfile): Profile {
         stepNumber: s.paso,
       })),
       readingSkipStreak: raw.aprendido.lecturas_saltadas_seguidas?.slice(),
-      origins: raw.aprendido.origenes?.map((o) => ({
-        key: o.clave,
-        event: o.evento,
-        date: o.fecha,
-      })),
+      origins: raw.aprendido.origenes?.map(toOrigin),
     },
     emotional: {
       assistantTone: raw.emocional.tono_asistente,
       celebration: raw.emocional.celebracion,
       ambientMusic: raw.emocional.musica_ambiente,
-      lastFeeling: raw.emocional.ultima_emocion && {
-        feeling: raw.emocional.ultima_emocion.emocion,
-        date: raw.emocional.ultima_emocion.fecha,
-      },
+      lastFeeling: raw.emocional.ultima_emocion && toFeeling(raw.emocional.ultima_emocion),
     },
     pantry: [...raw.despensa],
     history: raw.historial.map(toHistoryEntry),
     rooms: [...raw.salas],
+    ...(raw.comunidad && { community: { alias: raw.comunidad.alias } }),
   };
 }
 
@@ -279,23 +325,17 @@ export function toRawProfile(profile: Profile): RawProfile {
         paso: s.stepNumber,
       })),
       lecturas_saltadas_seguidas: profile.learned.readingSkipStreak?.slice(),
-      origenes: profile.learned.origins?.map((o) => ({
-        clave: o.key,
-        evento: o.event,
-        fecha: o.date,
-      })),
+      origenes: profile.learned.origins?.map(toRawOrigin),
     },
     emocional: {
       tono_asistente: profile.emotional.assistantTone,
       celebracion: profile.emotional.celebration,
       musica_ambiente: profile.emotional.ambientMusic,
-      ultima_emocion: profile.emotional.lastFeeling && {
-        emocion: profile.emotional.lastFeeling.feeling,
-        fecha: profile.emotional.lastFeeling.date,
-      },
+      ultima_emocion: profile.emotional.lastFeeling && toRawFeeling(profile.emotional.lastFeeling),
     },
     despensa: [...profile.pantry],
     historial: profile.history.map(toRawHistoryEntry),
     salas: [...profile.rooms],
+    ...(profile.community && { comunidad: { alias: profile.community.alias } }),
   };
 }

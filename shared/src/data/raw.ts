@@ -116,14 +116,19 @@ export interface RawLearnedData {
   sustituciones_rechazadas?: { original: string; sustituto: string }[];
   pasos_dificiles?: { receta_id: string; paso: number }[];
   lecturas_saltadas_seguidas?: string[];
-  origenes?: { clave: string; evento: string; fecha: string }[];
+  origenes?: { clave: string; evento: string; fecha: string; detalle?: string }[];
 }
 
 export interface RawEmotionalPrefs {
   tono_asistente: string;
   celebracion: CelebrationStyle;
   musica_ambiente: string;
-  ultima_emocion?: { emocion: Feeling; fecha: string };
+  ultima_emocion?: {
+    emocion: Feeling;
+    fecha: string;
+    origen?: 'declarada' | 'inferida';
+    fecha_hora?: string;
+  };
 }
 
 export interface RawHistoryEntry {
@@ -145,6 +150,7 @@ export interface RawProfile {
   despensa: string[];
   historial: RawHistoryEntry[];
   salas: string[];
+  comunidad?: { alias: string };
 }
 
 export interface RawProfileBook {

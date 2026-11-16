@@ -89,6 +89,8 @@ export interface LearnedOrigin {
   event: string;
   /** Fecha en formato AAAA-MM-DD. */
   date: string;
+  /** Detalle legible del origen, por ejemplo "repetiste el paso 4 tres veces" (RF-42). */
+  detail?: string;
 }
 
 export interface LearnedData {
@@ -106,10 +108,14 @@ export interface LearnedData {
   origins?: LearnedOrigin[];
 }
 
-/** Emoción que el usuario declaró por última vez (CA-24.3). */
+/** Última emoción del usuario, declarada o inferida del uso (CA-24.3, RF-42). */
 export interface DeclaredFeeling {
   feeling: Feeling;
   date: string;
+  /** Si la persona la dijo o el sistema la infirió del uso (RF-42). Si falta, se declaró. */
+  source?: 'declared' | 'inferred';
+  /** Fecha y hora ISO, para saber si sigue vigente en la sesión (CA-33.2). */
+  at?: string;
 }
 
 export interface EmotionalPrefs {
@@ -117,6 +123,11 @@ export interface EmotionalPrefs {
   celebration: CelebrationStyle;
   ambientMusic: string;
   lastFeeling?: DeclaredFeeling;
+}
+
+export interface CommunityPrefs {
+  /** Alias público en la Comunidad; nunca el nombre real (RF-33). */
+  alias: string;
 }
 
 export interface HistoryEntry {
@@ -142,4 +153,6 @@ export interface Profile {
   pantry: string[];
   history: HistoryEntry[];
   rooms: string[];
+  /** Datos de la Comunidad; falta hasta que la persona elige un alias. */
+  community?: CommunityPrefs;
 }
