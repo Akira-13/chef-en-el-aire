@@ -13,7 +13,7 @@
 | Gestos con MediaPipe | 22/10 | 2 semanas (en paralelo) | Vocabulario de gestos funcional |
 | Capa LLM + validación de alérgenos | 05/11 | 10 días | Adaptación de recetas segura |
 | Perfil persistente | 05/11 | 10 días (en paralelo) | Perfil que aprende |
-| Salas multiusuario | 15/11 | 10 días | Cocina conjunta sincronizada |
+| Comunidad (reemplaza a las salas desde el 16/11) | 17/11 | 8 días | Publicar, comentar y compartir logros |
 | Diseño emocional | 15/11 | 1 semana | Microinteracciones y celebración |
 | Pruebas de usabilidad | 25/11 | 1 semana | Informe con métricas de los criterios de usabilidad |
 | Correcciones y entrega final | 02/12 | 5 días | Versión final |
