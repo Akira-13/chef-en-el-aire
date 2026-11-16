@@ -19,7 +19,7 @@
 | CU-10 | Legibilidad | Porcentaje de participantes que lee el paso sin error a 2 m | 100 % | Prueba de lectura a 2 m, con luz normal y tenue | RNF-07, RF-11 |
 | CU-11 | Accesibilidad por grupo | Porcentaje de éxito al completar una receta por el canal principal de cada grupo (S04 voz, S05 audio, S06 visual, S07 gestos) | ≥ 90 % por grupo | Prueba con al menos 1 persona por grupo, o simulación con restricción de canal | RNF-08, RF-24 a RF-27 |
 | CU-12 | Alerta del temporizador | Tiempo hasta que el participante nota la alerta | ≤ 3 s; 100 % la nota (incluido S06) | Observación con temporizador de 1 min | RNF-18, RF-17, RF-26 |
-| CU-13 | Sincronización percibida | Porcentaje que identifica en qué paso va el otro participante sin preguntar; retraso del cambio de paso | ≥ 90 %; ≤ 1 s | Prueba con 2 dispositivos | RNF-09, RF-35 |
+| CU-13 | Comunidad | Porcentaje que publica una receta y comenta una publicación ajena sin ayuda; retraso hasta ver el comentario en otro dispositivo | ≥ 90 %; ≤ 5 s (p95) *(propuesto el 16/11/2026, por validar)* | Prueba con 2 dispositivos | RNF-09, RF-33 a RF-37 |
 | CU-14 | Carga cognitiva | NASA-TLX (versión simplificada) | ≤ 40 sobre 100 | Cuestionario al terminar la receta | RNF-12 |
 | CU-15 | Satisfacción general | Puntaje SUS | ≥ 75 | Cuestionario al terminar | RNF-12 |
 | CU-16 | Experiencia emocional | Cuestionario de 5 ítems en escala de 1 a 5 (acompañamiento, tono, celebración, ambientación, confianza) | ≥ 4 de 5 en promedio | Cuestionario tras la celebración | RNF-16, RF-38 a RF-42 |
