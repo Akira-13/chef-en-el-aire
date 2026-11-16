@@ -94,7 +94,8 @@ export function createConfirmation() {
       const gestures = profileService.getProfile().accessibility.activeInputs.includes('gestos');
       pending = { command, extra, timer: window.setTimeout(fail, CONFIRM_TIMEOUT_MS) };
       // Un pulgar arriba confirma esta orden de voz, no la del paso: que se vea cuál es.
-      if (gestures) pending.hintId = showHint('👍', `Pulgar arriba: ${COMMAND_LABELS[command.type]}`);
+      if (gestures)
+        pending.hintId = showHint('👍', `Pulgar arriba: ${COMMAND_LABELS[command.type]}`);
       output.announce({
         text: `¿Dijiste «${text}»? Di «sí»${gestures ? ' o haz pulgar arriba' : ''}.`,
         short: `¿Dijiste «${text}»?`,

@@ -11,7 +11,9 @@ describe('eco del altavoz', () => {
 
   it('no confunde una orden del usuario que comparte alguna palabra', () => {
     expect(isEcho('chef tengo arroz', spoken)).toBe(false);
-    expect(isEcho('chef repite el paso', ['Paso 2. Corta el pollo en el paso anterior.'])).toBe(false);
+    expect(isEcho('chef repite el paso', ['Paso 2. Corta el pollo en el paso anterior.'])).toBe(
+      false,
+    );
   });
 
   it('las respuestas de una palabra nunca son eco', () => {

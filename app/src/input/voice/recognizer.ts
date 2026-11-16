@@ -1,6 +1,7 @@
 // Reconocimiento de voz continuo (RF-18). Se reinicia solo porque Android lo corta en silencio.
 
 import type { Command } from '@chef/shared';
+import { enqueueMediaRequest } from '../mediaQueue';
 import { normalizeSpeech } from './normalize';
 import { createWakeGate, misheardWake, startsWithWakeWord, WAKE_WORD } from './wakeWord';
 import { parseCommand } from './parseCommand';

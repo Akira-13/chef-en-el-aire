@@ -136,8 +136,9 @@ describe('robustez ante cuadros dudosos y movimientos que no son gestos', () => 
       i % 3 === 2 ? { ...frame, category: 'None' } : frame,
     );
     expect(run(flicker)).toEqual([{ type: 'confirm' }]);
-    expect(run(flicker.map((frame, i) => (i % 3 === 2 ? { ...frame, category: null } : frame))))
-      .toEqual([{ type: 'confirm' }]);
+    expect(
+      run(flicker.map((frame, i) => (i % 3 === 2 ? { ...frame, category: null } : frame))),
+    ).toEqual([{ type: 'confirm' }]);
   });
 
   it('un cuadro dudoso no repite un gesto que sigue sostenido', () => {
