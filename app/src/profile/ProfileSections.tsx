@@ -1,12 +1,14 @@
-// Secciones de la pantalla de perfil: despensa (RF-03), lo que aprendí de ti (RF-30), mis
-// platos (RF-31) y control de los datos (RNF-11).
+// Secciones de la pantalla de perfil: despensa (RF-03), cómo te habla el asistente (RF-41),
+// lo que aprendí de ti (RF-30), mis platos (RF-31) y control de los datos (RNF-11).
 
 import { useState, type FormEvent } from 'react';
+import type { SkillLevel } from '@chef/shared';
 import { metrics } from '../core/metrics';
 import { useRecipes } from '../core/recipes';
 import { output, profileService, useProfile } from '../core/services';
 import { addToPantry } from '../personalization';
 import { Button } from '../ui';
+import { Choice } from './AccessibilitySettings';
 import { describeLearned, forgetLearned } from './learned';
 import styles from './profile.module.css';
 
@@ -71,6 +73,71 @@ export function PantryEditor() {
       ) : (
         <p className={styles.muted}>Tu despensa está vacía. También puedes decir "tengo papa".</p>
       )}
+    </section>
+  );
+}
+
+export const SKILL_LABELS: Record<SkillLevel, string> = {
+  novato: 'Novato',
+  intermedio: 'Intermedio',
+  avanzado: 'Avanzado',
+};
+
+// Tonos de los perfiles de prueba; el asistente recibe el texto tal cual en cada pedido.
+export const ASSISTANT_TONES = [
+  'cordial y directo',
+  'animado y paciente',
+  'calmado',
+  'amigable',
+] as const;
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** Opciones de tono; si el perfil trae uno que no está en la lista, se agrega para no perderlo. */
+export function toneOptions(current: string): Record<string, string> {
+  const tones = ASSISTANT_TONES.includes(current as (typeof ASSISTANT_TONES)[number])
+    ? ASSISTANT_TONES
+    : [...ASSISTANT_TONES, current];
+  return Object.fromEntries(tones.map((tone) => [tone, capitalize(tone)]));
+}
+
+// RF-41, CA-33.1: el nivel cambia las sugerencias y cómo explica el asistente; el tono, cómo
+// habla. Ambos se guardan al instante.
+export function AssistantSettings() {
+  const { skillLevel, emotional } = useProfile();
+
+  function changeLevel(level: SkillLevel) {
+    void profileService.update((p) => ({ ...p, skillLevel: level }));
+    output.announce({ text: `Nivel: ${SKILL_LABELS[level]}.`, kind: 'info' });
+  }
+
+  function changeTone(tone: string) {
+    void profileService.update((p) => ({
+      ...p,
+      emotional: { ...p.emotional, assistantTone: tone },
+    }));
+    output.announce({ text: `Tono del asistente: ${tone}.`, kind: 'info' });
+  }
+
+  return (
+    <section className={styles.section} aria-labelledby="perfil-asistente">
+      <h2 id="perfil-asistente" className={styles.sectionTitle}>
+        Cómo te habla el asistente
+      </h2>
+      <Choice
+        legend="Mi nivel en la cocina"
+        name="nivel"
+        value={skillLevel}
+        options={SKILL_LABELS}
+        onChange={changeLevel}
+      />
+      <Choice
+        legend="Tono del asistente"
+        name="tono"
+        value={emotional.assistantTone}
+        options={toneOptions(emotional.assistantTone)}
+        onChange={changeTone}
+      />
     </section>
   );
 }

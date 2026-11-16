@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import rawRecipes from '../../../datos/recetas.json';
 import { toRecipes, type RawRecipeBook } from '@chef/shared';
 import { profileService } from '../core/services';
+import { suggestRecipes } from '../personalization';
 import { SubstitutionHints } from '../personalization/SubstitutionHints';
 import { AccessibilitySetup } from './AccessibilitySetup';
 import { ProfileScreen } from './ProfileScreen';
@@ -89,6 +90,38 @@ describe('ProfileScreen', () => {
     expect(profileService.getProfile().pantry).toEqual(expect.arrayContaining(['quinua', 'palta']));
     await click(container.querySelector('[aria-label="Quitar palta"]')!);
     expect(profileService.getProfile().pantry).not.toContain('palta');
+  });
+
+  it('cambiar el nivel se guarda y cambia las sugerencias (CA-33.1)', async () => {
+    // Diego (novato) con dos recetas básicas y una avanzada: solo entra la avanzada relajando
+    // la dificultad; como avanzado, entra sin relajar nada.
+    const subset = recipes.filter((r) => ['REC-003', 'REC-006', 'REC-010'].includes(r.id));
+    await render(<ProfileScreen />);
+    expect(profileService.getProfile().skillLevel).toBe('novato');
+    expect(suggestRecipes(subset, profileService.getProfile()).message).toContain('la dificultad');
+
+    await click(checkbox('Avanzado'));
+    expect(profileService.getProfile().skillLevel).toBe('avanzado');
+    expect(checkbox('Avanzado').checked).toBe(true);
+    const advanced = suggestRecipes(subset, profileService.getProfile());
+    expect(advanced.recipes.map((r) => r.id)).toContain('REC-010');
+    expect(advanced.message).toBeUndefined();
+  });
+
+  it('el tono elegido queda en el perfil (RF-41)', async () => {
+    await render(<ProfileScreen />);
+    expect(profileService.getProfile().emotional.assistantTone).toBe('animado y paciente');
+    await click(checkbox('Calmado'));
+    expect(profileService.getProfile().emotional.assistantTone).toBe('calmado');
+  });
+
+  it('conserva como opción un tono que no está en la lista (RF-41)', async () => {
+    await profileService.update((p) => ({
+      ...p,
+      emotional: { ...p.emotional, assistantTone: 'paciente y bromista' },
+    }));
+    await render(<ProfileScreen />);
+    expect(checkbox('Paciente y bromista').checked).toBe(true);
   });
 
   it('borra los datos en 2 pasos (CA-25.3)', async () => {
