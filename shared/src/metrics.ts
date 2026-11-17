@@ -10,6 +10,8 @@ export const METRIC_NAMES = [
   'timer.drift', // RNF-18: desfase del temporizador al vencer
   'profile.save', // RNF-17: duración del guardado del perfil
   'channel.fallback', // RNF-15: falla de un canal → canal alterno
+  'community.visible', // RNF-09: publicación o comentario ajeno, de su createdAt a que se ve
+  'community.queueFlush', // RNF-09: de la reconexión a la cola sin conexión vacía
 ] as const;
 
 export type MetricName = (typeof METRIC_NAMES)[number];
