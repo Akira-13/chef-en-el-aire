@@ -130,6 +130,31 @@
   color: var(--color-text);
 }
 
+/* ---------- Alias de la Comunidad ---------- */
+
+.aliasForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aliasField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.aliasField .textInput {
+  font-weight: 400;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 /* ---------- Despensa ---------- */
 
 .pantryForm {
