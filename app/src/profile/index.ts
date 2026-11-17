@@ -109,7 +109,7 @@ export function createProfileService(options: ProfileServiceOptions = {}): Profi
   async function recordEvent(event: UsageEvent): Promise<void> {
     let message: string | undefined;
     await update((profile) => {
-      const result = applyUsageEvent(profile, event, today(), session);
+      const result = applyUsageEvent(profile, event, today(), session, new Date());
       message = result.notice;
       return result.profile;
     });

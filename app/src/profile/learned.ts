@@ -17,14 +17,18 @@ export const learnedKey = {
   lastFeeling: () => 'lastFeeling',
 };
 
-/** Registra (o reemplaza) el origen de un dato aprendido. */
+/** Registra (o reemplaza) el origen de un dato aprendido; `detail` explica el motivo exacto. */
 export function withOrigin(
   origins: LearnedOrigin[] | undefined,
   key: string,
   event: string,
   date: string,
+  detail?: string,
 ): LearnedOrigin[] {
-  return [...(origins ?? []).filter((o) => o.key !== key), { key, event, date }];
+  return [
+    ...(origins ?? []).filter((o) => o.key !== key),
+    { key, event, date, ...(detail && { detail }) },
+  ];
 }
 
 const FEELING_LABELS: Record<Feeling, string> = {
@@ -40,6 +44,7 @@ const ORIGIN_LABELS: Record<string, string> = {
   readingSkipped: 'saltaste la lectura completa en 3 recetas seguidas',
   stepRepeated: 'repetiste este paso 3 veces',
   feelingDeclared: 'lo dijiste mientras cocinabas',
+  commandFailed: 'no te entendí 2 veces seguidas',
   explanationRequested: 'me pediste que te lo explicara',
   recipeRated: 'por cómo valoraste tus platos',
 };
@@ -66,7 +71,7 @@ export function describeLearned(
   const originOf = (key: string) => {
     const origin = origins.get(key);
     if (!origin) return 'de tu historial de uso';
-    const what = ORIGIN_LABELS[origin.event] ?? 'por cómo usas la app';
+    const what = origin.detail ?? ORIGIN_LABELS[origin.event] ?? 'por cómo usas la app';
     return `${what} el ${formatDate(origin.date)}`;
   };
   const item = (key: string, label: string): LearnedItem => ({ key, label, origin: originOf(key) });
@@ -95,11 +100,14 @@ export function describeLearned(
         `Te costó el paso ${s.stepNumber} de ${recipeName(s.recipeId)}`,
       ),
     ),
+    // RF-42: lo inferido se distingue de lo que la persona dijo.
     ...(emotional.lastFeeling
       ? [
           item(
             learnedKey.lastFeeling(),
-            `La última vez dijiste que estabas ${FEELING_LABELS[emotional.lastFeeling.feeling]}`,
+            emotional.lastFeeling.source === 'inferred'
+              ? `Lo inferí: te noté ${FEELING_LABELS[emotional.lastFeeling.feeling]}`
+              : `La última vez dijiste que estabas ${FEELING_LABELS[emotional.lastFeeling.feeling]}`,
           ),
         ]
       : []),
