@@ -121,6 +121,18 @@ describe('AdaptationPanel', () => {
     });
   });
 
+  it('envía las porciones pedidas al adaptar (CA-04.2)', async () => {
+    mocks.adapt.mockResolvedValueOnce(okResponse);
+    await act(async () => root.render(<AdaptationPanel recipe={original} servings={2} />));
+    await act(async () => button('Adaptar con IA')!.click());
+    expect(mocks.adapt).toHaveBeenCalledWith(expect.objectContaining({ servings: 2 }));
+  });
+
+  it('sin porciones pedidas, el pedido no lleva `servings` (CA-04.2)', async () => {
+    await request(okResponse);
+    expect(mocks.adapt.mock.calls[0][0]).not.toHaveProperty('servings');
+  });
+
   it('lista cada cambio con el antes, el después y el motivo (CA-05.1)', async () => {
     await request(okResponse);
     const text = container.textContent ?? '';

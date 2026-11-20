@@ -7,3 +7,4 @@ export * from './assistant';
 export * from './metrics';
 export * from './allergens';
 export * from './scaling';
+export * from './community';
