@@ -76,3 +76,57 @@ describe('parseCommand (CA-13.1)', () => {
     expect(parseCommand('  ¿? ')).toBeNull();
   });
 });
+
+describe('porciones por voz (CA-04.2)', () => {
+  it.each([
+    ['para 2 porciones', 2],
+    ['para dos porciones', 2],
+    ['para una porción', 1],
+    ['Para 12 porciones', 12],
+    ['para doce porciones', 12],
+  ])('"%s" → %i porciones', (text, servings) => {
+    expect(parseCommand(text)).toEqual({ type: 'setServings', servings });
+  });
+
+  it('fuera de 1 a 12 no cambia las porciones', () => {
+    expect(parseCommand('para 20 porciones')).toMatchObject({ type: 'ask' });
+    expect(parseCommand('para 0 porciones')).toMatchObject({ type: 'ask' });
+  });
+
+  it('"para" sigue deteniendo el temporizador', () => {
+    expect(parseCommand('para el temporizador')).toEqual({ type: 'stopTimer' });
+  });
+});
+
+describe('abrir la Comunidad y publicar una receta (CA-27.1)', () => {
+  it.each([
+    ['abre la comunidad', { type: 'openCommunity' }],
+    ['ir a la comunidad', { type: 'openCommunity' }],
+    ['publica mi receta', { type: 'share' }],
+    ['comparte mi receta', { type: 'share' }],
+  ] satisfies [string, Command][])('"%s"', (text, expected) => {
+    expect(parseCommand(text)).toEqual(expected);
+  });
+});
+
+describe('aplaudir y comentar por voz (CA-28.2)', () => {
+  it.each([
+    ['aplaude', { type: 'applaud' }],
+    ['aplauso', { type: 'applaud' }],
+    ['comenta que me salió rica', { type: 'comment', text: 'me salió rica' }],
+    ['comentario: ¡Qué Rico!', { type: 'comment', text: '¡Qué Rico!' }],
+    ['Comenta, se ve buenaza', { type: 'comment', text: 'se ve buenaza' }],
+  ] satisfies [string, Command][])('"%s"', (text, expected) => {
+    expect(parseCommand(text)).toEqual(expected);
+  });
+
+  it('"comenta qué rico" es un comentario y no una pregunta al asistente', () => {
+    expect(parseCommand('comenta qué rico')).toEqual({ type: 'comment', text: 'qué rico' });
+  });
+});
+
+describe('compartir el logro (CA-29.2)', () => {
+  it.each(['comparte mi logro', 'publícalo'])('"%s"', (text) => {
+    expect(parseCommand(text)).toEqual({ type: 'share' });
+  });
+});

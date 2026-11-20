@@ -3,7 +3,8 @@
 import type { Command, Feeling } from '@chef/shared';
 import { normalizeSpeech } from './normalize';
 
-type Rule = [RegExp, (match: RegExpMatchArray) => Command];
+/** `original` es la frase tal como se dijo, con tildes y mayúsculas. */
+type Rule = [RegExp, (match: RegExpMatchArray, original: string) => Command];
 
 // Nombre opcional de un temporizador: "de X", "del X" o "de la X".
 const TIMER_NAME = '(?: (?:del|de la|de los|de las|de)? ?(.+))?';
@@ -25,6 +26,35 @@ const FEELINGS: Record<string, Feeling> = {
   feliz: 'happy',
   content: 'happy',
 };
+
+// Porciones que se pueden pedir por voz, en cifra o en palabra (CA-04.2).
+const NUMBER_WORDS: Record<string, number> = {
+  un: 1,
+  uno: 1,
+  una: 1,
+  dos: 2,
+  tres: 3,
+  cuatro: 4,
+  cinco: 5,
+  seis: 6,
+  siete: 7,
+  ocho: 8,
+  nueve: 9,
+  diez: 10,
+  once: 11,
+  doce: 12,
+};
+const SERVINGS = `(1[0-2]|[1-9]|${Object.keys(NUMBER_WORDS).join('|')})`;
+
+/** Texto de "comenta que me salió rica" sin "comenta" ni el "que" inicial, con sus tildes. */
+function commentText(original: string): string {
+  const text = original
+    .trim()
+    .replace(/^comenta(?:r|rio)?\b[\s:,]*/i, '')
+    .replace(/^que\s+/i, '')
+    .trim();
+  return text || original.trim();
+}
 
 /** Separa "arroz, huevos y cebolla" en ["arroz", "huevos", "cebolla"]. */
 function splitList(text: string): string[] {
@@ -89,6 +119,16 @@ const RULES: Rule[] = [
     (m) => ({ type: 'search', query: m[1]! }),
   ],
   [/^tengo (.+)$/, (m) => ({ type: 'addPantry', items: splitList(m[1]!) })],
+  // Porciones y Comunidad (CA-04.2, RF-33 a RF-37). Van antes de tomar la frase como pregunta.
+  [
+    new RegExp(`^para ${SERVINGS} porcion(?:es)?$`),
+    (m) => ({ type: 'setServings', servings: NUMBER_WORDS[m[1]!] ?? Number(m[1]) }),
+  ],
+  [/^(?:abre|abrir|ir a|ve a|vamos a) la comunidad$/, () => ({ type: 'openCommunity' })],
+  [/^(?:publica|publicar|comparte|compartir) mi (?:receta|logro)$/, () => ({ type: 'share' })],
+  [/^(?:publicalo|compartelo)$/, () => ({ type: 'share' })],
+  [/^(?:aplaude|aplaudir|aplauso)$/, () => ({ type: 'applaud' })],
+  [/^comenta(?:r|rio)? .+$/, (_m, original) => ({ type: 'comment', text: commentText(original) })],
 ];
 
 /** Convierte una frase en un comando; `null` si está vacía. */
@@ -98,7 +138,7 @@ export function parseCommand(text: string): Command | null {
   if (!normalized) return null;
   for (const [pattern, build] of RULES) {
     const match = normalized.match(pattern);
-    if (match) return build(match);
+    if (match) return build(match, text);
   }
   return { type: 'ask', question: text.trim() };
 }

@@ -30,7 +30,12 @@ export type Command =
   | { type: 'skip' }
   | { type: 'cameraOn' }
   | { type: 'cameraOff' }
-  | { type: 'lockGestures'; seconds?: number };
+  | { type: 'lockGestures'; seconds?: number }
+  | { type: 'setServings'; servings: number } // "para 2 porciones" (CA-04.2)
+  | { type: 'openCommunity' } // "abre la comunidad"
+  | { type: 'share' } // "publica mi receta" / "comparte mi logro": según la pantalla
+  | { type: 'applaud' } // "aplaude" (RF-36)
+  | { type: 'comment'; text: string }; // "comenta <texto>" (RF-36)
 
 export type CommandType = Command['type'];
 
@@ -71,9 +76,15 @@ export const COMMAND_LABELS: Record<CommandType, string> = {
   cameraOn: 'enciende la cámara',
   cameraOff: 'apaga la cámara',
   lockGestures: 'bloquea gestos',
+  setServings: 'para … porciones',
+  openCommunity: 'abre la comunidad',
+  share: 'publica / comparte',
+  applaud: 'aplaude',
+  comment: 'comenta…',
 };
 
-export type ScreenId = 'home' | 'recipe' | 'cooking' | 'celebration' | 'profile' | 'onboarding';
+export type ScreenId =
+  'home' | 'recipe' | 'cooking' | 'celebration' | 'profile' | 'onboarding' | 'community';
 
 // Estado mínimo que necesita la ayuda contextual para saber qué comandos valen ahora.
 export interface CommandContext {
