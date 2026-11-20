@@ -75,4 +75,36 @@ describe('ayuda contextual (RF-14, CA-12.3)', () => {
     expect(gestureFor('next', COOKING, PREFS)?.icon).toBe('👈');
     expect(gestureFor('repeat', COOKING, PREFS)).toBeUndefined();
   });
+
+  it('en la Receta ofrece cambiar las porciones y publicar (CA-04.2, CA-27.1)', () => {
+    const voice = helpFor({ ...COOKING, screen: 'recipe' }, PREFS).voice;
+    expect(voice).toContain('para … porciones');
+    expect(voice).toContain('publica / comparte');
+    expect(voice).toContain('abre la comunidad');
+  });
+});
+
+describe('ayuda de la Comunidad (CA-28.2)', () => {
+  const COMMUNITY: CommandContext = { ...COOKING, screen: 'community' };
+
+  it('ofrece cambiar de publicación, aplaudir, comentar y pedir ayuda por voz', () => {
+    expect(helpFor(COMMUNITY, PREFS).voice).toEqual([
+      'siguiente',
+      'anterior',
+      '¿dónde estoy?',
+      'aplaude',
+      'comenta…',
+      'ayuda',
+    ]);
+  });
+
+  it('deslizar cambia de publicación y el pulgar arriba (confirm) aplaude', () => {
+    expect(
+      helpFor(COMMUNITY, PREFS).gestures.map(({ icon, command, does }) => [icon, command, does]),
+    ).toEqual([
+      ['👈', 'next', 'siguiente publicación'],
+      ['👉', 'previous', 'publicación anterior'],
+      ['👍', 'confirm', 'aplaude'],
+    ]);
+  });
 });
