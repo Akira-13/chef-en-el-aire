@@ -30,7 +30,7 @@ Diseñar una interfaz de cocina **sin contacto, multimodal y accesible** que per
 - Control completo por **voz** y por **gestos** (MediaPipe), con respaldo táctil; ninguna acción depende de un solo canal.
 - **Adaptación de recetas con LLM** detrás de una capa de abstracción, con validación local de alérgenos.
 - **Perfil persistente** que aprende gustos, restricciones y preferencias de accesibilidad.
-- **Salas multiusuario** para cocinar a distancia con los pasos sincronizados.
+- **Comunidad multiusuario** asíncrona para publicar recetas adaptadas, comentarlas y celebrar los platos terminados con otras personas.
 - **Diseño emocional** según los tres niveles de Norman (visceral, conductual y reflexivo).
 
 ---
@@ -94,36 +94,38 @@ El perfil se guarda en el dispositivo (IndexedDB) para funcionar sin conexión y
 | `emocional` | Tono del asistente, tipo de celebración, música ambiente | Usuario y sistema |
 | `despensa` | Ingredientes disponibles | Usuario (voz o texto) |
 | `historial` | Recetas hechas, fecha, valoración y sustituciones usadas | Sistema |
-| `salas` | Salas a las que pertenece | Sistema |
+| `salas` | Sin uso desde el 16/11/2026: se conserva del diseño original de salas en tiempo real | — |
 
 - **Separación explícito / aprendido:** lo que el usuario declara nunca se sobrescribe con lo que el sistema infiere. Las restricciones de `explicito` siempre tienen prioridad.
 - **Aprendizaje continuo (RF-29):** calificaciones, sustituciones aceptadas o rechazadas, pasos repetidos y emociones declaradas actualizan `aprendido`, `emocional` e `historial`.
 - **Transparencia (RF-30):** la pantalla "lo que aprendí de ti" muestra el bloque `aprendido` y permite corregir o borrar cada dato.
 - **Privacidad (RNF-11):** el perfil se exporta o se borra en 2 pasos como máximo; el video de la cámara no se guarda ni se envía.
 
-### Estructura de salas multiusuario
+### Estructura de la Comunidad (multiusuario)
 
-Una sala es un estado compartido que mantiene el **servidor de salas** (WebSocket). Su estructura es la de `salas_ejemplo` en [`datos/perfiles.json`](datos/perfiles.json):
+Desde el 16/11/2026 el multiusuario es la **Comunidad**: un espacio compartido **asíncrono** que guarda el servidor (`/api/community`), sin WebSocket ni salas en tiempo real (ver [alcance](docs/06-alcance.md#4-cambios-de-alcance)). El cliente consulta las novedades cada pocos segundos y, sin conexión, deja en cola lo que publica para enviarlo al reconectar. Una publicación tiene esta forma (los tipos están en `shared/src/community.ts`):
 
 ```json
 {
-  "id": "SALA-7K2P",
-  "codigo": "7K2P",
-  "receta_id": "REC-004",
-  "modo": "sincronizado",
-  "anfitrion": "USR-002",
-  "participantes": [
-    { "usuario": "USR-002", "paso_actual": 3, "conectado": true },
-    { "usuario": "invitado-mama-diego", "paso_actual": 2, "conectado": true }
-  ]
+  "id": "PUB-0001",
+  "kind": "recipe",
+  "alias": "Dieguito",
+  "recipeId": "REC-008",
+  "recipeName": "Ocopa arequipeña",
+  "createdAt": "2026-11-20T15:04:05.000Z",
+  "changes": [{ "kind": "ingredient", "before": "…", "after": "…" }],
+  "applause": 3,
+  "comments": [{ "id": "COM-0001", "alias": "Mamá", "text": "¡Me salió rica!", "createdAt": "…" }]
 }
 ```
 
-- **`codigo`:** 4 caracteres fáciles de dictar; sirve para unirse por voz o texto (RF-33).
-- **`modo`:** `sincronizado` ("juntos": el paso del anfitrión manda) o `libre` ("a mi ritmo": cada uno avanza solo) (RF-34).
-- **`participantes`:** cada uno con su `paso_actual` y si está `conectado`; la interfaz los muestra como avatares con su número de paso (RF-35). Máximo 4 participantes.
-- **Eventos:** `unirse`, `salir`, `cambiar_paso`, `compartir_receta`, `compartir_logro` y `resincronizar`. Al reconectar, el cliente pide `resincronizar` y recibe el estado completo de la sala (RF-36, RF-37).
-- **Metas (RNF-09):** cambio de paso visible a los demás en ≤ 1 s (percentil 95) y resincronización en ≤ 5 s.
+- **`kind`:** `recipe` (receta adaptada, RF-34) o `achievement` (logro con la valoración, RF-37).
+- **`alias`:** nombre que elige la persona; nunca su nombre real (RF-33).
+- **`changes`:** cambios de la adaptación. El motivo (`reason`) solo se envía si la persona marca "mostrar motivos", porque puede revelar una alergia o una condición de salud (RF-34).
+- **Seguridad alimentaria:** quien abre una receta publicada la recibe como receta adaptada y pasa por su propio validador local de alérgenos (RF-35).
+- **Metas (RNF-09):** publicación o comentario visible en otro dispositivo en ≤ 5 s (percentil 95); la cola sin conexión se envía en ≤ 10 s tras reconectar, sin duplicados.
+
+El bloque `salas_ejemplo` de [`datos/perfiles.json`](datos/perfiles.json) se conserva del diseño original y ya no se usa.
 
 ---
 
@@ -132,7 +134,7 @@ Una sala es un estado compartido que mantiene el **servidor de salas** (WebSocke
 | Archivo | Contenido |
 |---|---|
 | [`datos/recetas.json`](datos/recetas.json) | 10 recetas (mayormente peruanas) con ingredientes, alérgenos, sustitutos, pasos con temporizador y mensaje de celebración |
-| [`datos/perfiles.json`](datos/perfiles.json) | 4 perfiles de prueba, incluyendo usuarios con discapacidad motriz, visual, auditiva y del habla; y una sala de ejemplo |
+| [`datos/perfiles.json`](datos/perfiles.json) | 4 perfiles de prueba, incluyendo usuarios con discapacidad motriz, visual, auditiva y del habla; y una sala de ejemplo del diseño original, sin uso |
 
 ---
 

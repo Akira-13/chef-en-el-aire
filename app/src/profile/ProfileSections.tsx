@@ -2,9 +2,10 @@
 // lo que aprendí de ti (RF-30), mis platos (RF-31), alias de la Comunidad (RF-33) y control de
 // los datos (RNF-11).
 
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { SkillLevel } from '@chef/shared';
-import { ALIAS_MAX_LENGTH, validateAlias } from '../community/alias';
+import { AliasForm } from '../community/AliasField';
+import { removeOwnPosts } from '../community/outbox';
 import { clearCommunityData } from '../community/storage';
 import { metrics } from '../core/metrics';
 import { useRecipes } from '../core/recipes';
@@ -229,58 +230,6 @@ export function MyDishes() {
 }
 
 // RF-33: lo único que se publica en la Comunidad es el alias, nunca el nombre real.
-function AliasForm({ initial, name }: { initial: string; name: string }) {
-  const [alias, setAlias] = useState(initial);
-  const [error, setError] = useState<string>();
-  const counterId = useId();
-  const errorId = useId();
-
-  function save(event: FormEvent) {
-    event.preventDefault();
-    const result = validateAlias(alias, name);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setError(undefined);
-    setAlias(result.alias);
-    void profileService.update((p) => ({ ...p, community: { alias: result.alias } }));
-    output.announce({ text: `Guardé tu alias: ${result.alias}.`, kind: 'success' });
-  }
-
-  return (
-    <form className={styles.aliasForm} onSubmit={save} noValidate>
-      <label className={styles.aliasField}>
-        <span>Tu alias</span>
-        <input
-          className={styles.textInput}
-          value={alias}
-          maxLength={ALIAS_MAX_LENGTH}
-          autoComplete="off"
-          placeholder="Ej.: La sazón de casa"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${counterId} ${errorId}` : counterId}
-          onChange={(event) => {
-            setAlias(event.target.value);
-            setError(undefined);
-          }}
-        />
-      </label>
-      <span id={counterId} className={styles.muted} aria-live="polite">
-        {alias.length} de {ALIAS_MAX_LENGTH} caracteres
-      </span>
-      {error && (
-        <p id={errorId} className={styles.fieldError} role="alert">
-          {error}
-        </p>
-      )}
-      <Button type="submit" disabled={alias.trim() === initial}>
-        Guardar alias
-      </Button>
-    </form>
-  );
-}
-
 export function CommunitySection() {
   const profile = useProfile();
   const alias = profile.community?.alias ?? '';
@@ -319,12 +268,20 @@ export function DataControls() {
   }
 
   async function erase() {
-    // Lo de la Comunidad que está en el dispositivo (clave, propias y cola) se borra aquí; el
-    // alias se va con el perfil.
+    // CA-25.3: primero se intenta borrar en el servidor lo publicado desde este teléfono; después
+    // se borra lo de la Comunidad guardado aquí (clave, propias y cola). El alias se va con el
+    // perfil. Sin la clave ya no se podría borrar lo que quedó publicado.
+    const { failed } = await removeOwnPosts();
     clearCommunityData();
     await profileService.reset();
     setConfirming(false);
-    output.announce({ text: 'Borré tus datos. Volviste al perfil inicial.', kind: 'success' });
+    output.announce({
+      text:
+        failed > 0
+          ? `Borré tus datos. No pude conectarme para borrar ${failed === 1 ? 'una publicación' : `${failed} publicaciones`} de la Comunidad: quedarán publicadas.`
+          : 'Borré tus datos. Volviste al perfil inicial.',
+      kind: failed > 0 ? 'info' : 'success',
+    });
   }
 
   return (
@@ -342,8 +299,8 @@ export function DataControls() {
         {confirming ? (
           <div className={styles.warning} role="alertdialog" aria-labelledby="borrar-pregunta">
             <p id="borrar-pregunta">
-              ¿Borrar tus preferencias, despensa, historial, alias y lo que aprendí? No se puede
-              deshacer.
+              ¿Borrar tus preferencias, despensa, historial, alias, lo que aprendí y tus
+              publicaciones en la Comunidad? No se puede deshacer.
             </p>
             <div className={styles.actions}>
               <Button block onClick={() => void erase()} autoFocus>

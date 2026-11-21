@@ -5,10 +5,12 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import rawRecipes from '../../../datos/recetas.json';
 import { toRecipes, type RawRecipeBook } from '@chef/shared';
-import { profileService } from '../core/services';
+import { output, profileService } from '../core/services';
 import { suggestRecipes } from '../personalization';
 import { SubstitutionHints } from '../personalization/SubstitutionHints';
 import { getDeviceKey } from '../community/device';
+import { createFakeCommunityServer } from '../community/fakeServer';
+import { publishPost } from '../community/outbox';
 import { COMMUNITY_STORAGE_KEYS, addOwnPostId } from '../community/storage';
 import { AccessibilitySetup } from './AccessibilitySetup';
 import { ProfileScreen } from './ProfileScreen';
@@ -176,6 +178,46 @@ describe('ProfileScreen', () => {
       '[aria-labelledby="perfil-comunidad"] input',
     )!;
     expect(input.value).toBe('');
+  });
+
+  it('borrar mis datos borra antes lo publicado en la Comunidad (CA-25.3)', async () => {
+    const server = createFakeCommunityServer();
+    vi.stubGlobal('fetch', vi.fn(server.fetch));
+    await publishPost({
+      kind: 'achievement',
+      alias: 'Rosita',
+      recipeId: 'REC-001',
+      recipeName: 'Ají de gallina',
+    });
+    expect(server.posts).toHaveLength(1);
+    await render(<ProfileScreen />);
+
+    await click(button('Borrar mis datos'));
+    await click(button('Sí, borrar mis datos'));
+
+    expect(server.requests.filter((r) => r.method === 'DELETE')).toHaveLength(1);
+    expect(server.posts).toHaveLength(0);
+    vi.unstubAllGlobals();
+  });
+
+  it('sin red avisa que lo publicado quedará en la Comunidad (CA-25.3)', async () => {
+    const announce = vi.spyOn(output, 'announce');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    addOwnPostId('PUB-0001');
+    await render(<ProfileScreen />);
+
+    await click(button('Borrar mis datos'));
+    await click(button('Sí, borrar mis datos'));
+    await act(async () => {
+      for (let i = 0; i < 5; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(announce).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('quedarán publicadas') as unknown }),
+    );
+    expect(localStorage.getItem(COMMUNITY_STORAGE_KEYS.ownPosts)).toBeNull();
+    announce.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it('borra los datos en 2 pasos (CA-25.3)', async () => {

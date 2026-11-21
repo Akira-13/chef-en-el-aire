@@ -14,7 +14,7 @@
 - **Formato:** *Como* (stakeholder) *quiero* (acción) *para* (beneficio). Criterios en *Dado / Cuando / Entonces*.
 - **Métricas:** los criterios de los RNF repiten literalmente la métrica del requerimiento.
 - **Personas:** se usan los perfiles de [`datos/perfiles.json`](../datos/perfiles.json): Rosa (USR-001, artritis, motriz), Diego (USR-002, novato, alergia al maní), Carmen (USR-003, baja visión) y Javier (USR-004, sordera y habla poco inteligible para el reconocimiento de voz). Las recetas (`REC-nnn`) son las de [`datos/recetas.json`](../datos/recetas.json).
-- **Nombres de modos de sala:** "juntos" se guarda como `sincronizado` y "a mi ritmo" como `libre`.
+- **Comunidad:** desde el 16/11/2026, el multiusuario es un espacio compartido asíncrono que reemplaza a las salas en tiempo real (ver [alcance](06-alcance.md)). En la Comunidad las personas aparecen con un alias, nunca con su nombre real.
 
 ### Resumen
 
@@ -27,7 +27,7 @@
 | E5 · Gestos | HU-15 a HU-17 |
 | E6 · Accesibilidad (discapacidad) | HU-18 a HU-22 |
 | E7 · Personalización continua | HU-23 a HU-26 |
-| E8 · Multiusuario | HU-27 a HU-29 |
+| E8 · Multiusuario (Comunidad) | HU-27 a HU-29 |
 | E9 · Diseño emocional | HU-30 a HU-33 |
 | E10 · PWA y calidad | HU-34 a HU-37 |
 
@@ -291,33 +291,33 @@
 
 ---
 
-### E8 · Multiusuario
+### E8 · Multiusuario (Comunidad)
 
-#### HU-27 · Crear una sala y unirse con un código
+#### HU-27 · Publicar mi receta adaptada en la Comunidad
 **Cubre:** RF-33, RF-34 · **Prioridad:** Alta · **Stakeholders:** S09 · **Actividad:** A8
 
-> **Como** Diego, que vive lejos de su mamá, **quiero** crear una sala con un código corto y elegir si cocinamos "juntos" o "a mi ritmo", **para** preparar la misma receta a distancia.
+> **Como** Diego, que vive lejos de su mamá, **quiero** publicar la versión de la receta que adapté a mi alergia, **para** que ella y otras personas cocinen la misma versión cuando puedan.
 
-- **CA-27.1** · **Dado** que Diego crea una sala para "Tortilla de verduras" (REC-004), **cuando** se genera, **entonces** recibe un código de 4 caracteres (por ejemplo `7K2P`) que puede dictar o compartir.
-- **CA-27.2** · **Dado** el código, **cuando** su mamá lo ingresa por voz o texto, **entonces** se une a la sala y ve la misma receta.
-- **CA-27.3** · **Dado** el modo "juntos" (`sincronizado`), **cuando** el anfitrión avanza de paso, **entonces** todos avanzan; en modo "a mi ritmo" (`libre`) cada participante avanza por separado.
+- **CA-27.1** · **Dado** que Diego adaptó la "Ocopa arequipeña" (REC-008) sin maní y eligió el alias «Dieguito», **cuando** toca "Publicar en la Comunidad" o dice "publica mi receta" y confirma la vista previa, **entonces** la publicación aparece en la Comunidad con su alias, el nombre del plato y la lista de cambios.
+- **CA-27.2** · **Dado** que Diego no marcó "mostrar motivos", **cuando** se publica, **entonces** la publicación no contiene su nombre real, su alergia ni el motivo de salud de los cambios: solo el ingrediente original y su reemplazo.
+- **CA-27.3** · **Dado** que el usuario entra a la Comunidad, **cuando** la pantalla carga, **entonces** ve primero las publicaciones más recientes, cada una con el plato, el alias, la fecha y la cantidad de comentarios y aplausos, y el lector de pantalla las anuncia como una lista.
 
-#### HU-28 · Ver en qué paso va cada participante
-**Cubre:** RF-35, RF-36, RNF-09 · **Prioridad:** Alta · **Stakeholders:** S09 · **Actividad:** A8
+#### HU-28 · Cocinar y conversar sobre una receta que compartió otra persona
+**Cubre:** RF-35, RF-36, RF-37, RNF-09 · **Prioridad:** Alta · **Stakeholders:** S03, S09 · **Actividad:** A8
 
-> **Como** co-cocinero remoto, **quiero** ver el avatar de cada participante con su número de paso y volver a la sala si se corta la conexión, **para** esperarlo o ayudarlo.
+> **Como** co-cocinero a distancia, **quiero** abrir la receta que compartió otra persona y comentarle cómo me fue, **para** cocinar lo mismo aunque no estemos a la misma hora.
 
-- **CA-28.1** · **Dado** una sala en modo `libre`, **cuando** un participante cambia de paso, **entonces** su avatar muestra el nuevo número de paso en la vista de los demás.
-- **CA-28.2 (RNF-09)** · **Dado** una sala de **hasta 4 participantes**, **cuando** alguien cambia de paso, **entonces** el cambio es visible a los demás en **≤ 1 s (percentil 95)**.
-- **CA-28.3 (RNF-09)** · **Dado** que un participante pierde la conexión, **cuando** se reconecta, **entonces** se **resincroniza en ≤ 5 s** con el paso y los temporizadores de la sala, y su avatar pasa de "desconectado" a "conectado".
+- **CA-28.1** · **Dado** que Rosa (su esposo es intolerante a la lactosa) abre una receta publicada que contiene leche, **cuando** la abre, **entonces** pasa por su propio validador de alérgenos y queda bloqueada con la advertencia hasta que confirme explícitamente, igual que en CA-06.2.
+- **CA-28.2 (RNF-09)** · **Dado** dos teléfonos con la Comunidad abierta, **cuando** uno publica un comentario escrito o dictado por voz, **entonces** el comentario aparece en el otro en **≤ 5 s (percentil 95)**.
+- **CA-28.3 (RNF-09)** · **Dado** que el usuario comenta sin conexión, **cuando** vuelve la red, **entonces** el comentario se envía en **≤ 10 s, una sola vez**, y su estado pasa de "pendiente" a "publicado".
 
-#### HU-29 · Compartir la receta adaptada y el logro con la sala
-**Cubre:** RF-37 · **Prioridad:** Media · **Stakeholders:** S09 · **Actividad:** A8, A9
+#### HU-29 · Compartir mi logro y celebrar con otros
+**Cubre:** RF-37, RF-36 · **Prioridad:** Media · **Stakeholders:** S01, S09 · **Actividad:** A8, A9
 
-> **Como** participante de una sala, **quiero** compartir mi receta adaptada y mi plato terminado, **para** que los demás cocinen la misma versión y celebremos juntos.
+> **Como** cocinero, **quiero** compartir mi plato terminado y recibir aplausos, **para** sentir que celebro con otros aunque cocine solo.
 
-- **CA-29.1** · **Dado** que Diego adaptó la receta sin huevo, **cuando** elige "compartir con la sala", **entonces** los demás participantes pueden usar esa versión adaptada (pasando por su propio validador de alérgenos).
-- **CA-29.2** · **Dado** que un participante termina, **cuando** comparte su logro, **entonces** los demás ven una notificación con el nombre del plato.
+- **CA-29.1** · **Dado** que el usuario terminó "Ají de gallina" (REC-001), **cuando** elige "Compartir mi logro" en la celebración (por toque o diciendo "comparte mi logro"), **entonces** la Comunidad muestra el plato, la valoración y el alias, sin datos de salud.
+- **CA-29.2** · **Dado** una publicación de otra persona, **cuando** el usuario aplaude por toque, por voz ("aplaude") o con el pulgar arriba, **entonces** el contador sube una vez y el autor ve el aplauso la próxima vez que entra a la Comunidad.
 
 ---
 
@@ -391,7 +391,7 @@
 
 > **Como** equipo de desarrollo, **quiero** un protocolo de prueba que mida todas las latencias y tasas de acierto, **para** demostrar que el sistema cumple los requerimientos no funcionales.
 
-- **CA-37.1** · **Dado** el protocolo de prueba, **cuando** se ejecuta con los 4 perfiles de `datos/perfiles.json` y las recetas de `datos/recetas.json`, **entonces** genera un informe con: latencia de voz (p95), latencia de gestos y cuadros/s, latencia del LLM (p90 remoto y local), aciertos de voz por nivel de ruido, aciertos de gestos y falsos positivos, detección de alérgenos, latencia de sincronización de salas (p95) y deriva de temporizadores.
+- **CA-37.1** · **Dado** el protocolo de prueba, **cuando** se ejecuta con los 4 perfiles de `datos/perfiles.json` y las recetas de `datos/recetas.json`, **entonces** genera un informe con: latencia de voz (p95), latencia de gestos y cuadros/s, latencia del LLM (p90 remoto y local), aciertos de voz por nivel de ruido, aciertos de gestos y falsos positivos, detección de alérgenos, latencia de publicación en la Comunidad (p95) y deriva de temporizadores.
 - **CA-37.2** · **Dado** el informe, **cuando** alguna métrica no cumple su umbral, **entonces** el requerimiento se marca "No cumple" en la matriz de trazabilidad con el valor medido.
 
 ---
@@ -418,8 +418,8 @@
 | RF-03 | HU-03 | RF-18 | HU-13 | RF-33 | HU-27 |
 | RF-04 | HU-04 | RF-19 | HU-14 | RF-34 | HU-27 |
 | RF-05 | HU-04 | RF-20 | HU-15 | RF-35 | HU-28 |
-| RF-06 | HU-05 | RF-21 | HU-16 | RF-36 | HU-28 |
-| RF-07 | HU-06 | RF-22 | HU-17 | RF-37 | HU-29 |
+| RF-06 | HU-05 | RF-21 | HU-16 | RF-36 | HU-28, HU-29 |
+| RF-07 | HU-06 | RF-22 | HU-17 | RF-37 | HU-28, HU-29 |
 | RF-08 | HU-07 | RF-23 | HU-18 | RF-38 | HU-30 |
 | RF-09 | HU-08 | RF-24 | HU-18, HU-21 | RF-39 | HU-31 |
 | RF-10 | HU-08, HU-35 | RF-25 | HU-21, HU-22 | RF-40 | HU-32 |
@@ -450,4 +450,4 @@ Ninguno: los 44 RF y los 18 RNF tienen al menos una historia, y cada RNF tiene u
 ### Observaciones para la matriz (Integrante 2)
 
 - **RF-04 y RNF-06:** [`datos/recetas.json`](../datos/recetas.json) tiene las 10 recetas de ejemplo que piden. Se agregaron la ocopa (REC-008, con maní, para probar el perfil de Diego), el ceviche (REC-009, con pescado) y el arroz chaufa (REC-010, con soya y de nivel avanzado), para que el conjunto de prueba de alérgenos cubra más categorías.
-- **RF-34:** "juntos" y "a mi ritmo" se corresponden con los valores `sincronizado` y `libre` del campo `modo` de la sala.
+- **RF-33 a RF-37 y RNF-09:** desde el 16/11/2026 describen la Comunidad asíncrona, no las salas en tiempo real. El bloque `salas_ejemplo` de [`datos/perfiles.json`](../datos/perfiles.json) se conserva del diseño original y ya no se usa.
