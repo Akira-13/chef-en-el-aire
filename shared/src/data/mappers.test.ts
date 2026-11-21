@@ -70,4 +70,63 @@ describe('perfiles', () => {
     };
     expect(toRawProfile(toProfile(raw))).toEqual(raw);
   });
+
+  it('conserva el alias, el origen de la emoción y el detalle del origen (RNF-11, RF-42)', () => {
+    const base = profileBook.perfiles[1]!;
+    const raw: RawProfile = {
+      ...base,
+      aprendido: {
+        ...base.aprendido,
+        origenes: [
+          {
+            clave: 'lastFeeling',
+            evento: 'stepRepeated',
+            fecha: '2026-11-16',
+            detalle: 'repetiste el paso 4 tres veces',
+          },
+        ],
+      },
+      emocional: {
+        ...base.emocional,
+        ultima_emocion: {
+          emocion: 'confused',
+          fecha: '2026-11-16',
+          origen: 'inferida',
+          fecha_hora: '2026-11-16T15:30:00.000Z',
+        },
+      },
+      comunidad: { alias: 'CocineroDelSur' },
+    };
+    const profile = toProfile(raw);
+    expect(profile.community).toEqual({ alias: 'CocineroDelSur' });
+    expect(profile.emotional.lastFeeling).toEqual({
+      feeling: 'confused',
+      date: '2026-11-16',
+      source: 'inferred',
+      at: '2026-11-16T15:30:00.000Z',
+    });
+    expect(profile.learned.origins?.[0]?.detail).toBe('repetiste el paso 4 tres veces');
+    expect(toRawProfile(profile)).toEqual(raw);
+  });
+
+  it('no agrega los campos opcionales nuevos si el perfil no los tiene (RNF-11)', () => {
+    const base = profileBook.perfiles[0]!;
+    const raw: RawProfile = {
+      ...base,
+      aprendido: {
+        ...base.aprendido,
+        origenes: [{ clave: 'lastFeeling', evento: 'feelingDeclared', fecha: '2026-10-05' }],
+      },
+      emocional: { ...base.emocional, ultima_emocion: { emocion: 'nervous', fecha: '2026-10-05' } },
+    };
+    const profile = toProfile(raw);
+    expect(profile.community).toBeUndefined();
+    expect(Object.keys(profile.emotional.lastFeeling!)).toEqual(['feeling', 'date']);
+    expect(Object.keys(profile.learned.origins![0]!)).toEqual(['key', 'event', 'date']);
+
+    const exported = toRawProfile(profile);
+    expect(exported).not.toHaveProperty('comunidad');
+    expect(Object.keys(exported.emocional.ultima_emocion!)).toEqual(['emocion', 'fecha']);
+    expect(Object.keys(exported.aprendido.origenes![0]!)).toEqual(['clave', 'evento', 'fecha']);
+  });
 });

@@ -1,5 +1,6 @@
 // Pantalla de perfil: elegir quién cocina, ajustar la accesibilidad, la despensa, revisar lo
-// aprendido y el historial, y exportar o borrar los datos (RF-25, RF-28, RF-30, RNF-11).
+// aprendido y el historial, elegir nivel, tono y alias, y exportar o borrar los datos (RF-25, RF-28,
+// RF-30, RF-33, RF-41, RNF-11).
 
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -8,7 +9,14 @@ import { enterScreen } from '../core/commandContext';
 import { output, profileService, useProfile } from '../core/services';
 import { Card, IconButton, Screen } from '../ui';
 import { AccessibilitySettings, INPUT_LABELS } from './AccessibilitySettings';
-import { DataControls, LearnedSection, MyDishes, PantryEditor } from './ProfileSections';
+import {
+  AssistantSettings,
+  CommunitySection,
+  DataControls,
+  LearnedSection,
+  MyDishes,
+  PantryEditor,
+} from './ProfileSections';
 import styles from './profile.module.css';
 
 function PersonaPicker() {
@@ -95,9 +103,11 @@ export function ProfileScreen() {
       <PersonaPicker />
       <PantryEditor />
       <AccessibilitySettings />
+      <AssistantSettings />
       <Restrictions />
       <LearnedSection />
       <MyDishes />
+      <CommunitySection />
       <DataControls />
     </Screen>
   );

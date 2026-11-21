@@ -11,7 +11,13 @@ import {
 import type { UsageEvent } from '../core/contracts';
 import { proposeSubstitutions, substituteFor } from '../personalization';
 import { describeLearned, forgetLearned, learnedKey } from './learned';
-import { applyUsageEvent, BRIEF_READING_NOTICE, createLearningSession } from './learning';
+import { currentFeeling } from './feeling';
+import {
+  applyUsageEvent,
+  BRIEF_READING_NOTICE,
+  createLearningSession,
+  INFERRED_FEELING_NOTICE,
+} from './learning';
 
 const profiles = (rawProfiles as unknown as RawProfileBook).perfiles.map(toProfile);
 const recipes = toRecipes(rawRecipes as unknown as RawRecipeBook);
@@ -107,9 +113,15 @@ describe('aprendizaje con el uso', () => {
     expect(profile.learned.difficultSteps).toEqual([{ recipeId: 'REC-001', stepNumber: 4 }]);
   });
 
-  it('registra la emoción declarada (CA-24.3)', () => {
+  it('registra la emoción declarada con su origen y hora (CA-24.3)', () => {
     const { profile } = run(carmen, [{ type: 'feelingDeclared', feeling: 'nervous' }]);
-    expect(profile.emotional.lastFeeling).toEqual({ feeling: 'nervous', date: DATE });
+    expect(profile.emotional.lastFeeling).toEqual({
+      feeling: 'nervous',
+      date: DATE,
+      source: 'declared',
+      at: expect.any(String),
+    });
+    expect(Number.isNaN(Date.parse(profile.emotional.lastFeeling!.at!))).toBe(false);
   });
 
   it('lo explícito nunca se sobrescribe', () => {
@@ -167,5 +179,170 @@ describe('lo que aprendí de ti', () => {
   it('borrar un gusto lo quita de las sugerencias', () => {
     const profile = forgetLearned(carmen, learnedKey.like('sopas'));
     expect(profile.learned.likes).toEqual(['arroz con pollo']);
+  });
+});
+
+describe('emoción inferida', () => {
+  const START = new Date('2026-11-16T15:00:00.000Z');
+  const repeat: UsageEvent = { type: 'stepRepeated', recipeId: 'REC-001', stepNumber: 4 };
+  const failed: UsageEvent = { type: 'commandFailed', channel: 'voice' };
+  const declared: UsageEvent = { type: 'feelingDeclared', feeling: 'nervous' };
+
+  /** Aplica cada evento a los `seconds` indicados desde START. */
+  function runAt(profile: Profile, events: [UsageEvent, number][]) {
+    const session = createLearningSession();
+    const notices: string[] = [];
+    let current = profile;
+    for (const [event, seconds] of events) {
+      const now = new Date(START.getTime() + seconds * 1000);
+      const result = applyUsageEvent(current, event, DATE, session, now);
+      current = result.profile;
+      if (result.notice) notices.push(result.notice);
+    }
+    return { profile: current, notices };
+  }
+
+  it('repetir 3 veces un paso infiere confusión y lo avisa (CA-24.3)', () => {
+    const { profile, notices } = runAt(carmen, [
+      [repeat, 0],
+      [repeat, 10],
+      [repeat, 20],
+      [repeat, 30],
+    ]);
+    expect(profile.emotional.lastFeeling).toEqual({
+      feeling: 'confused',
+      date: DATE,
+      source: 'inferred',
+      at: '2026-11-16T15:00:20.000Z',
+    });
+    expect(notices).toEqual([INFERRED_FEELING_NOTICE]);
+    expect(profile.learned.difficultSteps).toEqual([{ recipeId: 'REC-001', stepNumber: 4 }]);
+    expect(profile.learned.origins?.find((o) => o.key === learnedKey.lastFeeling())).toEqual({
+      key: 'lastFeeling',
+      event: 'stepRepeated',
+      date: DATE,
+      detail: 'repetiste el paso 4 tres veces',
+    });
+  });
+
+  it('también infiere si el paso ya era difícil de antes (CA-24.3)', () => {
+    const known: Profile = {
+      ...carmen,
+      learned: { ...carmen.learned, difficultSteps: [{ recipeId: 'REC-001', stepNumber: 4 }] },
+    };
+    const { profile, notices } = runAt(known, [
+      [repeat, 0],
+      [repeat, 10],
+      [repeat, 20],
+    ]);
+    expect(profile.emotional.lastFeeling?.source).toBe('inferred');
+    expect(notices).toEqual([INFERRED_FEELING_NOTICE]);
+    expect(profile.learned.difficultSteps).toHaveLength(1);
+  });
+
+  it('2 órdenes no entendidas en menos de 60 s infieren confusión (RF-42)', () => {
+    const { profile, notices } = runAt(carmen, [
+      [failed, 0],
+      [failed, 59],
+    ]);
+    expect(profile.emotional.lastFeeling).toMatchObject({
+      feeling: 'confused',
+      source: 'inferred',
+    });
+    expect(notices).toEqual([INFERRED_FEELING_NOTICE]);
+    expect(profile.learned.origins?.at(-1)).toMatchObject({
+      event: 'commandFailed',
+      detail: 'no te entendí 2 veces seguidas en menos de un minuto',
+    });
+  });
+
+  it('2 órdenes no entendidas separadas por 60 s o más no infieren nada (RF-42)', () => {
+    const { profile, notices } = runAt(carmen, [
+      [failed, 0],
+      [failed, 60],
+      [failed, 150],
+    ]);
+    expect(profile.emotional.lastFeeling).toBeUndefined();
+    expect(notices).toEqual([]);
+  });
+
+  it('una emoción declarada hace menos de 30 min no se pisa (RF-42)', () => {
+    const { profile, notices } = runAt(carmen, [
+      [declared, 0],
+      [repeat, 60],
+      [repeat, 70],
+      [repeat, 80],
+      [failed, 90],
+      [failed, 100],
+    ]);
+    expect(profile.emotional.lastFeeling).toMatchObject({ feeling: 'nervous', source: 'declared' });
+    expect(notices).toEqual([]);
+    // El paso difícil se registra igual (CA-24.3).
+    expect(profile.learned.difficultSteps).toEqual([{ recipeId: 'REC-001', stepNumber: 4 }]);
+  });
+
+  it('una emoción declarada hace 30 min o más ya no impide inferir (RF-42)', () => {
+    const { profile, notices } = runAt(carmen, [
+      [declared, 0],
+      [failed, 30 * 60],
+      [failed, 30 * 60 + 5],
+    ]);
+    expect(profile.emotional.lastFeeling?.source).toBe('inferred');
+    expect(notices).toEqual([INFERRED_FEELING_NOTICE]);
+  });
+
+  it('una emoción guardada sin hora no está vigente y se puede inferir encima (RF-42)', () => {
+    const old: Profile = {
+      ...carmen,
+      emotional: { ...carmen.emotional, lastFeeling: { feeling: 'happy', date: '2026-10-05' } },
+    };
+    expect(currentFeeling(old, START)).toBeUndefined();
+    const { profile } = runAt(old, [
+      [failed, 0],
+      [failed, 1],
+    ]);
+    expect(profile.emotional.lastFeeling?.source).toBe('inferred');
+  });
+
+  it('no repite el aviso mientras la emoción inferida sigue vigente (RF-42)', () => {
+    const { notices } = runAt(carmen, [
+      [failed, 0],
+      [failed, 5],
+      [failed, 10],
+      [failed, 15],
+      [repeat, 20],
+      [repeat, 25],
+      [repeat, 30],
+    ]);
+    expect(notices).toEqual([INFERRED_FEELING_NOTICE]);
+  });
+
+  it('la emoción vigente dura 30 minutos (CA-33.2)', () => {
+    const { profile } = runAt(carmen, [[declared, 0]]);
+    const at = (minutes: number) => new Date(START.getTime() + minutes * 60 * 1000);
+    expect(currentFeeling(profile, at(29))?.feeling).toBe('nervous');
+    expect(currentFeeling(profile, at(30))).toBeUndefined();
+  });
+
+  it('"Lo que aprendí de ti" dice que la inferí y por qué, y se puede borrar (CA-25.2)', () => {
+    const { profile } = runAt(carmen, [
+      [repeat, 0],
+      [repeat, 10],
+      [repeat, 20],
+    ]);
+    const item = describeLearned(profile).find((i) => i.key === learnedKey.lastFeeling());
+    expect(item?.label).toBe('Lo inferí: te noté con dudas');
+    expect(item?.origin).toBe('repetiste el paso 4 tres veces el 5/10');
+
+    const forgotten = forgetLearned(profile, learnedKey.lastFeeling());
+    expect(forgotten.emotional.lastFeeling).toBeUndefined();
+    expect(forgotten.learned.origins?.some((o) => o.key === learnedKey.lastFeeling())).toBe(false);
+    expect(describeLearned(forgotten).some((i) => i.key === learnedKey.lastFeeling())).toBe(false);
+  });
+
+  it('la declarada se sigue mostrando como dicha por la persona (CA-24.3)', () => {
+    const { profile } = runAt(carmen, [[declared, 0]]);
+    const item = describeLearned(profile).find((i) => i.key === learnedKey.lastFeeling());
+    expect(item?.label).toBe('La última vez dijiste que estabas nervioso o nerviosa');
   });
 });
