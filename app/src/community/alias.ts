@@ -1,10 +1,11 @@
 // Alias público de la Comunidad (RF-33): lo único que se publica de la persona. No puede ser su
 // nombre real.
 
+import { COMMUNITY_LIMITS } from '@chef/shared';
 import { normalizeText } from '../personalization/text';
 
 /** El mismo límite que acepta el servidor de la Comunidad. */
-export const ALIAS_MAX_LENGTH = 30;
+export const ALIAS_MAX_LENGTH = COMMUNITY_LIMITS.aliasMaxLength;
 
 export type AliasValidation = { ok: true; alias: string } | { ok: false; error: string };
 
