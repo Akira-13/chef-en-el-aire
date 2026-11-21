@@ -32,16 +32,26 @@ export interface HelpContent {
   touch: boolean;
 }
 
-export const GESTURE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
+// En la Comunidad, deslizar cambia de publicación y el pulgar arriba (`confirm`) aplaude.
+export const GESTURE_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding', 'community'];
 
 // Pantallas donde corre el reconocimiento de voz. Es la única lista: `InputLayer` enciende el
 // micrófono con ella y la ayuda contextual solo ofrece comandos de voz donde está encendido, para
 // no prometer lo que no funciona. La cámara se queda solo en `GESTURE_SCREENS`, que gasta más.
-export const VOICE_SCREENS: ScreenId[] = ['home', 'recipe', 'cooking', 'celebration', 'onboarding'];
+export const VOICE_SCREENS: ScreenId[] = [
+  'home',
+  'recipe',
+  'cooking',
+  'celebration',
+  'onboarding',
+  'community',
+];
 
+// Solo alimenta la ayuda: no bloquea comandos. Cada pantalla decide qué hace con lo que llega.
+// `help` se agrega al final en `voiceCommands`.
 const VOICE_BY_SCREEN: Record<ScreenId, CommandType[]> = {
-  home: ['search', 'addPantry', 'ask'],
-  recipe: ['substitute', 'ask', 'whereAmI'],
+  home: ['search', 'addPantry', 'ask', 'openCommunity'],
+  recipe: ['substitute', 'setServings', 'share', 'ask', 'whereAmI', 'openCommunity'],
   cooking: [
     'next',
     'previous',
@@ -54,9 +64,10 @@ const VOICE_BY_SCREEN: Record<ScreenId, CommandType[]> = {
     'skip',
     'whereAmI',
   ],
-  celebration: ['rate', 'feeling', 'skip'],
-  profile: ['whereAmI'],
+  celebration: ['rate', 'feeling', 'share', 'skip', 'openCommunity'],
+  profile: ['whereAmI', 'openCommunity'],
   onboarding: ['next', 'previous', 'confirm', 'cancel'],
+  community: ['next', 'previous', 'whereAmI', 'applaud', 'comment'],
 };
 
 export function voiceAllowed(prefs: Pick<HelpPrefs, 'activeInputs' | 'voiceDisabled'>): boolean {
@@ -90,23 +101,55 @@ function gesture(
   return { id, hint: { icon, how, does, command } };
 }
 
+function screenGestures(ctx: CommandContext) {
+  switch (ctx.screen) {
+    case 'celebration':
+      return [
+        gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'rate', 'me gustó'),
+        gesture('pulgar_arriba_confirmar', '👎', 'pulgar abajo', 'rate', 'no me gustó'),
+      ];
+    case 'community':
+      return [
+        gesture(
+          'deslizar_siguiente',
+          '👈',
+          'desliza la mano hacia tu izquierda',
+          'next',
+          'siguiente publicación',
+        ),
+        gesture(
+          'deslizar_anterior',
+          '👉',
+          'desliza la mano hacia tu derecha',
+          'previous',
+          'publicación anterior',
+        ),
+        // El gesto emite `confirm` y la pantalla de la Comunidad lo trata como aplauso.
+        gesture(
+          'pulgar_arriba_confirmar',
+          '👍',
+          'pulgar arriba',
+          'confirm',
+          COMMAND_LABELS.applaud,
+        ),
+      ];
+    default:
+      return [
+        gesture('deslizar_siguiente', '👈', 'desliza la mano hacia tu izquierda', 'next'),
+        gesture('deslizar_anterior', '👉', 'desliza la mano hacia tu derecha', 'previous'),
+        gesture('palma_abierta_pausar', '✋', 'palma abierta sostenida', 'pause'),
+        ctx.alertActive
+          ? gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'dismissAlert')
+          : gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'confirm'),
+      ];
+  }
+}
+
 function gestureHints(ctx: CommandContext, prefs: HelpPrefs): GestureHint[] {
   if (!prefs.activeInputs.includes('gestos') || !GESTURE_SCREENS.includes(ctx.screen)) return [];
-  const all =
-    ctx.screen === 'celebration'
-      ? [
-          gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'rate', 'me gustó'),
-          gesture('pulgar_arriba_confirmar', '👎', 'pulgar abajo', 'rate', 'no me gustó'),
-        ]
-      : [
-          gesture('deslizar_siguiente', '👈', 'desliza la mano hacia tu izquierda', 'next'),
-          gesture('deslizar_anterior', '👉', 'desliza la mano hacia tu derecha', 'previous'),
-          gesture('palma_abierta_pausar', '✋', 'palma abierta sostenida', 'pause'),
-          ctx.alertActive
-            ? gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'dismissAlert')
-            : gesture('pulgar_arriba_confirmar', '👍', 'pulgar arriba', 'confirm'),
-        ];
-  return all.filter(({ id }) => prefs.enabledGestures.includes(id)).map(({ hint }) => hint);
+  return screenGestures(ctx)
+    .filter(({ id }) => prefs.enabledGestures.includes(id))
+    .map(({ hint }) => hint);
 }
 
 export function helpFor(ctx: CommandContext, prefs: HelpPrefs): HelpContent {

@@ -62,7 +62,8 @@ function ChangeLine({ change }: { change: RecipeChange }) {
   );
 }
 
-export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
+// `servings` son las porciones pedidas; si falta, el asistente conserva las de la receta (CA-04.2).
+export function AdaptationPanel({ recipe, servings }: { recipe: Recipe; servings?: number }) {
   const profile = useProfile();
   const { isAdapted } = useRecipe(recipe.id);
   const [state, setState] = useState<PanelState>({ phase: 'idle' });
@@ -89,6 +90,7 @@ export function AdaptationPanel({ recipe }: { recipe: Recipe }) {
       constraints,
       pantry: profile.pantry,
       skillLevel: profile.skillLevel,
+      ...(servings && { servings }),
     });
     if (response.status === 'unavailable') {
       output.announce({ text: response.message, kind: 'info' });
