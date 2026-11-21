@@ -1,0 +1,182 @@
+/* Comunidad: lista de publicaciones, vista previa de lo que se publica y alias (RF-33 a RF-37).
+   Desde 360 px, con los tokens del tema y objetivos táctiles de al menos 44 px. */
+
+.muted {
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--color-substitute);
+  border-radius: 8px;
+  background: var(--color-chip);
+  color: var(--color-text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions > * {
+  flex: 1 1 140px;
+}
+
+/* ---------- Lista ---------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 3px solid transparent;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  scroll-margin-top: 72px;
+}
+
+.post[aria-current='true'] {
+  border-color: var(--color-primary);
+}
+
+.postHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.postTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.changes,
+.comments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.change {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--color-chip);
+}
+
+.reason {
+  display: block;
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.comment {
+  padding-left: 10px;
+  border-left: 3px solid var(--color-chip);
+}
+
+.commentAlias {
+  font-weight: 700;
+}
+
+.stat {
+  font-weight: 600;
+}
+
+/* ---------- Formularios ---------- */
+
+.aliasForm,
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.textInput {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 2px solid var(--color-chip);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 400;
+}
+
+.textInput::placeholder {
+  color: var(--color-text-2);
+  opacity: 1;
+}
+
+textarea.textInput {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-min);
+  font-weight: 600;
+}
+
+.checkbox input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--color-primary);
+}
+
+/* ---------- Vista previa ---------- */
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.previewTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
