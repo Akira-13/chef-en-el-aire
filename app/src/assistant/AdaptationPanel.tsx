@@ -16,6 +16,7 @@ import {
   type RecipeChange,
 } from '@chef/shared';
 import { assistantClient } from '../core/assistantClient';
+import { PublishRecipeButton } from '../community';
 import { useCommands } from '../core/commandBus';
 import { clearAdaptedRecipe, setAdaptedRecipe, useRecipe } from '../core/recipes';
 import { output, useProfile } from '../core/services';
@@ -67,6 +68,8 @@ export function AdaptationPanel({ recipe, servings }: { recipe: Recipe; servings
   const profile = useProfile();
   const { isAdapted } = useRecipe(recipe.id);
   const [state, setState] = useState<PanelState>({ phase: 'idle' });
+  // La adaptación que la persona ya eligió usar: es la que puede publicar en la Comunidad.
+  const [applied, setApplied] = useState<Proposal | null>(null);
 
   const blocked =
     state.phase === 'result' && state.response.status === 'blocked' ? state.response : null;
@@ -130,12 +133,14 @@ export function AdaptationPanel({ recipe, servings }: { recipe: Recipe; servings
 
   function applyAdapted(response: Proposal) {
     setAdaptedRecipe(response.adapted);
+    setApplied(response);
     output.announce({ text: 'Usaré la receta adaptada.', kind: 'success' });
     setState({ phase: 'idle' });
   }
 
   function applyOriginal() {
     clearAdaptedRecipe(recipe.id);
+    setApplied(null);
     output.announce({ text: 'Usaré la receta original.', kind: 'info' });
     setState({ phase: 'idle' });
   }
@@ -173,6 +178,11 @@ export function AdaptationPanel({ recipe, servings }: { recipe: Recipe; servings
             Usar original
           </Button>
         </>
+      )}
+
+      {/* La receta conserva el id original: el servidor lo exige al publicar (RF-34). */}
+      {!result && applied && (
+        <PublishRecipeButton recipe={applied.adapted} changes={applied.changes} />
       )}
 
       {result && (
@@ -218,6 +228,10 @@ export function AdaptationPanel({ recipe, servings }: { recipe: Recipe; servings
               Usar original
             </Button>
           </div>
+
+          {result.status === 'ok' && (
+            <PublishRecipeButton recipe={result.adapted} changes={result.changes} />
+          )}
         </>
       )}
     </section>

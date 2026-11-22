@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   setAdaptedRecipe: vi.fn(),
   clearAdaptedRecipe: vi.fn(),
   allergies: ['mani'],
+  publishButton: vi.fn(),
+  isAdapted: false,
 }));
 
 vi.mock('../core/assistantClient', () => ({ assistantClient: { adapt: mocks.adapt } }));
@@ -33,7 +35,14 @@ vi.mock('../core/services', () => ({
 vi.mock('../core/recipes', () => ({
   setAdaptedRecipe: mocks.setAdaptedRecipe,
   clearAdaptedRecipe: mocks.clearAdaptedRecipe,
-  useRecipe: () => ({ isAdapted: false }),
+  useRecipe: () => ({ isAdapted: mocks.isAdapted }),
+}));
+
+vi.mock('../community', () => ({
+  PublishRecipeButton: (props: { recipe: Recipe; changes: unknown[] }) => {
+    mocks.publishButton(props);
+    return <button type="button">Publicar en la Comunidad</button>;
+  },
 }));
 
 import { AdaptationPanel } from './AdaptationPanel';
@@ -76,6 +85,7 @@ let root: Root;
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.allergies = ['mani'];
+  mocks.isAdapted = false;
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -279,5 +289,51 @@ describe('AdaptationPanel sin asistente: sustituciones del recetario', () => {
     expect(mocks.setAdaptedRecipe).not.toHaveBeenCalled();
     await act(async () => void commandBus.emit({ type: 'confirm' }, 'voice'));
     expect(mocks.setAdaptedRecipe).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AdaptationPanel publica la receta adaptada (CA-27.1)', () => {
+  it('con la adaptación mostrada ofrece publicarla con sus cambios y el id original', async () => {
+    await request(okResponse);
+    expect(button('Publicar en la Comunidad')).toBeDefined();
+    expect(mocks.publishButton).toHaveBeenLastCalledWith({ recipe: adapted, changes });
+    expect(mocks.publishButton.mock.calls[0][0].recipe.id).toBe(original.id);
+  });
+
+  it('tras elegir "Usar adaptada" el botón sigue disponible', async () => {
+    await request(okResponse);
+    await act(async () => button('Usar adaptada')!.click());
+    expect(button('Publicar en la Comunidad')).toBeDefined();
+  });
+
+  it('tras confirmar una advertencia el botón aparece (CA-06.2)', async () => {
+    await request(blockedResponse);
+    await act(async () => button('Confirmo, usar igual')!.click());
+    expect(button('Publicar en la Comunidad')).toBeDefined();
+  });
+
+  it('con una advertencia sin confirmar no se puede publicar (CA-06.2)', async () => {
+    await request(blockedResponse);
+    expect(button('Publicar en la Comunidad')).toBeUndefined();
+  });
+
+  it('al usar la receta original no se ofrece publicar', async () => {
+    await request(okResponse);
+    await act(async () => button('Usar original')!.click());
+    expect(button('Publicar en la Comunidad')).toBeUndefined();
+  });
+
+  it('tras usar la adaptada y luego la original ya no se ofrece publicar', async () => {
+    await request(okResponse);
+    await act(async () => button('Usar adaptada')!.click());
+    mocks.isAdapted = true;
+    await render();
+    await act(async () => button('Usar original')!.click());
+    expect(button('Publicar en la Comunidad')).toBeUndefined();
+  });
+
+  it('sin haber adaptado nada no hay botón', async () => {
+    await render();
+    expect(button('Publicar en la Comunidad')).toBeUndefined();
   });
 });
