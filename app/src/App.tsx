@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router';
+import { CommunityScreen } from './community';
 import { TimerHost } from './cooking/TimerHost';
 import { InputLayer } from './input';
 import { OutputLayer } from './output/OutputLayer';
@@ -28,6 +29,7 @@ export function App() {
         <Route path="/receta/:recipeId" element={<RecipeScreen />} />
         <Route path="/cocinar/:recipeId" element={<CookingScreen />} />
         <Route path="/listo/:recipeId" element={<CelebrationScreen />} />
+        <Route path="/comunidad" element={<CommunityScreen />} />
         <Route path="/perfil" element={<ProfileScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
