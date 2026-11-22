@@ -189,6 +189,7 @@ export function CommunityScreen(): ReactElement {
   const selected = listed[index];
   const applauded = new Set(getApplaudedPostIds());
   const own = new Set(getOwnPostIds());
+  const confirmItem = listed.find((l) => l.post.id === confirmDeleteId);
 
   function select(target: number, cue?: 'next' | 'previous') {
     const item = listed[target];
@@ -231,13 +232,21 @@ export function CommunityScreen(): ReactElement {
       output.announce({ text: 'Elige una publicación ya enviada para comentar.', kind: 'info' });
       return;
     }
+    // El servidor rechaza un comentario vacío: se avisa antes de encolarlo.
+    const trimmed = text.trim().slice(0, COMMUNITY_LIMITS.textMaxLength);
+    if (!trimmed) {
+      output.announce({
+        text: 'No escuché tu comentario. Di "comenta" y lo que quieras escribir.',
+        kind: 'info',
+      });
+      return;
+    }
     if (!alias) {
       setSelectedId(item.post.id);
       setCommentingId(item.post.id);
       output.announce({ text: 'Para comentar, primero escribe tu alias.', kind: 'info' });
       return;
     }
-    const trimmed = text.trim().slice(0, COMMUNITY_LIMITS.textMaxLength);
     announceResult(await commentOn(item.post.id, alias, trimmed), 'Publiqué tu comentario.');
     void refresh();
   }
@@ -288,10 +297,17 @@ export function CommunityScreen(): ReactElement {
           kind: 'info',
         });
         break;
-      // El pulgar arriba emite `confirm`; en la Comunidad equivale a aplaudir (RF-36).
       case 'applaud':
-      case 'confirm':
         void applaud(selected);
+        break;
+      // El pulgar arriba emite `confirm`: con el diálogo de borrar abierto lo confirma; si no,
+      // en la Comunidad equivale a aplaudir (RF-36).
+      case 'confirm':
+        if (confirmItem) void remove(confirmItem);
+        else void applaud(selected);
+        break;
+      case 'cancel':
+        if (confirmItem) setConfirmDeleteId(undefined);
         break;
       case 'comment':
         void commentByVoice(selected, command.text);
