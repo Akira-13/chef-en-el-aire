@@ -4,6 +4,7 @@
 
 import type { Command, CommandEvent } from '@chef/shared';
 import { normalizeSpeech } from '../voice/normalize';
+import { seededRandom, shuffle } from './seeded';
 
 /** Tiempo que se espera una respuesta antes de darla por no reconocida. */
 export const RESPONSE_TIMEOUT_MS = 5000;
@@ -38,27 +39,6 @@ export const ESSENTIAL_COMMANDS: readonly EssentialCommand[] = [
     matches: (c) => c.type === 'substitute' && normalizeSpeech(c.ingredient).includes('leche'),
   },
 ];
-
-/** Generador pseudoaleatorio con semilla (mulberry32): la misma semilla da el mismo orden. */
-export function seededRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffle<T>(items: readonly T[], random: () => number): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [result[i], result[j]] = [result[j] as T, result[i] as T];
-  }
-  return result;
-}
 
 /**
  * Lista de pedidos de un participante: cada comando esencial las mismas veces y, si sobran

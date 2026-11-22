@@ -2,6 +2,7 @@
 // actual, y publica lo reconocido en el bus de comandos. Se monta una sola vez.
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { COMMAND_LABELS, type Command, type ScreenId } from '@chef/shared';
 import { commandBus, useCommands } from '../core/commandBus';
 import { getCommandContext, useCommandContext } from '../core/commandContext';
@@ -54,8 +55,12 @@ export function InputLayer() {
   const voiceAllowed = isVoiceAllowed(prefs);
   const voiceWanted = voiceAllowed && voiceEnabled && VOICE_SCREENS.includes(screen);
   const voiceRuns = voiceWanted && online;
-  const gesturesAllowed = prefs.activeInputs.includes('gestos');
-  const gesturesRun = gesturesAllowed && !cameraUserOff && GESTURE_SCREENS.includes(screen);
+  // Con ?prueba=gestos la cámara corre en el Inicio, donde se mide, aunque el perfil no la use.
+  const [searchParams] = useSearchParams();
+  const gestureTrial = searchParams.get('prueba') === 'gestos';
+  const gesturesAllowed = prefs.activeInputs.includes('gestos') || gestureTrial;
+  const gesturesRun =
+    gesturesAllowed && !cameraUserOff && (GESTURE_SCREENS.includes(screen) || gestureTrial);
 
   // El micrófono se pide al llegar a una pantalla con voz; si ya tenía permiso, se activa sin
   // preguntar. Si el usuario lo rechaza, se avisa una vez y el botón permite reintentar.
