@@ -121,3 +121,7 @@
 .table td:not(:first-child) {
   text-align: right;
 }
+
+.tableWrap {
+  overflow-x: auto;
+}

@@ -151,7 +151,7 @@ Todos los archivos se nombran con el **código del participante** y se guardan e
 | `P0n-metricas.json` | En la app: **Perfil → «Exportar métricas»**. Se descarga como `metricas-chef-en-el-aire.json`; hay que renombrarlo |
 | `P0n-prueba-voz.json` | Con `?prueba=voz` (en el Inicio): al terminar, botón **Exportar**, con el código del participante escrito |
 | `P0n-prueba-gestos.json` | Con `?prueba=gestos` (en el Inicio): botón **Exportar**, con el código del participante escrito |
-| `P0n-resumen-metricas.json` y `.md` | Con `?prueba=metricas`: **Exportar resumen** (se agrega al terminar T3 de la app) |
+| `P0n-resumen-metricas.json` y `.md` | Con `?prueba=metricas`: **Exportar resumen** (JSON y Markdown), con el código del participante escrito |
 | Hoja de observación y cuestionarios | Foto o archivo con el código, sin nombres |
 
 **Reglas de uso de los modos prueba**
@@ -159,7 +159,7 @@ Todos los archivos se nombran con el **código del participante** y se guardan e
 - **Conexión.** La voz necesita internet; la cámara, permiso y buena luz.
 - **Código del participante.** Se escribe como `P01` en el panel. Cualquier otro texto se descarta, para que no llegue un nombre al archivo.
 - **No se guarda audio ni video:** solo el comando reconocido y el resultado.
-- **Antes de cada sesión,** limpiar los datos del sitio en el teléfono o usar un perfil de navegador nuevo, para que las métricas no se mezclen con las del participante anterior.
+- **Antes de cada sesión,** abrir `?prueba=metricas` y usar **Borrar muestras** (pide confirmar), para que las métricas no se mezclen con las del participante anterior. Exportar antes de borrar.
 
 ## 8. Análisis (01/12)
 
