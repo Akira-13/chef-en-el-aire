@@ -1,12 +1,15 @@
 // Datos de la Comunidad guardados en el dispositivo (RNF-11): la clave del dispositivo, los ids
-// de lo propio, los aplausos dados y la cola sin conexión. Módulo puro, sin core/services, para
+// de lo propio, los aplausos dados y vistos y la cola sin conexión. Módulo puro, sin core/services, para
 // que "Borrar mis datos" del perfil pueda limpiarlo.
+
+import type { SeenApplause } from './applause';
 
 export const COMMUNITY_STORAGE_KEYS = {
   deviceKey: 'chef.community.deviceKey',
   ownPosts: 'chef.community.ownPosts',
   ownComments: 'chef.community.ownComments',
   applauded: 'chef.community.applauded',
+  seenApplause: 'chef.community.seenApplause',
   queue: 'chef.community.queue',
 } as const;
 
@@ -84,6 +87,25 @@ export function getApplaudedPostIds(): string[] {
 
 export function addApplaudedPostId(id: string): void {
   addId(COMMUNITY_STORAGE_KEYS.applauded, id);
+}
+
+/** Aplausos ajenos ya vistos en cada publicación propia (CA-29.2). Un dato dañado se toma como vacío. */
+export function getSeenApplause(): SeenApplause {
+  try {
+    const parsed: unknown = JSON.parse(readItem(COMMUNITY_STORAGE_KEYS.seenApplause) ?? '{}');
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, number] => typeof entry[1] === 'number',
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+export function setSeenApplause(seen: SeenApplause): void {
+  writeItem(COMMUNITY_STORAGE_KEYS.seenApplause, JSON.stringify(seen));
 }
 
 /** Borra todo lo de la Comunidad guardado en el dispositivo (CA-25.3). */

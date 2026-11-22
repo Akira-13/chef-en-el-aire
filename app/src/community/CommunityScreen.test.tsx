@@ -15,7 +15,7 @@ import { output, profileService } from '../core/services';
 import { createFakeCommunityServer, type FakeCommunityServer } from './fakeServer';
 import { CommunityScreen } from './index';
 import { publishPost } from './outbox';
-import { clearCommunityData } from './storage';
+import { addOwnPostId, clearCommunityData } from './storage';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -244,6 +244,70 @@ describe('CommunityScreen', () => {
     await poll();
     expect(samples('community.visible')).toHaveLength(1);
     expect(cards()[0]!.textContent).toContain('Causa');
+  });
+
+  it('al entrar avisa de los aplausos nuevos en lo propio, una sola vez (CA-29.2)', async () => {
+    addOwnPostId('PUB-0001');
+    server.posts.find((p) => p.id === 'PUB-0001')!.applause = 3;
+    await render();
+    const text = 'Tu publicación «Ají de gallina» recibió 3 aplausos nuevos.';
+    expect(container.textContent).toContain(text);
+    expect(announce).toHaveBeenCalledWith(expect.objectContaining({ text }));
+
+    // La próxima vez que entra ya los vio; solo avisa lo que llegó después.
+    act(() => root.unmount());
+    announce.mockClear();
+    root = createRoot(container);
+    server.posts.find((p) => p.id === 'PUB-0001')!.applause = 4;
+    await render();
+    expect(container.textContent).toContain('recibió 1 aplauso nuevo.');
+
+    act(() => root.unmount());
+    announce.mockClear();
+    root = createRoot(container);
+    await render();
+    expect(container.textContent).not.toContain('aplauso nuevo');
+    expect(announce).not.toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('aplauso') }),
+    );
+  });
+
+  it('no avisa de aplausos en publicaciones de otras personas (CA-29.2)', async () => {
+    await render();
+    expect(container.textContent).not.toContain('aplausos nuevos');
+  });
+
+  it('marca la receta que choca con el perfil y la que no, sin ocultar ninguna (RF-35)', async () => {
+    await profileService.selectProfile('USR-001');
+    await render();
+    const recipeCard = cards()[1]!;
+    expect(recipeCard.textContent).toContain('⚠️ Contiene leche (para esposo)');
+    expect(cards()).toHaveLength(2);
+    // Los logros no llevan marca.
+    expect(cards()[0]!.textContent).not.toContain('Contiene');
+    expect(cards()[0]!.textContent).not.toContain('Sin alérgenos');
+
+    act(() => root.unmount());
+    root = createRoot(container);
+    await profileService.selectProfile('USR-004');
+    await render();
+    expect(cards()[1]!.textContent).toContain('✅ Sin alérgenos de tu perfil');
+  });
+
+  it('"dónde estoy" lee la revisión de la receta con el perfil (RF-35)', async () => {
+    await profileService.selectProfile('USR-001');
+    await render();
+    await emit({ type: 'next' }, 'gesture');
+    expect(announce).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('Contiene leche (para esposo)') }),
+    );
+    announce.mockClear();
+    await emit({ type: 'whereAmI' });
+    expect(announce).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringMatching(/Ají de gallina.*Contiene leche \(para esposo\)\./),
+      }),
+    );
   });
 
   it('"Cocinar esta receta" la abre como adaptada para que pase por el validador (RF-35)', async () => {
