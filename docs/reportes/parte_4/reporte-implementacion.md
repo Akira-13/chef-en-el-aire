@@ -12,7 +12,7 @@ Continúa el [reporte de la parte 3](../parte_3/reporte-implementacion.md). Pres
 |---|---|---|
 | Pruebas Vitest | 49 archivos, unos 417 casos | **59 archivos, 793 casos** (`shared` 141, `server` 153, `app` 499) |
 | `npm run check` | en verde | en verde: formato, tipos, pruebas y build |
-| Multiusuario (RF-33 a RF-37, RNF-09) | ❌ sin implementar | 🟡 implementado en servidor y cliente; **falta medir RNF-09 con dos teléfonos** |
+| Multiusuario (RF-33 a RF-37, RNF-09) | ❌ sin implementar | ✅ implementado en servidor y cliente; 🟡 RNF-09 medido con dos teléfonos el 22/11/2026 (publicación y comentario visibles en 2 s, límite 5 s); **falta registrar el tiempo del envío de la cola sin conexión (límite 10 s)** |
 | Emoción inferida (RF-42) | 🟡 solo declarada | ✅ inferida del uso, con tono del asistente; 🟡 falta la lectura más lenta |
 | Nivel y tono editables (RF-41) | 🟡 solo eligiendo otro perfil | ✅ editables en el Perfil |
 
@@ -60,8 +60,8 @@ Código en `app/src/profile/`, `app/src/personalization/` y `app/src/community/`
 | HU | Req. | Estado | Evidencia |
 |---|---|---|---|
 | HU-27 Publicar mi receta adaptada | RF-33, RF-34 | ✅ | [`PublishRecipeButton`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/PublishRecipeButton.tsx#L26): alias, vista previa de lo que se publicará, «Mostrar motivos» desmarcado por defecto y aviso «Revisa que el texto no mencione tu salud» (CA-27.1, CA-27.2); montado en el panel de adaptación · [`toCommunityChanges`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/changes.ts#L7) quita los motivos si no hay consentimiento · [`CommunityScreen`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/CommunityScreen.tsx): lista accesible, más reciente primero, con plato, alias, fecha y conteos (CA-27.3) |
-| HU-28 Cocinar y conversar sobre una receta ajena | RF-35, RF-36, RF-37, RNF-09 | ✅ / 🟡 | «Cocinar esta receta» la abre como adaptada y pasa por `findAllergens` del perfil de quien la abre: con Rosa **bloquea hasta confirmar**, con Javier no (CA-28.1) · [`postSafety`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/postSafety.ts) marca cada receta de la lista con «⚠️ Contiene leche (para esposo)» o «✅ Sin alérgenos de tu perfil», con texto y ícono, sin ocultar ninguna; la marca también se lee en voz ([`postSafety.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/postSafety.test.ts)) · [`safety.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/safety.test.ts), [`safetyScreen.test.tsx`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/safetyScreen.test.tsx) · comentar por texto o por voz · cola sin conexión: [`flushOutbox`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/outbox.ts#L75) envía en orden, sin duplicar (conserva el `clientId`) y descarta los rechazos definitivos (CA-28.3) · sondeo y medida `community.visible` en [`useCommunityFeed`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/useCommunityFeed.ts#L23) (CA-28.2) · *los umbrales de RNF-09 (≤ 5 s y ≤ 10 s) están instrumentados, pero falta medirlos con dos teléfonos* |
-| HU-29 Compartir mi logro y celebrar | RF-37, RF-36 | ✅ / 🟡 | [`ShareAchievementButton`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/ShareAchievementButton.tsx#L21) publica plato, valoración y alias, sin datos de salud (CA-29.1) · aplauso por toque, voz o pulgar arriba, una sola vez por publicación; al entrar, [`newApplause`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/applause.ts) avisa de los aplausos nuevos en lo que publicaste, una sola vez y sin contar el propio (CA-29.2) · *el botón todavía no está montado en la pantalla de celebración, así que hoy solo se prueba como componente* |
+| HU-28 Cocinar y conversar sobre una receta ajena | RF-35, RF-36, RF-37, RNF-09 | ✅ / 🟡 | «Cocinar esta receta» la abre como adaptada y pasa por `findAllergens` del perfil de quien la abre: con Rosa **bloquea hasta confirmar**, con Javier no (CA-28.1) · [`postSafety`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/postSafety.ts) marca cada receta de la lista con «⚠️ Contiene leche (para esposo)» o «✅ Sin alérgenos de tu perfil», con texto y ícono, sin ocultar ninguna; la marca también se lee en voz ([`postSafety.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/postSafety.test.ts)) · [`safety.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/safety.test.ts), [`safetyScreen.test.tsx`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/safetyScreen.test.tsx) · comentar por texto o por voz · cola sin conexión: [`flushOutbox`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/outbox.ts#L75) envía en orden, sin duplicar (conserva el `clientId`) y descarta los rechazos definitivos (CA-28.3) · sondeo y medida `community.visible` en [`useCommunityFeed`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/useCommunityFeed.ts#L23) (CA-28.2) · *prueba en dos teléfonos por el túnel (22/11/2026): la publicación y el comentario aparecen en el otro dispositivo en 2 s (CA-28.2, límite 5 s); la cola sin conexión envía sin duplicados (CA-28.3). Falta registrar el tiempo de ese envío contra el límite de 10 s* |
+| HU-29 Compartir mi logro y celebrar | RF-37, RF-36 | ✅ / 🟡 | [`ShareAchievementButton`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/ShareAchievementButton.tsx#L21) publica plato, valoración y alias, sin datos de salud (CA-29.1) · aplauso por toque, voz o pulgar arriba, una sola vez por publicación; al entrar, [`newApplause`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/community/applause.ts) avisa de los aplausos nuevos en lo que publicaste, una sola vez y sin contar el propio (CA-29.2); en teléfono, un segundo aplauso de la misma persona no suma · *el botón todavía no está montado en la pantalla de celebración, así que hoy solo se prueba como componente* |
 
 ### E9 · Diseño emocional
 
@@ -82,7 +82,7 @@ Código en `app/src/profile/`, `app/src/personalization/` y `app/src/community/`
 | HU-25 | CA-25.1, CA-25.2, CA-25.3 |
 | HU-26 | CA-26.1 (CA-26.2 fuera del MVP) |
 | HU-27 | CA-27.1, CA-27.2, CA-27.3 |
-| HU-28 | CA-28.1, CA-28.2, CA-28.3 (las medidas reales, pendientes) |
+| HU-28 | CA-28.1, CA-28.2, CA-28.3 (con medida real en teléfono; falta el tiempo de la cola) |
 | HU-29 | CA-29.1, CA-29.2 |
 | HU-33 | CA-33.1, CA-33.2 |
 
@@ -100,7 +100,7 @@ Todas son opcionales, tienen su forma en `shared/src/data/raw.ts` y sus converso
 
 | Pendiente | Requerimientos | Siguiente paso |
 |---|---|---|
-| Medir la Comunidad con dos teléfonos | RNF-09, CA-28.2, CA-28.3 | Prueba por el túnel con los equipos reales y exportar `community.visible` y `community.queueFlush` |
+| Registrar el tiempo del envío de la cola sin conexión (≤ 10 s) | RNF-09, CA-28.3 | Repetir la prueba D por el túnel y exportar `community.queueFlush` (CA-28.2 ya se midió: 2 s) |
 | Montar «Compartir mi logro» en la celebración | RF-37, CA-29.1 | Lo monta la parte de la interfaz |
 | Montar la configuración inicial de accesibilidad en el onboarding | CA-22.2 | Lo monta la parte de la interfaz |
 
