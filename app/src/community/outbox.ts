@@ -11,6 +11,7 @@ import {
   enqueue,
   flushQueue,
   loadQueue,
+  resetBackoff,
   type FlushResult,
   type QueueItem,
   type SendOutcome,
@@ -34,8 +35,8 @@ async function send(item: QueueItem): Promise<SendOutcome> {
         addOwnPostId(result.id);
         return 'sent';
       }
-      // Un 404 al publicar significa que el servidor aún no tiene la Comunidad: se reintenta.
-      return result.status === 'rejected' ? 'rejected' : 'unavailable';
+      // Todo 4xx (404 incluido) es definitivo; solo lo que no llegó se reintenta.
+      return result.status === 'unavailable' ? 'unavailable' : 'rejected';
     }
     case 'comment': {
       const result = await communityClient.comment(item.postId, item.body);
@@ -65,6 +66,8 @@ let reconnectedAt: number | undefined;
 
 /** Marca que volvió la conexión; solo cuenta si hay algo pendiente. */
 export function markReconnected(): void {
+  // Con la red de vuelta no tiene sentido seguir esperando el reintento.
+  resetBackoff();
   if (reconnectedAt === undefined && loadQueue().length > 0) reconnectedAt = performance.now();
 }
 
@@ -74,6 +77,12 @@ export async function flushOutbox(): Promise<FlushResult> {
   for (const item of result.rejected) {
     output.announce({
       text: `La Comunidad no aceptó ${KIND_LABELS[item.kind]} y la descarté.`,
+      kind: 'error',
+    });
+  }
+  for (const item of result.expired) {
+    output.announce({
+      text: `No pude enviar ${KIND_LABELS[item.kind]} tras varios intentos y la descarté.`,
       kind: 'error',
     });
   }
@@ -90,7 +99,9 @@ async function submit(item: QueueItem): Promise<ActionResult> {
   enqueue(item);
   const result = await flushOutbox();
   if (result.sent.some((i) => i.clientId === item.clientId)) return 'sent';
-  if (result.rejected.some((i) => i.clientId === item.clientId)) return 'rejected';
+  if ([...result.rejected, ...result.expired].some((i) => i.clientId === item.clientId)) {
+    return 'rejected';
+  }
   return 'pending';
 }
 

@@ -119,4 +119,27 @@ describe('ShareAchievementButton', () => {
     await share();
     expect(published()).toHaveLength(0);
   });
+
+  it('dos "comparte" seguidos comparten una sola vez (RF-37)', async () => {
+    await profileService.update((p) => ({ ...p, community: { alias: 'Rosita' } }));
+    await render();
+    await act(async () => {
+      commandBus.emit({ type: 'share' }, 'voice');
+      commandBus.emit({ type: 'share' }, 'voice');
+    });
+    await settle();
+    expect(published()).toHaveLength(1);
+  });
+
+  it('dos toques seguidos en Compartir comparten una sola vez (RF-37)', async () => {
+    await render();
+    await act(async () => button('Compartir mi logro')!.click());
+    await act(async () => {
+      const confirm = button('Compartir')!;
+      confirm.click();
+      confirm.click();
+    });
+    await settle();
+    expect(published()).toHaveLength(1);
+  });
 });

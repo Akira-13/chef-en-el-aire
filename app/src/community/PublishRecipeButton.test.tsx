@@ -172,4 +172,29 @@ describe('PublishRecipeButton', () => {
     await click('Publicar');
     expect(container.textContent).toContain('Pendiente: se publicará al volver la conexión');
   });
+
+  it('dos "publica" seguidos publican una sola vez (RF-34)', async () => {
+    await profileService.update((p) => ({ ...p, community: { alias: 'Dieguito' } }));
+    await render();
+    await share();
+    await act(async () => {
+      commandBus.emit({ type: 'share' }, 'voice');
+      commandBus.emit({ type: 'share' }, 'voice');
+    });
+    await settle();
+    expect(published()).toHaveLength(1);
+  });
+
+  it('dos toques seguidos en Publicar publican una sola vez (RF-34)', async () => {
+    await profileService.update((p) => ({ ...p, community: { alias: 'Dieguito' } }));
+    await render();
+    await click('Publicar en la Comunidad');
+    await act(async () => {
+      const publish = button('Publicar')!;
+      publish.click();
+      publish.click();
+    });
+    await settle();
+    expect(published()).toHaveLength(1);
+  });
 });

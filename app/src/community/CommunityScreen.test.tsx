@@ -276,4 +276,97 @@ describe('CommunityScreen', () => {
     expect(requests('DELETE', '/posts/')).toHaveLength(1);
     expect(cards()).toHaveLength(2);
   });
+
+  async function publishOwn() {
+    expect(
+      await publishPost({
+        kind: 'achievement',
+        alias: 'Sazón 1234',
+        recipeId: 'REC-001',
+        recipeName: 'Ají de gallina',
+        rating: 'up',
+      }),
+    ).toBe('sent');
+    await render();
+    await act(async () => button('Borrar', cards()[0])!.click());
+  }
+
+  it('con el diálogo de borrar abierto, "confirma" borra y no aplaude (RF-33)', async () => {
+    await publishOwn();
+    expect(container.querySelector('[role="alertdialog"]')).not.toBeNull();
+
+    await emit({ type: 'confirm' });
+    expect(requests('DELETE', '/posts/')).toHaveLength(1);
+    expect(requests('POST', '/applause')).toHaveLength(0);
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(cards()).toHaveLength(2);
+  });
+
+  it('con el diálogo de borrar abierto, el pulgar arriba también confirma (RF-33)', async () => {
+    await publishOwn();
+    await emit({ type: 'confirm' }, 'gesture');
+    expect(requests('DELETE', '/posts/')).toHaveLength(1);
+    expect(requests('POST', '/applause')).toHaveLength(0);
+  });
+
+  it('con el diálogo de borrar abierto, "cancela" lo cierra sin borrar (RF-33)', async () => {
+    await publishOwn();
+    await emit({ type: 'cancel' });
+    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(requests('DELETE', '/posts/')).toHaveLength(0);
+    expect(cards()).toHaveLength(3);
+  });
+
+  it('sin diálogo abierto, "confirma" sigue aplaudiendo (RF-36)', async () => {
+    await render();
+    await emit({ type: 'confirm' });
+    expect(requests('POST', '/PUB-0002/applause')).toHaveLength(1);
+  });
+
+  it('un comentario por voz vacío no se encola y se avisa (RF-36)', async () => {
+    await render();
+    await emit({ type: 'comment', text: '   ' });
+    expect(requests('POST', '/comments')).toHaveLength(0);
+    expect(localStorage.getItem('chef.community.queue')).toBeNull();
+    expect(announce).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('comentario') as unknown }),
+    );
+    expect(announce).not.toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('descart') as unknown }),
+    );
+  });
+
+  it('una respuesta vieja que llega tarde no pisa a la más nueva (RNF-09)', async () => {
+    const pending: ((posts: CommunityPost[]) => void)[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, _init?: RequestInit) =>
+          new Promise<Response>((resolve) => {
+            pending.push((posts) =>
+              resolve(
+                new Response(JSON.stringify({ posts, serverTime: new Date().toISOString() }), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' },
+                }),
+              ),
+            );
+          }),
+      ),
+    );
+    await render();
+    await poll();
+    expect(pending).toHaveLength(2);
+
+    const [older, newer] = pending as [(typeof pending)[0], (typeof pending)[0]];
+    const fresh = [{ ...seed()[0]!, id: 'PUB-0003', recipeName: 'Causa limeña' }, ...seed()];
+    await act(async () => newer(fresh));
+    await settle();
+    expect(cards()).toHaveLength(3);
+
+    await act(async () => older(seed()));
+    await settle();
+    expect(cards()).toHaveLength(3);
+    expect(cards()[0]!.textContent).toContain('Causa limeña');
+  });
 });

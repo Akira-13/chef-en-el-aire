@@ -27,9 +27,13 @@ export function useCommunityFeed(ownAlias?: string): CommunityFeedState {
   const failing = useRef(false);
   const alias = useRef(ownAlias);
   alias.current = ownAlias;
+  // Número de la última consulta: una respuesta vieja que llega tarde no pisa a la más nueva.
+  const latestRequest = useRef(0);
 
   const refresh = useCallback(async () => {
+    const request = ++latestRequest.current;
     const feed = await communityClient.feed();
+    if (request !== latestRequest.current) return;
     if ('status' in feed) {
       failing.current = true;
       setStatus('unavailable');
