@@ -67,6 +67,17 @@ describe('cliente de la Comunidad', () => {
     expect(await communityClient.applaud('PUB-9', 'dev-1')).toMatchObject({ status: 'notFound' });
   });
 
+  it('todo 4xx es definitivo salvo 408 y 429, que se reintentan (RNF-09)', async () => {
+    for (const status of [400, 401, 403, 410, 413, 422]) {
+      respond(status, { error: 'No.' });
+      expect(await communityClient.publish(post)).toMatchObject({ status: 'rejected' });
+    }
+    for (const status of [408, 429, 500, 502, 503]) {
+      respond(status, { error: 'Luego.' });
+      expect(await communityClient.publish(post)).toEqual(unavailable);
+    }
+  });
+
   it('envía el cuerpo como JSON a la ruta de cada publicación (RF-36)', async () => {
     const fetchMock = respond(200, { applause: 3 });
     expect(await communityClient.applaud('PUB 1', 'dev-1')).toEqual({ applause: 3 });

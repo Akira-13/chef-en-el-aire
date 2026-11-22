@@ -1,7 +1,8 @@
 // Cliente REST de la Comunidad (RF-33 a RF-37). Igual que el del asistente, nunca lanza error:
 // si la red o el servidor fallan devuelve "no disponible" y la pantalla sigue con lo último
-// cargado. Distingue además lo que el servidor rechazó (400, 403) y lo que ya no existe (404),
-// porque la cola sin conexión descarta lo primero y reintenta lo que no llegó (RNF-09).
+// cargado. Distingue además lo que el servidor rechazó (cualquier 4xx salvo 408 y 429) y lo que
+// ya no existe (404), porque la cola sin conexión descarta ambos y reintenta lo que no llegó:
+// la red, el 408, el 429 y el 5xx (RNF-09).
 
 import {
   COMMUNITY_ROUTES,
@@ -65,11 +66,12 @@ async function request<T>(
     if (res.status === 204) return {} as T;
     const data: unknown = await res.json().catch(() => null);
     if (res.ok && data && typeof data === 'object') return data as T;
-    if (res.status === 400 || res.status === 403) {
-      return { status: 'rejected', message: errorMessage(data, 'La Comunidad no lo aceptó.') };
-    }
     if (res.status === 404) {
       return { status: 'notFound', message: errorMessage(data, 'Ya no existe.') };
+    }
+    // Un 4xx es definitivo: reenviar lo mismo daría lo mismo. Solo 408 y 429 son pasajeros.
+    if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+      return { status: 'rejected', message: errorMessage(data, 'La Comunidad no lo aceptó.') };
     }
     return unavailable;
   } catch {
