@@ -153,6 +153,39 @@ describe('AssistantPanel: preguntar', () => {
     expect(mocks.metricsEnd).toHaveBeenCalledWith('llm.response', expect.any(String), anything);
   });
 
+  it('registra el proveedor que respondió en llm.response (RNF-03)', async () => {
+    mocks.ask.mockResolvedValueOnce({ ...answer, provider: 'ollama' });
+    await askQuestion();
+    expect(mocks.metricsEnd).toHaveBeenCalledWith('llm.response', expect.any(String), {
+      status: 'ok',
+      provider: 'ollama',
+    });
+  });
+
+  it('sin respuesta del asistente solo registra el estado, sin proveedor (RNF-03)', async () => {
+    mocks.ask.mockResolvedValueOnce(unavailable);
+    await askQuestion();
+    expect(mocks.metricsEnd).toHaveBeenCalledWith('llm.response', expect.any(String), {
+      status: 'unavailable',
+    });
+  });
+
+  it('la explicación también registra el proveedor, salvo si salió de la receta (RNF-03)', async () => {
+    mocks.explain.mockResolvedValueOnce({ ...explanation, provider: 'remoto' });
+    await render();
+    await act(async () => button('Más')!.click());
+    expect(mocks.metricsEnd).toHaveBeenCalledWith('llm.response', expect.any(String), {
+      status: 'ok',
+      provider: 'remoto',
+    });
+    mocks.metricsEnd.mockClear();
+    mocks.explain.mockResolvedValueOnce({ ...explanation, provider: null });
+    await act(async () => button('Más')!.click());
+    expect(mocks.metricsEnd).toHaveBeenCalledWith('llm.response', expect.any(String), {
+      status: 'ok',
+    });
+  });
+
   it('muestra la respuesta escrita y la anuncia como respuesta (CA-07.3)', async () => {
     mocks.ask.mockResolvedValueOnce(answer);
     await askQuestion();

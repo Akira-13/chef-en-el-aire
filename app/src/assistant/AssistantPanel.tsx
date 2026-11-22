@@ -188,8 +188,9 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   }
 
   // Cierra la medición y dice si la respuesta sigue vigente para este paso.
-  function finish(id: number, status: string): boolean {
-    metrics.end('llm.response', METRIC_KEY, { status });
+  // El proveedor permite separar el umbral remoto (≤ 8 s) del local (≤ 15 s) en el informe.
+  function finish(id: number, status: string, provider?: string | null): boolean {
+    metrics.end('llm.response', METRIC_KEY, { status, ...(provider && { provider }) });
     if (id !== requestId.current) return false;
     busy.current = false;
     return true;
@@ -217,7 +218,8 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       stepView: viewOf(recipe, step),
     };
     const response = await assistantClient.ask(request);
-    if (!finish(id, response.status)) return;
+    if (!finish(id, response.status, response.status === 'ok' ? response.provider : undefined))
+      return;
     if (response.status === 'unavailable') {
       showUnavailable(response.message);
       return;
@@ -254,7 +256,8 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       stepView: viewOf(recipe, step),
     };
     const response = await assistantClient.explain(request);
-    if (!finish(id, response.status)) return;
+    if (!finish(id, response.status, response.status === 'ok' ? response.provider : undefined))
+      return;
     if (response.status === 'unavailable') {
       showUnavailable(response.message);
       return;
