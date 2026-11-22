@@ -2,10 +2,13 @@
 // más antigua (CA-27.3). Se recorre con "siguiente" y "anterior" por voz, gesto o teclado; el
 // pulgar arriba o "aplaude" aplauden la seleccionada y "comenta …" la comenta. Todo tiene además
 // su botón táctil (RF-24). Lo que aún está en la cola sin conexión se muestra como "pendiente".
+// Cada receta lleva una marca que dice si choca con las alergias de quien mira (sin ocultarla), y
+// al entrar se avisa de los aplausos nuevos en lo que uno publicó (CA-29.2).
 
 import {
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -21,6 +24,7 @@ import { output, useProfile } from '../core/services';
 import { useOnlineStatus } from '../core/useOnlineStatus';
 import { Button, Chip, IconButton, Screen } from '../ui';
 import { AliasField, saveAlias } from './AliasField';
+import { applauseNotice, markApplauseSeen, newApplause } from './applause';
 import {
   applauseLabel,
   commentsLabel,
@@ -30,8 +34,9 @@ import {
   postHeadline,
 } from './format';
 import { applaudPost, commentOn, removePost, type ActionResult } from './outbox';
+import { postSafety } from './postSafety';
 import { loadQueue, subscribeQueue, type QueueItem } from './queue';
-import { getApplaudedPostIds, getOwnPostIds } from './storage';
+import { getApplaudedPostIds, getOwnPostIds, getSeenApplause, setSeenApplause } from './storage';
 import { useCommunityFeed } from './useCommunityFeed';
 import styles from './community.module.css';
 
@@ -174,6 +179,8 @@ export function CommunityScreen(): ReactElement {
   const [selectedId, setSelectedId] = useState<string>();
   const [commentingId, setCommentingId] = useState<string>();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string>();
+  const [newApplauseText, setNewApplauseText] = useState<string>();
+  const entryChecked = useRef(false);
   // Sube tras aplaudir o borrar, para releer lo guardado en el dispositivo.
   const [, setVersion] = useState(0);
   const items = useRef(new Map<string, HTMLLIElement>());
@@ -181,7 +188,36 @@ export function CommunityScreen(): ReactElement {
   // Publica la pantalla para que la ayuda y los reconocedores ofrezcan sus comandos.
   useEffect(() => enterScreen('community'), []);
 
+  // CA-29.2: al entrar, avisa de los aplausos que llegaron a lo propio desde la última vez. Solo
+  // en la primera lista cargada; después, lo que se ve en pantalla ya cuenta como visto.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const own = new Set(getOwnPostIds());
+    const applaudedIds = new Set(getApplaudedPostIds());
+    if (!entryChecked.current) {
+      entryChecked.current = true;
+      const text = applauseNotice(newApplause(posts, own, applaudedIds, getSeenApplause()));
+      if (text) {
+        setNewApplauseText(text);
+        output.announce({ text, kind: 'info' });
+      }
+    }
+    setSeenApplause(markApplauseSeen(posts, own, applaudedIds));
+  }, [posts, status]);
+
   const listed = listPosts(posts, queue);
+  // La marca depende solo de las recetas y de las alergias del perfil, no de cada render.
+  const safetyById = useMemo(
+    () =>
+      new Map(
+        listed.flatMap(({ post }) => {
+          const safety = postSafety(post, profile);
+          return safety ? [[post.id, safety] as const] : [];
+        }),
+      ),
+
+    [posts, queue, profile.explicit],
+  );
   const index = Math.max(
     0,
     listed.findIndex((l) => l.post.id === selectedId),
@@ -205,8 +241,9 @@ export function CommunityScreen(): ReactElement {
     element?.focus({ preventScroll: true });
     element?.scrollIntoView?.({ block: 'nearest' });
     if (cue) output.cue(cue);
+    const safety = safetyById.get(item.post.id);
     output.announce({
-      text: `${postHeadline(item.post)}.${item.pending ? ' Pendiente de enviar.' : ''}`,
+      text: `${postHeadline(item.post)}.${safety ? ` ${safety.text}.` : ''}${item.pending ? ' Pendiente de enviar.' : ''}`,
       kind: 'info',
     });
   }
@@ -292,7 +329,12 @@ export function CommunityScreen(): ReactElement {
       case 'whereAmI':
         output.announce({
           text: selected
-            ? describePost(selected.post, index + 1, listed.length)
+            ? describePost(
+                selected.post,
+                index + 1,
+                listed.length,
+                safetyById.get(selected.post.id)?.text,
+              )
             : 'Estás en la Comunidad. Todavía no hay publicaciones.',
           kind: 'info',
         });
@@ -337,6 +379,7 @@ export function CommunityScreen(): ReactElement {
           ? `Publicas como ${alias}.`
           : 'Aquí solo se muestra tu alias. Puedes elegirlo en Mi perfil o al publicar.'}
       </p>
+      {newApplauseText && <p className={styles.notice}>👏 {newApplauseText}</p>}
       {unavailable && (
         <p className={styles.notice} role="status">
           {COMMUNITY_UNAVAILABLE_MESSAGE}
@@ -352,6 +395,7 @@ export function CommunityScreen(): ReactElement {
           const isSelected = i === index;
           const titleId = `titulo-${post.id}`;
           const canCook = post.kind === 'recipe' && post.recipe?.id === post.recipeId;
+          const safety = safetyById.get(post.id);
           return (
             <li
               key={post.id}
@@ -374,6 +418,11 @@ export function CommunityScreen(): ReactElement {
               </div>
               <div className={styles.badges}>
                 <Chip>{kindLabel(post)}</Chip>
+                {safety && (
+                  <Chip tone={safety.safe ? 'have' : 'missing'}>
+                    {safety.safe ? '✅' : '⚠️'} {safety.text}
+                  </Chip>
+                )}
                 {item.pending && <Chip tone="substitute">Pendiente</Chip>}
                 {post.kind === 'achievement' && post.rating && (
                   <Chip>{post.rating === 'up' ? '👍 Le gustó' : '👎 No le gustó'}</Chip>

@@ -29,9 +29,18 @@ export function postHeadline(post: CommunityPost): string {
   return `${post.recipeName}, ${kindLabel(post).toLowerCase()} de ${post.alias}`;
 }
 
-/** Lo que se lee con "dónde estoy": la publicación y sus últimos 3 comentarios (RF-36). */
-export function describePost(post: CommunityPost, position: number, total: number): string {
+/**
+ * Lo que se lee con "dónde estoy": la publicación y sus últimos 3 comentarios (RF-36). Si se
+ * pasa `safety`, la revisión de la receta con el perfil se lee justo después del título.
+ */
+export function describePost(
+  post: CommunityPost,
+  position: number,
+  total: number,
+  safety?: string,
+): string {
   const parts = [`Publicación ${position} de ${total}: ${postHeadline(post)}.`];
+  if (safety) parts.push(`${safety}.`);
   if (post.kind === 'achievement' && post.rating) {
     parts.push(post.rating === 'up' ? 'Le gustó.' : 'No le gustó.');
   }
