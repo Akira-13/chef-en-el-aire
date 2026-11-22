@@ -1,6 +1,6 @@
 // Lectura en voz alta con speechSynthesis (RF-15).
 
-import type { AccessibilityPrefs, Verbosity } from '@chef/shared';
+import type { AccessibilityPrefs, DeclaredFeeling, Feeling, Verbosity } from '@chef/shared';
 import type { Announcement } from '../core/contracts';
 
 type VoiceLike = Pick<SpeechSynthesisVoice, 'lang'>;
@@ -34,6 +34,28 @@ export function wantsSubtitles(prefs: OutputPrefs): boolean {
 /** Texto según la verbosidad del perfil (CA-13.3). */
 export function textFor(announcement: Announcement, verbosity: Verbosity): string {
   return verbosity === 'breve' ? (announcement.short ?? announcement.text) : announcement.text;
+}
+
+// ---------- Lectura más lenta con emoción reciente (CA-33.2, RF-42) ----------
+
+/** Velocidad de lectura normal y la más lenta con una emoción reciente. */
+export const NORMAL_RATE = 1;
+export const SLOW_RATE = 0.85;
+/** Cuánto tiempo la emoción cuenta como reciente. */
+export const FEELING_FRESH_MS = 30 * 60 * 1000;
+
+const SLOWING_FEELINGS: readonly Feeling[] = ['nervous', 'confused', 'tired'];
+
+/**
+ * Lee más despacio si la última emoción, declarada o inferida, es de nervios, confusión o cansancio
+ * y es de hace menos de 30 minutos. Con alegría, sin emoción, o sin la hora en que ocurrió, la
+ * velocidad es la normal.
+ */
+export function speechRate(lastFeeling: DeclaredFeeling | undefined, now = Date.now()): number {
+  if (!lastFeeling?.at || !SLOWING_FEELINGS.includes(lastFeeling.feeling)) return NORMAL_RATE;
+  const since = now - Date.parse(lastFeeling.at);
+  // Una fecha inválida o del futuro no es una emoción vigente que se pueda medir.
+  return since >= 0 && since < FEELING_FRESH_MS ? SLOW_RATE : NORMAL_RATE;
 }
 
 // ---------- Parte con efectos ----------
@@ -78,6 +100,8 @@ export function speechAt(at: number, now = Date.now()): string[] {
 
 export interface SpeakOptions {
   volume: number;
+  /** Velocidad de lectura; 1 es la normal (`speechRate`). */
+  rate?: number;
   /** Corta lo que se esté leyendo antes de empezar. */
   interrupt: boolean;
   onStart?: () => void;
@@ -85,7 +109,10 @@ export interface SpeakOptions {
 }
 
 /** Lee `text` en voz alta. Devuelve false si el navegador no tiene síntesis de voz. */
-export function speak(text: string, { volume, interrupt, onStart, onEnd }: SpeakOptions): boolean {
+export function speak(
+  text: string,
+  { volume, rate = NORMAL_RATE, interrupt, onStart, onEnd }: SpeakOptions,
+): boolean {
   const engine = synth();
   if (!engine || typeof SpeechSynthesisUtterance === 'undefined') return false;
   if (interrupt) engine.cancel();
@@ -94,6 +121,7 @@ export function speak(text: string, { volume, interrupt, onStart, onEnd }: Speak
   utterance.lang = voice?.lang ?? 'es-PE';
   if (voice) utterance.voice = voice;
   utterance.volume = Math.min(1, Math.max(0, volume));
+  utterance.rate = rate;
   // Si va en cola detrás de otra lectura, empieza a sonar recién en `onstart`.
   const queued = engine.speaking && !interrupt;
   const entry = { text, start: queued ? Infinity : Date.now(), end: Infinity };
