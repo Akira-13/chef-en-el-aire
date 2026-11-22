@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   metricsStart: vi.fn(),
   metricsEnd: vi.fn(),
   online: true,
+  lastFeeling: undefined as
+    { feeling: string; date: string; at?: string; source?: 'declared' | 'inferred' } | undefined,
 }));
 
 vi.mock('../core/assistantClient', () => ({
@@ -32,7 +34,7 @@ vi.mock('../core/services', () => ({
   useProfile: () => ({
     skillLevel: 'novato',
     explicit: { allergies: ['mani'], dinerRestrictions: [], diet: 'omnivora' },
-    emotional: { assistantTone: 'calmado' },
+    emotional: { assistantTone: 'calmado', lastFeeling: mocks.lastFeeling },
   }),
 }));
 vi.mock('../core/metrics', () => ({
@@ -78,6 +80,7 @@ let root: Root;
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.online = true;
+  mocks.lastFeeling = undefined;
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);
@@ -541,5 +544,135 @@ describe('AssistantPanel: el ánimo declarado llega al asistente', () => {
     await act(async () => root.render(<AssistantPanel recipe={other} step={other.steps[0]!} />));
     await ask();
     expect('feeling' in lastRequest()).toBe(false);
+  });
+});
+
+describe('AssistantPanel: emoción reciente del perfil (RF-42, CA-33.2)', () => {
+  const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+  const setFeeling = (
+    feeling: string,
+    minutes: number,
+    source: 'declared' | 'inferred' = 'inferred',
+  ) => {
+    mocks.lastFeeling = {
+      feeling,
+      date: minutesAgo(minutes).slice(0, 10),
+      at: minutesAgo(minutes),
+      source,
+    };
+  };
+  const lastAsk = () => mocks.ask.mock.calls.at(-1)![0] as Record<string, unknown>;
+  const lastExplain = () => mocks.explain.mock.calls.at(-1)![0] as Record<string, unknown>;
+  const feel = (feeling: 'nervous' | 'tired' | 'confused' | 'happy') =>
+    act(async () => {
+      commandBus.emit({ type: 'feeling', feeling }, 'voice');
+    });
+
+  it('una emoción inferida reciente viaja con la pregunta aunque no se declare aquí (CA-33.2)', async () => {
+    setFeeling('nervous', 5);
+    mocks.ask.mockResolvedValue(answer);
+    await askQuestion();
+    expect(lastAsk()).toMatchObject({ feeling: 'nervous' });
+  });
+
+  it('y también con la explicación del paso (CA-33.2)', async () => {
+    setFeeling('confused', 5);
+    mocks.explain.mockResolvedValue(explanation);
+    await render();
+    await act(async () => button('Más')!.click());
+    expect(lastExplain()).toMatchObject({ feeling: 'confused' });
+  });
+
+  it('una emoción de hace 2 horas no viaja (CA-33.2)', async () => {
+    setFeeling('nervous', 120);
+    mocks.ask.mockResolvedValue(answer);
+    await askQuestion();
+    expect(lastAsk()).not.toHaveProperty('feeling');
+    expect(container.textContent).not.toContain('Parece');
+  });
+
+  it('una emoción sin hora (datos antiguos) no se usa (CA-33.2)', async () => {
+    mocks.lastFeeling = { feeling: 'nervous', date: '2026-10-05' };
+    mocks.ask.mockResolvedValue(answer);
+    await askQuestion();
+    expect(lastAsk()).not.toHaveProperty('feeling');
+  });
+
+  it('si estaba contento no hay nada que ajustar ni apoyo que mostrar (CA-33.2)', async () => {
+    setFeeling('happy', 5);
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    expect(container.textContent).not.toContain('Qué bien');
+    expect(mocks.announce).not.toHaveBeenCalled();
+    await type('¿Cuánto hiervo las papas?');
+    await act(async () => button('Preguntar')!.click());
+    expect(lastAsk()).not.toHaveProperty('feeling');
+  });
+
+  it('declarar un ánimo en esta pantalla manda sobre el del perfil (CA-33.1)', async () => {
+    setFeeling('nervous', 5);
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('tired');
+    await type('¿Cuánto hiervo las papas?');
+    await act(async () => button('Preguntar')!.click());
+    expect(lastAsk()).toMatchObject({ feeling: 'tired' });
+  });
+
+  it('declarar que está contento anula la emoción reciente del perfil (CA-33.1)', async () => {
+    setFeeling('nervous', 5);
+    mocks.ask.mockResolvedValue(answer);
+    await render();
+    await feel('happy');
+    await type('¿Cuánto hiervo las papas?');
+    await act(async () => button('Preguntar')!.click());
+    expect(lastAsk()).not.toHaveProperty('feeling');
+  });
+
+  it('muestra el apoyo con la oferta de pausar al abrir el asistente (CA-33.2)', async () => {
+    setFeeling('tired', 5, 'declared');
+    await render();
+    expect(container.textContent).toContain('respiro');
+    expect(button('Pausar un momento')).toBeDefined();
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringMatching(/respiro.*pausa/s), kind: 'info' }),
+    );
+  });
+
+  it('con una emoción inferida el apoyo es suave y no afirma lo que siente (CA-33.2)', async () => {
+    setFeeling('nervous', 5, 'inferred');
+    await render();
+    expect(container.textContent).toContain('Parece que este paso cuesta');
+    expect(container.textContent).not.toMatch(/estás nervios|te sientes|Tranquilo, vas bien/i);
+    expect(button('Pausar un momento')).toBeDefined();
+  });
+
+  it('el apoyo se muestra una sola vez por sesión, aunque cambie de paso (CA-33.2)', async () => {
+    setFeeling('confused', 5);
+    await render();
+    const announcements = () =>
+      mocks.announce.mock.calls.filter(([a]) => /Parece que este paso cuesta/.test(a.text)).length;
+    expect(announcements()).toBe(1);
+    await render(recipe.steps[4]!);
+    await render(recipe.steps[3]!);
+    expect(announcements()).toBe(1);
+    expect(container.textContent).not.toContain('Parece que este paso cuesta');
+  });
+
+  it('en otra receta vuelve a ofrecerse (nueva sesión de cocina)', async () => {
+    setFeeling('confused', 5);
+    await render();
+    const other = toRecipes(rawRecipes as unknown as RawRecipeBook).find(
+      (r) => r.id !== recipe.id,
+    )!;
+    await render(other.steps[0]!, other);
+    expect(container.textContent).toContain('Parece que este paso cuesta');
+  });
+
+  it('si ya se declaró el ánimo aquí, el apoyo del perfil no se repite (CA-33.2)', async () => {
+    setFeeling('nervous', 5);
+    await render();
+    await feel('nervous');
+    expect(container.textContent).toContain('Tranquilo');
   });
 });

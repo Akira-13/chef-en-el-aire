@@ -18,6 +18,7 @@ import { assistantClient } from '../core/assistantClient';
 import { commandBus, useCommands } from '../core/commandBus';
 import { metrics } from '../core/metrics';
 import { output, profileService, useProfile } from '../core/services';
+import { currentFeeling } from '../profile/feeling';
 import { Button } from '../ui';
 import styles from './assistant.module.css';
 import { useOnlineStatus } from './useOnlineStatus';
@@ -65,6 +66,18 @@ const FEELING_SUPPORT: Record<Feeling, { message: string; offerPause: boolean }>
   happy: { message: '¡Qué bien! Sigue así, lo estás haciendo muy bien.', offerPause: false },
 };
 
+// Si la emoción la infirió la app y no la dijo la persona, el apoyo solo sugiere: nunca afirma lo
+// que siente (RF-42).
+const INFERRED_SUPPORT: Record<Exclude<Feeling, 'happy'>, string> = {
+  nervous: 'Parece que este paso cuesta un poco. No hay apuro, respira hondo si quieres.',
+  tired: 'Parece que este paso cuesta. Puedes tomarte un respiro cuando quieras.',
+  confused: 'Parece que este paso cuesta. Si quieres, di «explícame» y lo vemos con calma.',
+};
+
+function supportMessage(feeling: Feeling, soft: boolean): string {
+  return soft && feeling !== 'happy' ? INFERRED_SUPPORT[feeling] : FEELING_SUPPORT[feeling].message;
+}
+
 const PAUSE_OFFER = '¿Quieres pausar un momento? Di «pausa» o pulsa el botón.';
 
 // "maní", "maní y leche", "maní, leche y huevo".
@@ -111,15 +124,22 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   const busy = useRef(false);
   // El apoyo afectivo va aparte de la respuesta para no pisarla; `paused` sigue los comandos
   // pause y resume de cualquier canal.
-  const [feeling, setFeeling] = useState<Feeling | null>(null);
+  const [support, setSupport] = useState<{ feeling: Feeling; soft: boolean } | null>(null);
   const [paused, setPaused] = useState(false);
   // RF-41, CA-33.1: el último ánimo declarado viaja con cada pregunta para que el asistente ajuste
   // el tono. A diferencia del mensaje de apoyo, no se borra al cambiar de paso: quien está
   // nervioso lo sigue estando. Se olvida al declarar que está contento o al cambiar de receta.
   const declaredFeeling = useRef<Feeling | null>(null);
+  // RF-42, CA-33.2: la emoción reciente del perfil (declarada o inferida) también cuenta, pero
+  // quien dice que está contento la anula, y su apoyo se muestra una sola vez por sesión.
+  const profileFeelingIgnored = useRef(false);
+  const supportShown = useRef(false);
+  const recentFeeling = currentFeeling(profile);
 
   useEffect(() => {
     declaredFeeling.current = null;
+    profileFeelingIgnored.current = false;
+    supportShown.current = false;
   }, [recipe.id]);
 
   useEffect(() => {
@@ -127,8 +147,18 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     busy.current = false;
     setState({ phase: 'idle' });
     setQuestion('');
-    setFeeling(null);
+    setSupport(null);
   }, [recipe.id, step.number]);
+
+  // CA-33.2: al abrir el asistente con una emoción reciente y no contenta, se ofrece apoyo una vez.
+  const recentKind = recentFeeling?.feeling;
+  const recentSoft = recentFeeling?.source === 'inferred';
+  useEffect(() => {
+    if (!recentKind || recentKind === 'happy') return;
+    if (supportShown.current || profileFeelingIgnored.current) return;
+    supportShown.current = true;
+    showSupport(recentKind, recentSoft);
+  }, [recentKind, recentSoft, recipe.id]);
 
   // RNF-03: "Pensando…" cuenta como mostrado cuando ya se pintó, no cuando se pidió.
   useEffect(() => {
@@ -175,13 +205,14 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     if (!trimmed) return;
     const id = begin();
     if (id === null) return;
+    const feeling = activeFeeling();
     const request: AskRequest = {
       recipeId: recipe.id,
       stepNumber: step.number,
       question: trimmed,
       skillLevel: profile.skillLevel,
       tone: profile.emotional.assistantTone,
-      ...(declaredFeeling.current && { feeling: declaredFeeling.current }),
+      ...(feeling && { feeling }),
       constraints,
       stepView: viewOf(recipe, step),
     };
@@ -213,10 +244,12 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     });
     const id = begin();
     if (id === null) return;
+    const feeling = activeFeeling();
     const request: ExplainRequest = {
       recipeId: recipe.id,
       stepNumber: step.number,
       skillLevel: profile.skillLevel,
+      ...(feeling && { feeling }),
       constraints,
       stepView: viewOf(recipe, step),
     };
@@ -249,10 +282,26 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
     setState({ ...current, detailShown: true });
   }
 
-  function support(declared: Feeling) {
-    const { message, offerPause } = FEELING_SUPPORT[declared];
-    setFeeling(declared);
+  // La emoción que viaja al asistente: la declarada aquí, o si no la reciente del perfil.
+  function activeFeeling(): Feeling | undefined {
+    if (declaredFeeling.current) return declaredFeeling.current;
+    if (profileFeelingIgnored.current) return undefined;
+    const recent = currentFeeling(profile)?.feeling;
+    return recent && recent !== 'happy' ? recent : undefined;
+  }
+
+  function declare(declared: Feeling) {
     declaredFeeling.current = declared === 'happy' ? null : declared;
+    profileFeelingIgnored.current = declared === 'happy';
+    // Ya se apoyó a la persona en esta sesión: el apoyo del perfil no se repite.
+    supportShown.current = true;
+    showSupport(declared, false);
+  }
+
+  function showSupport(shown: Feeling, soft: boolean) {
+    const message = supportMessage(shown, soft);
+    const { offerPause } = FEELING_SUPPORT[shown];
+    setSupport({ feeling: shown, soft });
     output.announce({
       text: offerPause && !paused ? `${message} ${PAUSE_OFFER}` : message,
       short: message,
@@ -268,7 +317,7 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
       void ask(event.command.question);
     }
     if (event.command.type === 'explain') void explain();
-    if (event.command.type === 'feeling') support(event.command.feeling);
+    if (event.command.type === 'feeling') declare(event.command.feeling);
     if (event.command.type === 'pause') setPaused(true);
     if (event.command.type === 'resume') setPaused(false);
   });
@@ -279,7 +328,12 @@ export function AssistantPanel({ recipe, step }: AssistantPanelProps) {
   }
 
   const loading = state.phase === 'loading';
-  const feelingSupport = feeling ? FEELING_SUPPORT[feeling] : null;
+  const feelingSupport = support
+    ? {
+        offerPause: FEELING_SUPPORT[support.feeling].offerPause,
+        message: supportMessage(support.feeling, support.soft),
+      }
+    : null;
 
   return (
     <section aria-label="Asistente" className={styles.panel}>
