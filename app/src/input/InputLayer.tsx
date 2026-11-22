@@ -17,6 +17,7 @@ import {
 } from './gestures/interpretGestures';
 import { GESTURE_SCREENS, VOICE_SCREENS, voiceAllowed as isVoiceAllowed } from './help';
 import { HelpPanel } from './HelpPanel';
+import { TrialHost } from './trial/TrialHost';
 import { createConfirmation } from './voice/confirmation';
 import { isEcho } from './voice/echo';
 import { resolveMicrophone } from './voice/permission';
@@ -234,5 +235,10 @@ export function InputLayer() {
     };
   }, [gesturesRun, sensitivity, confirmation]);
 
-  return <HelpPanel />;
+  return (
+    <>
+      <HelpPanel />
+      <TrialHost />
+    </>
+  );
 }
