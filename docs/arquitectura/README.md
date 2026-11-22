@@ -13,17 +13,17 @@ Quién usa el sistema y con qué sistemas externos se relaciona.
 ```mermaid
 flowchart TB
     cocinero["Cocinero<br/><small>Novato, experimentado, con alergias,<br/>con discapacidad motriz, visual,<br/>auditiva o del habla, adulto mayor</small>"]
-    remoto["Co-cocinero remoto<br/><small>Se une a una sala con un código</small>"]
+    otros["Otras personas de la Comunidad<br/><small>Publican y comentan en otro momento</small>"]
     cuidador["Cuidador<br/><small>Configura el perfil de otra persona</small>"]
 
-    sistema["Chef en el Aire<br/><small>PWA de cocina manos libres:<br/>voz, gestos, LLM, salas</small>"]
+    sistema["Chef en el Aire<br/><small>PWA de cocina manos libres:<br/>voz, gestos, LLM, Comunidad</small>"]
 
     llmRemoto["Proveedor LLM remoto<br/><small>Claude u otro, vía API</small>"]
     llmLocal["LLM local<br/><small>Ollama</small>"]
     navegador["APIs del navegador<br/><small>Cámara + MediaPipe Hands,<br/>Web Speech (voz y TTS),<br/>notificaciones</small>"]
 
     cocinero -- "Sigue y adapta recetas<br/>por voz, gesto o toque" --> sistema
-    remoto -- "Cocina en la misma sala" --> sistema
+    otros -- "Comparten recetas adaptadas<br/>de forma asíncrona" --> sistema
     cuidador -- "Ajusta perfil y accesibilidad" --> sistema
     sistema -- "Adaptaciones y dudas<br/>(HTTPS)" --> llmRemoto
     sistema -- "Alternativa local<br/>(HTTP)" --> llmLocal
@@ -41,18 +41,18 @@ flowchart TB
     usuario["Usuario"]
 
     subgraph dispositivo["Dispositivo del usuario (navegador)"]
-        pwa["PWA · Interfaz<br/><small>HTML/JS · modo cocina, perfiles,<br/>salas, ayuda contextual</small>"]
+        pwa["PWA · Interfaz<br/><small>HTML/JS · modo cocina, perfiles,<br/>Comunidad, ayuda contextual</small>"]
         sw["Service worker<br/><small>Caché offline de la app,<br/>receta en curso y perfil</small>"]
         gestos["Motor de gestos<br/><small>MediaPipe Hands en el navegador;<br/>el video no sale del equipo</small>"]
         voz["Motor de voz<br/><small>Web Speech: palabra de activación,<br/>comandos y TTS</small>"]
-        local[("Almacenamiento local<br/><small>IndexedDB: perfil, despensa,<br/>historial, temporizadores</small>")]
+        local[("Almacenamiento local<br/><small>IndexedDB: perfil, despensa,<br/>historial, temporizadores;<br/>cola de la Comunidad</small>")]
     end
 
     subgraph servidor["Servidor"]
         api["API de la aplicación<br/><small>REST: recetas, perfiles,<br/>sincronización</small>"]
         gateway["Gateway LLM<br/><small>Capa de abstracción + validador<br/>local de alérgenos</small>"]
-        salas["Servidor de salas<br/><small>WebSocket: estado de salas<br/>y participantes</small>"]
-        bd[("Base de datos<br/><small>Recetas (JSON), perfiles,<br/>salas activas</small>")]
+        comunidad["API de la Comunidad<br/><small>REST /api/community: publicaciones,<br/>comentarios y aplausos</small>"]
+        bd[("Archivos JSON<br/><small>Recetas y publicaciones<br/>de la Comunidad</small>")]
     end
 
     llmRemoto["LLM remoto"]
@@ -64,10 +64,10 @@ flowchart TB
     pwa -- "lee / escribe" --> local
     sw -.-|intercepta y cachea| pwa
     pwa -- "HTTPS / JSON" --> api
-    pwa -- "WebSocket" --> salas
+    pwa -- "HTTPS / JSON<br/>(sondeo cada 3 s)" --> comunidad
     api --> gateway
     api --> bd
-    salas --> bd
+    comunidad --> bd
     gateway --> llmRemoto
     gateway --> llmLocal
 ```
@@ -78,10 +78,10 @@ flowchart TB
 | Service worker | Instalación y funcionamiento sin conexión | RF-43, RF-44; RNF-10, RNF-15 |
 | Motor de gestos | Detección local de gestos, sensibilidad configurable | RF-20 a RF-23; RNF-02, RNF-05, RNF-11 |
 | Motor de voz | Palabra de activación, comandos, confianza, TTS | RF-15, RF-18, RF-19; RNF-01, RNF-04 |
-| Almacenamiento local | Perfil persistente y estado de la receta en curso | RF-28 a RF-30; RNF-17, RNF-18 |
+| Almacenamiento local | Perfil persistente, estado de la receta en curso y cola sin conexión de la Comunidad | RF-28 a RF-30; RNF-17, RNF-18 |
 | API de la aplicación | Recetas, sincronización de perfiles, cuidador | RF-02 a RF-04, RF-32 |
 | Gateway LLM | Interfaz única, adaptadores, respaldo, validación de alérgenos | RF-05 a RF-10, RF-13; RNF-03, RNF-06, RNF-14 |
-| Servidor de salas | Crear/unirse, sincronizar pasos, resincronizar | RF-33 a RF-37; RNF-09 |
+| API de la Comunidad | Publicar recetas adaptadas y logros, comentar, aplaudir y borrar lo propio; guarda todo en un archivo JSON | RF-33 a RF-37; RNF-09 |
 
 ---
 
@@ -139,7 +139,6 @@ flowchart LR
         ayuda["AyudaContextual<br/><small>comandos válidos por paso</small>"]
         salida["SalidaMultimodal<br/><small>superposición, TTS, subtítulos,<br/>alertas, microinteracciones</small>"]
         perfil["ServicioDePerfil<br/><small>preferencias y aprendizaje</small>"]
-        clienteSala["ClienteDeSala<br/><small>WebSocket</small>"]
     end
 
     gestos --> fusion
@@ -152,9 +151,73 @@ flowchart LR
     timers --> salida
     perfil -.->|"configura canales,<br/>verbosidad y tono"| fusion
     perfil -.-> salida
-    pasos <--> clienteSala
 ```
 
 - `FusionadorDeCanales` garantiza que toda acción esencial llegue por al menos dos canales y que cada canal se pueda apagar (RF-12, RF-24).
 - `SalidaMultimodal` emite cada evento por dos canales de salida: visual y audio (RF-17, RF-26, RF-39).
-- `ClienteDeSala` publica los cambios de paso y aplica los recibidos según el modo de la sala (RF-34, RF-35).
+
+### Comunidad (asíncrona)
+
+La Comunidad es un espacio compartido sin tiempo real: las personas publican recetas adaptadas y logros, comentan y aplauden en el momento que les sirva. No hay conexión permanente; el cliente consulta cada pocos segundos.
+
+```mermaid
+flowchart LR
+    subgraph pwa["PWA · Comunidad"]
+        pantalla["Pantalla de la Comunidad<br/><small>lista, publicar, comentar,<br/>aplaudir, borrar lo propio</small>"]
+        sondeo["Sondeo<br/><small>consulta cada 3 s<br/>solo con la pantalla visible</small>"]
+        cola["Cola sin conexión<br/><small>localStorage; reintenta con<br/>espera creciente</small>"]
+        cliente["Cliente REST<br/><small>nunca lanza error</small>"]
+        dispositivo["Identificadores<br/><small>deviceKey del dispositivo<br/>y clientId por envío</small>"]
+    end
+
+    subgraph api["Servidor · /api/community"]
+        rutas["Rutas REST<br/><small>posts, comments,<br/>applause, delete</small>"]
+        validacion["Validación con zod<br/><small>alias, textos, receta</small>"]
+        almacen["Almacén<br/><small>memoria + JSON, escrituras<br/>en serie y atómicas</small>"]
+    end
+
+    archivo[("server/.data/community.json")]
+
+    pantalla --> sondeo
+    pantalla --> cola
+    sondeo --> cliente
+    cola --> cliente
+    dispositivo -.-> cola
+    cliente -- "HTTPS / JSON" --> rutas
+    rutas --> validacion
+    validacion --> almacen
+    almacen --> archivo
+```
+
+Rutas (todas bajo `/api/community`):
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /posts` | Devuelve hasta 50 publicaciones, de la más reciente a la más antigua, y `serverTime` |
+| `POST /posts` | Publica una receta adaptada o un logro; `201` si es nueva y `200` con la existente si el `clientId` ya llegó |
+| `POST /posts/:id/comments` | Agrega un comentario; mismo criterio de idempotencia con su `clientId` |
+| `POST /posts/:id/applause` | Suma un aplauso por dispositivo; repetirlo no lo cuenta dos veces |
+| `DELETE /posts/:id` | Borra la publicación solo si la pide el dispositivo que la publicó (`403` en otro caso) |
+
+- **Almacenamiento:** el almacén mantiene las publicaciones en memoria y las guarda en un JSON (`COMMUNITY_FILE`, por defecto `server/.data/community.json`). Las escrituras se encadenan en una sola cola y se hacen de forma atómica (archivo temporal y `rename`), así un corte no deja el archivo a medias. Se conservan como máximo 200 publicaciones (al pasarse se descartan las más antiguas) y 200 comentarios por publicación. Si el archivo no existe, se siembra con dos publicaciones de demostración.
+- **Sondeo del cliente:** consulta cada 3 s solo mientras la pantalla está visible. Sin servidor, conserva lo último cargado y avisa que la Comunidad no está disponible (RNF-09).
+- **Cola sin conexión:** publicar, comentar y aplaudir entran primero a una cola persistida en el dispositivo y se envían enseguida; lo que no llega se reintenta con una espera que crece (2 s, 4 s… hasta 60 s) y se descarta tras 6 intentos fallidos. Se vacía también al volver la conexión (RF-37, RNF-09).
+- **Sin duplicados:** cada publicación y comentario lleva un `clientId` generado una vez; si la cola lo reenvía, el servidor devuelve el existente en lugar de crear otro.
+- **Un aplauso por dispositivo y borrado de lo propio:** el dispositivo genera una `deviceKey` aleatoria que no identifica a la persona. El servidor la guarda **con hash (SHA-256)**, **nunca la devuelve** y solo la usa para saber quién aplaudió y quién puede borrar.
+- **Validación:** el servidor está expuesto por el túnel, así que valida todo con zod (alias de hasta 30 caracteres, textos de hasta 500, receta con el mismo esquema del recetario) y responde errores en español sin detalles internos. Quien abre una receta publicada la pasa por su propio validador local de alérgenos (RF-35).
+
+---
+
+## Decisiones de arquitectura
+
+### Asíncrono en vez de WebSocket (16/11/2026)
+
+**Decisión:** el requisito multiusuario (RF-33 a RF-37) se cubre con la Comunidad, una API REST con sondeo del cliente, y no con salas en tiempo real sobre WebSocket.
+
+**Motivo:** un servidor en tiempo real y las pruebas con varios dispositivos a la vez no caben en el tiempo restante, y cocinar con otros no exige coincidir en el horario. La Comunidad conserva el valor multiusuario (compartir recetas adaptadas, comentarlas y celebrar logros) sin sincronizar pasos ni mantener conexiones abiertas. Ver [alcance](../06-alcance.md), sección 4.
+
+**Consecuencias:**
+
+- Lo publicado se ve en los demás dispositivos con un retraso de unos segundos (el intervalo de sondeo), dentro del umbral de RNF-09 (≤ 5 s en el percentil 95).
+- El servidor no guarda estado de conexiones: solo atiende pedidos REST y escribe su archivo JSON.
+- Quedan fuera del alcance los pasos sincronizados, los avatares por participante y la resincronización.
