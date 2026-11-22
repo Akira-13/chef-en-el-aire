@@ -15,6 +15,8 @@ Se presentan las evidencias de implementación de historias de usuario ([07](../
 - **No implementado:** Funcionalidades multi-usuario, RF-33 a RF-37 y RNF-09 (Inicialmente se pensaban implementar salas de cocina, se consideran foros o lugares de discusión para la siguiente iteración), medición de tasa de aciertos de voz y gestos (RNF-04 y RNF-05)
 - **Parcial:** Funcionalidades de accesibilidad (tono de LLM según emoción, revisión de estándar WCAG 2.1 AA) y la elección de porciones desde la app (RF-05).
 
+> **Actualización (parte 4):** las cifras de arriba describen el corte de esta parte. La Comunidad (RF-33 a RF-37, RNF-09) se replanteó como una sección asíncrona en lugar de salas: ver [arquitectura-c4.md de la parte 4](../parte_4/arquitectura-c4.md) y [docs/arquitectura/README.md](../../arquitectura/README.md).
+
 ## 2. Arquitectura y pruebas
 
 Diagramas C4 de lo implementado (contexto, contenedores y componentes): [arquitectura-c4.md](arquitectura-c4.md).
