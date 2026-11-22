@@ -2,7 +2,7 @@
 // datos de salud. Responde también a "comparte mi logro" en la celebración. Sin conexión queda
 // en la cola y se envía al reconectar.
 
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { useCommands } from '../core/commandBus';
 import { getCommandContext } from '../core/commandContext';
 import { output, useProfile } from '../core/services';
@@ -28,16 +28,25 @@ export function ShareAchievementButton({
   const [phase, setPhase] = useState<'idle' | 'alias' | 'sending' | ActionResult>('idle');
   const [draftAlias, setDraftAlias] = useState(suggestAlias);
   const [aliasError, setAliasError] = useState<string>();
+  // Dos "comparte" o dos toques seguidos llegan antes de volver a pintar: evita compartir dos veces.
+  const inFlight = useRef(false);
 
   async function share(alias: string) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setPhase('sending');
-    const result = await publishPost({
-      kind: 'achievement',
-      alias,
-      recipeId,
-      recipeName,
-      ...(rating && { rating }),
-    });
+    let result: ActionResult;
+    try {
+      result = await publishPost({
+        kind: 'achievement',
+        alias,
+        recipeId,
+        recipeName,
+        ...(rating && { rating }),
+      });
+    } finally {
+      inFlight.current = false;
+    }
     setPhase(result);
     if (result === 'sent') {
       output.cue('success');

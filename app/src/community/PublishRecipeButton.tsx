@@ -4,7 +4,7 @@
 // También responde a "publica mi receta" en la pantalla Receta: la primera vez abre la vista
 // previa y la segunda publica.
 
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import type { Recipe, RecipeChange } from '@chef/shared';
 import { useCommands } from '../core/commandBus';
 import { getCommandContext } from '../core/commandContext';
@@ -33,6 +33,9 @@ export function PublishRecipeButton({
   const [showReasons, setShowReasons] = useState(false);
   const [draftAlias, setDraftAlias] = useState(suggestAlias);
   const [aliasError, setAliasError] = useState<string>();
+  // Dos "publica" o dos toques seguidos llegan antes de que la pantalla se vuelva a pintar y
+  // verían todavía la vista previa: este marcador evita publicar dos veces.
+  const inFlight = useRef(false);
 
   const published = toCommunityChanges(changes, showReasons);
 
@@ -47,6 +50,7 @@ export function PublishRecipeButton({
   }
 
   async function publish() {
+    if (inFlight.current) return;
     let alias = savedAlias;
     if (!alias) {
       const saved = saveAlias(draftAlias, profile.name);
@@ -57,16 +61,22 @@ export function PublishRecipeButton({
       }
       alias = saved.alias;
     }
+    inFlight.current = true;
     setPhase('sending');
-    // Solo el alias identifica a quien publica: ni su nombre ni sus restricciones (RNF-09).
-    const result = await publishPost({
-      kind: 'recipe',
-      alias,
-      recipeId: recipe.id,
-      recipeName: recipe.name,
-      recipe,
-      changes: published,
-    });
+    let result: ActionResult;
+    try {
+      // Solo el alias identifica a quien publica: ni su nombre ni sus restricciones (RNF-09).
+      result = await publishPost({
+        kind: 'recipe',
+        alias,
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        recipe,
+        changes: published,
+      });
+    } finally {
+      inFlight.current = false;
+    }
     setPhase(result);
     if (result === 'sent') {
       output.cue('success');
