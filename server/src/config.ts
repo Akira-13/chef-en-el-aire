@@ -2,10 +2,12 @@
 // salen de server/.env: cambiar de proveedor no toca la interfaz de usuario (RF-09, CA-08.1).
 
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { LLMProviderId } from '@chef/shared';
 
 const ENV_FILE = fileURLToPath(new URL('../.env', import.meta.url));
+const DEFAULT_COMMUNITY_FILE = fileURLToPath(new URL('../.data/community.json', import.meta.url));
 const LLM_CONFIG_FILE = fileURLToPath(new URL('../llm.config.json', import.meta.url));
 
 export interface LlmConfig {
@@ -18,6 +20,8 @@ export interface ServerConfig {
   llm: LlmConfig;
   deepseek: { apiKey: string | undefined; model: string; baseUrl: string };
   ollama: { url: string; model: string };
+  /** Archivo JSON donde la Comunidad guarda sus publicaciones. */
+  communityFile: string;
 }
 
 interface RawLlmConfig {
@@ -49,5 +53,8 @@ export function loadConfig(): ServerConfig {
       url: process.env.OLLAMA_URL || 'http://localhost:11434',
       model: process.env.OLLAMA_MODEL || 'llama3.1',
     },
+    communityFile: process.env.COMMUNITY_FILE
+      ? resolve(process.env.COMMUNITY_FILE)
+      : DEFAULT_COMMUNITY_FILE,
   };
 }

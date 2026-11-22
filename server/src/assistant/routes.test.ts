@@ -555,6 +555,19 @@ describe('POST /api/assistant/explain', () => {
     expect(seen[0]?.prompt).toContain('maní');
   });
 
+  it('manda la emoción al generar la explicación (RF-42, CA-33.2)', async () => {
+    const prompts: string[] = [];
+    const baseUrl = await start({ remoto: fake('remoto', () => generated, prompts) });
+    await explain(baseUrl, { ...explainBody, feeling: 'nervous' });
+    expect(prompts[0]).toMatch(/nervios/i);
+  });
+
+  it('rechaza una emoción desconocida en la explicación (RF-42)', async () => {
+    const baseUrl = await start({ remoto: fake('remoto', () => generated) });
+    const { status } = await explain(baseUrl, { ...explainBody, feeling: 'furioso' });
+    expect(status).toBe(400);
+  });
+
   it('avisa si la explicación o la pista del modelo nombran un alérgeno del perfil (RF-07, RNF-06)', async () => {
     const mentionsPeanut = (explicacion: string, pista: string) =>
       JSON.stringify({ explicacion, pista_listo: pista });

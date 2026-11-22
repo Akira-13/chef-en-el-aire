@@ -71,7 +71,7 @@
 | A5 Seguir pasos | Avanzar, retroceder y repetir por voz, gesto y táctil; lectura automática configurable; explicación ampliada | Superposición con un paso a la vez en tipografía grande; gestos: deslizar = siguiente/anterior, palma = pausar, pulgar arriba = confirmar |
 | A6 Temporizadores | Varios temporizadores simultáneos con nombre; alerta visual + sonora persistente; consulta "¿cuánto falta?" | Barra de temporizadores siempre visible con nombre y color; alerta a pantalla completa que no desaparece hasta confirmarla |
 | A7 Dudas en marcha | Preguntas libres al asistente con contexto del paso actual; latencia acotada; respuesta subtitulada | Respuesta breve primero, con opción de "más detalle"; aviso "pensando…" si tarda |
-| A8 Cocinar a distancia | Crear y unirse a salas con código corto; sincronizar pasos; mostrar el paso de cada participante; resincronizar tras desconexión | Avatares con el número de paso de cada participante; modos "juntos" o "a mi ritmo" |
+| A8 Cocinar a distancia | Crear y unirse a salas con código corto; sincronizar pasos; mostrar el paso de cada participante; resincronizar tras desconexión | Avatares con el número de paso de cada participante; modos "juntos" o "a mi ritmo". *Decisión posterior: las salas se sustituyeron por la Comunidad asíncrona (publicar, comentar y aplaudir)* |
 | A9 Terminar y celebrar | Celebración multimodal, breve y saltable; registro del logro | Animación + sonido + mensaje; respeta las preferencias del perfil (sin sonido para S06) |
 | A10 Valorar y aprender | Perfil persistente que aprende gustos, restricciones, sustituciones aceptadas y preferencias de interacción | Calificación por gesto (pulgar arriba/abajo) o voz; el perfil muestra "lo que aprendí de ti" y se puede corregir |
 
@@ -113,6 +113,6 @@
 | Salida visual | Superposición de pasos en tipografía grande, alto contraste, subtítulos, alertas a pantalla completa | Legibilidad a 2 m; canal principal para S06 |
 | Salida auditiva | Síntesis de voz (TTS) y sonidos diferenciados | Canal principal para S05; confirmación de gestos |
 | Inteligencia | LLM detrás de una capa de abstracción (adaptadores por proveedor) | Adaptación de recetas y dudas (A3, A7); independencia del proveedor |
-| Comunicación | WebSockets o WebRTC para salas | Sincronización de pasos (A8) |
+| Comunicación | WebSockets o WebRTC para salas. *Decisión posterior: se usa REST con sondeo para la Comunidad asíncrona; ver [arquitectura](arquitectura/README.md)* | Sincronización de pasos (A8) |
 | Plataforma | PWA (instalable, service worker, caché offline) | Multidispositivo sin tienda de apps; funciona con mala conexión |
 | Datos | Perfil persistente (almacenamiento local + sincronización) y recetario en JSON | Personalización continua (A10) |

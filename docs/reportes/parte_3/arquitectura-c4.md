@@ -77,7 +77,7 @@ flowchart LR
 
 | Diseño | Implementado |
 |---|---|
-| Servidor de salas (WebSocket) | No existe. Se replanteará como foros |
+| Servidor de salas (WebSocket) | No existe en esta parte. Se replanteó como una Comunidad asíncrona (REST con sondeo), documentada en la [parte 4](../parte_4/arquitectura-c4.md) |
 | Base de datos en el servidor | Archivos JSON; el perfil vive en el dispositivo |
 | Claude como LLM remoto | DeepSeek, con Ollama como respaldo |
 | — | Nuevo paquete `shared/` con reglas comunes |

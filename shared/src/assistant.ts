@@ -115,6 +115,8 @@ export interface ExplainRequest {
   recipeId: string;
   stepNumber: number;
   skillLevel: SkillLevel;
+  /** Emoción vigente, declarada o inferida, para ajustar el tono de la explicación (RF-42). */
+  feeling?: Feeling;
   /** Alergias y restricciones del perfil, para que el asistente no sugiera un alérgeno (RF-07). */
   constraints?: DietaryConstraints;
   /** Paso adaptado; si falta, se usa el de la receta original. */

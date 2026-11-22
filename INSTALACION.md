@@ -48,14 +48,15 @@ El proveedor de LLM se elige en `server/llm.config.json`, sin tocar la interfaz:
 
 Las claves y los modelos van en `server/.env` (a partir de `server/.env.example`). La clave nunca llega al navegador.
 
-| Variable            | Para qué sirve                  | Valor por defecto               |
-| ------------------- | ------------------------------- | ------------------------------- |
-| `DEEPSEEK_API_KEY`  | Clave de DeepSeek (`remoto`)    | vacía: el proveedor se omite    |
-| `DEEPSEEK_MODEL`    | Modelo de DeepSeek              | `deepseek-flash`                |
-| `DEEPSEEK_BASE_URL` | Dirección de la API de DeepSeek | `https://api.deepseek.com`      |
-| `OLLAMA_URL`        | Servidor de Ollama (`ollama`)   | `http://localhost:11434`        |
-| `OLLAMA_MODEL`      | Modelo local de Ollama          | `llama3.1`                      |
-| `PORT`              | Puerto del servidor             | 3001 con `dev`, 3000 con `demo` |
+| Variable            | Para qué sirve                            | Valor por defecto               |
+| ------------------- | ----------------------------------------- | ------------------------------- |
+| `DEEPSEEK_API_KEY`  | Clave de DeepSeek (`remoto`)              | vacía: el proveedor se omite    |
+| `DEEPSEEK_MODEL`    | Modelo de DeepSeek                        | `deepseek-flash`                |
+| `DEEPSEEK_BASE_URL` | Dirección de la API de DeepSeek           | `https://api.deepseek.com`      |
+| `OLLAMA_URL`        | Servidor de Ollama (`ollama`)             | `http://localhost:11434`        |
+| `OLLAMA_MODEL`      | Modelo local de Ollama                    | `llama3.1`                      |
+| `PORT`              | Puerto del servidor                       | 3001 con `dev`, 3000 con `demo` |
+| `COMMUNITY_FILE`    | Archivo de la Comunidad (ver "Comunidad") | `server/.data/community.json`   |
 
 ### Ollama como respaldo (opcional)
 
@@ -99,6 +100,37 @@ curl -X POST localhost:3001/api/assistant/explain -H 'Content-Type: application/
 ```
 
 Si la respuesta de `ask` o `explain` nombra un alérgeno del perfil, trae `allergenWarnings`. Si ningún proveedor responde, las tres rutas devuelven `503` con `{"status":"unavailable","message":"El asistente no está disponible, sigues con la receta original."}`; la app muestra ese aviso y, en la pantalla de la receta, ofrece los sustitutos del recetario que no necesitan al asistente.
+
+## Comunidad
+
+Las publicaciones, comentarios y aplausos de la Comunidad se guardan en un archivo JSON del servidor. Por defecto es `server/.data/community.json`; para usar otra ruta, define `COMMUNITY_FILE` en `server/.env`. La carpeta `server/.data/` no se sube al repositorio (está en `.gitignore`).
+
+Si el archivo no existe, el servidor lo crea con dos publicaciones de ejemplo la primera vez que alguien abre la Comunidad después de arrancar.
+
+### Vaciar la Comunidad antes de la demo
+
+1. Detén el servidor.
+2. Borra el archivo:
+
+   ```bash
+   rm server/.data/community.json   # o el archivo de COMMUNITY_FILE
+   ```
+
+3. Vuelve a arrancar el servidor. La Comunidad empieza solo con las dos publicaciones de ejemplo.
+
+Hazlo con el servidor detenido: mientras corre, mantiene las publicaciones en memoria y volvería a escribir el archivo en el siguiente cambio. Si el archivo se daña, el servidor lo aparta como `community.json.dañado-<marca de tiempo>` y empieza de nuevo con las publicaciones de ejemplo.
+
+## Medir la latencia del asistente
+
+```bash
+npm run measure:llm -w @chef/server
+```
+
+El script manda 20 preguntas a `/api/assistant/ask` y 5 adaptaciones a `/api/assistant/adapt`, primero con el proveedor remoto (si hay `DEEPSEEK_API_KEY`) y luego con Ollama (si responde en `OLLAMA_URL`). En cada pasada usa solo ese proveedor, sin respaldo. Imprime p50, p90 y máximo, y compara el p90 con el umbral: 8 s para el remoto y 15 s para Ollama.
+
+- **Llama a un servicio externo de pago:** cada ejecución consume 25 pedidos a DeepSeek, que pueden costar dinero. Ejecútalo a mano y solo cuando lo necesites.
+- **No forma parte de `npm run check`.**
+- El resultado se guarda en `server/.data/llm-latency-<fecha>.json`. Termina con código de error si algún umbral no se cumple o si no se pudo medir ningún proveedor.
 
 ## Verificación
 
