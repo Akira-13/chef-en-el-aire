@@ -107,6 +107,7 @@ const explainRequestSchema = z.object({
   recipeId: z.string().min(1),
   stepNumber: z.number().int().positive(),
   skillLevel: skillLevelSchema,
+  feeling: z.enum(['nervous', 'tired', 'confused', 'happy']).optional(),
   constraints: constraintsSchema.optional(),
   stepView: stepViewSchema.optional(),
 });
