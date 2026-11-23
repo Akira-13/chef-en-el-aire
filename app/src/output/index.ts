@@ -4,7 +4,7 @@
 
 import type { Announcement, OutputDeps, OutputService } from '../core/contracts';
 import { playCue } from './sounds';
-import { speak, stopSpeaking, textFor, wantsAudio, wantsSubtitles } from './speech';
+import { speak, speechRate, stopSpeaking, textFor, wantsAudio, wantsSubtitles } from './speech';
 import { clear, showCaption, showFlash } from './store';
 
 export { speechAt } from './speech';
@@ -53,6 +53,8 @@ export function createOutputService(deps: OutputDeps): OutputService {
         let captionId: number | undefined;
         const spoken = speak(text, {
           volume: prefs.volume ?? 1,
+          // Con una emoción reciente de nervios, confusión o cansancio se lee más despacio.
+          rate: speechRate(deps.getProfile().emotional.lastFeeling),
           // Un paso nuevo corta la lectura del anterior.
           interrupt: announcement.kind === 'step',
           onStart: () => {
