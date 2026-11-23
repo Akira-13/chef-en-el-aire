@@ -2,7 +2,7 @@
 // comida no espera aunque el usuario navegue (RF-16). La alerta es visual, sonora y persistente
 // hasta que se confirma por cualquier canal (RF-17, CA-20.1).
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { commandBus, useCommands } from '../core/commandBus';
 import { updateCommandContext } from '../core/commandContext';
 import { metrics } from '../core/metrics';
@@ -43,12 +43,21 @@ interface TimerAlertProps {
 function TimerAlert({ timer, pending, fullScreen, flash }: TimerAlertProps) {
   const button = useRef<HTMLButtonElement>(null);
 
-  // El foco vuelve a donde estaba cuando se confirma la alerta (RNF-08).
+  // El foco pasa al botón al abrirse y vuelve a donde estaba cuando se confirma (RNF-08, RF-24).
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     button.current?.focus();
     return () => previous?.focus?.();
   }, []);
+
+  // En pantalla completa el diálogo es modal: el único control es «Listo», así que el Tab no
+  // puede sacar el foco hacia el contenido de detrás (WCAG 2.4.3).
+  function keepFocusInside(event: KeyboardEvent<HTMLDivElement>) {
+    if (fullScreen && event.key === 'Tab') {
+      event.preventDefault();
+      button.current?.focus();
+    }
+  }
 
   return (
     <div
@@ -56,6 +65,7 @@ function TimerAlert({ timer, pending, fullScreen, flash }: TimerAlertProps) {
       aria-modal={fullScreen}
       aria-labelledby="timer-alert-title"
       aria-describedby="timer-alert-hint"
+      onKeyDown={keepFocusInside}
       className={cx(
         styles.alert,
         fullScreen ? styles.alertFull : styles.alertBanner,

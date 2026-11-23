@@ -1,13 +1,13 @@
 /* ---------- Barra de temporizadores ---------- */
+/* Los temporizadores se ajustan en varias líneas: a 360 px ninguno queda fuera de la vista (RNF-08). */
 .bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
   margin: 0;
   padding: 0;
-  overflow-x: auto;
   list-style: none;
-  scrollbar-width: none;
 }
 
 .barItem {
@@ -90,4 +90,18 @@
 
 .alertHint {
   font-size: var(--text-md);
+}
+
+/* En horizontal la altura es poca: el icono de la alerta se reduce para que el aviso quepa.
+   El aviso a pantalla completa se desplaza en vez de cortarse (RNF-08). */
+@media (orientation: landscape) and (max-height: 500px) {
+  .alertIcon {
+    font-size: 3rem;
+  }
+
+  .alertFull {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-block: var(--gutter);
+  }
 }
