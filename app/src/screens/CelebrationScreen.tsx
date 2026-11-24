@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router';
 import { celebrationPlan } from '../cooking/progress';
 import { commandBus, useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
+import { ShareAchievementButton } from '../community/ShareAchievementButton';
 import { useRecipe } from '../core/recipes';
 import { output, profileService, useProfile } from '../core/services';
 import { Button, IconButton, Screen } from '../ui';
@@ -132,6 +133,13 @@ export function CelebrationScreen() {
             👎
           </IconButton>
         </div>
+        {recipe && (
+          <ShareAchievementButton
+            recipeId={recipe.id}
+            recipeName={recipe.name}
+            rating={rating ?? undefined}
+          />
+        )}
       </div>
     </Screen>
   );

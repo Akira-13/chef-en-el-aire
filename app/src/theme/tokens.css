@@ -68,3 +68,12 @@
   --color-cork: #684e3a;
   --color-focus: #000000;
 }
+
+/* Horizontal en teléfono: la pantalla es baja y estrecha el margen lateral y el ancho máximo
+   para dar más ancho al paso. El tamaño del texto del paso no cambia (RNF-07). */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --gutter: 12px;
+    --content-max: 720px;
+  }
+}

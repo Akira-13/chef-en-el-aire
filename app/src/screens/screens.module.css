@@ -23,7 +23,7 @@
   width: 100%;
   min-height: 48px;
   padding: 10px 16px;
-  border: 2px solid transparent;
+  border: 2px solid var(--color-text-2);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
@@ -58,7 +58,7 @@
 .timeChip {
   min-height: var(--touch-min);
   padding: 8px 14px;
-  border: 2px solid transparent;
+  border: 2px solid var(--color-text-2);
   border-radius: var(--radius-pill);
   background: var(--color-chip);
   color: var(--color-text);
@@ -397,4 +397,38 @@
 
 .onboardingText {
   font-size: var(--text-lg);
+}
+
+/* ---------- Cabecera del inicio y carga de pantallas perezosas ---------- */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.communityLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-min);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-chip);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.loading {
+  padding: 24px 16px;
+  color: var(--color-text-2);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+
+/* Teléfono apoyado en horizontal: el paso conserva su tamaño y la pantalla se desplaza en vertical. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .stepText {
+    line-height: 1.1;
+  }
 }

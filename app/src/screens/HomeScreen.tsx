@@ -84,9 +84,18 @@ export function HomeScreen() {
       header={
         <>
           <span className={styles.brand}>Chef en el Aire</span>
-          <IconButton aria-label="Mi perfil" variant="primary" onClick={() => navigate('/perfil')}>
-            👤
-          </IconButton>
+          <div className={styles.headerActions}>
+            <Link to="/comunidad" className={styles.communityLink}>
+              Comunidad
+            </Link>
+            <IconButton
+              aria-label="Mi perfil"
+              variant="primary"
+              onClick={() => navigate('/perfil')}
+            >
+              👤
+            </IconButton>
+          </div>
         </>
       }
     >
@@ -162,7 +171,7 @@ export function HomeScreen() {
 
       {install && (
         <Button variant="secondary" block onClick={install}>
-          📲 Instalar la app
+          <span aria-hidden="true">📲</span> Instalar la app
         </Button>
       )}
     </Screen>

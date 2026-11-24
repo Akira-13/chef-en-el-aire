@@ -8,6 +8,7 @@ import { AssistantPanel } from '../assistant/AssistantPanel';
 import { requestAlertPermission } from '../cooking/backgroundAlert';
 import { encouragement, estimatedReadingMs, substitutedIngredients } from '../cooking/progress';
 import { clearCookingSession } from '../cooking/session';
+import { useServings } from '../cooking/servings';
 import { stepIngredients } from '../cooking/stepIngredients';
 import { TimerBar } from '../cooking/TimerBar';
 import {
@@ -53,7 +54,8 @@ function StepTimerControl({ step }: { step: Step }) {
       block
       onClick={() => commandBus.emit({ type: 'startTimer', name: step.timerName }, 'touch')}
     >
-      ⏱ Iniciar {step.timerName} · {formatDuration(step.timerSeconds)}
+      <span aria-hidden="true">⏱</span> Iniciar {step.timerName} ·{' '}
+      {formatDuration(step.timerSeconds)}
     </Button>
   );
 }
@@ -63,6 +65,7 @@ export function CookingScreen() {
   const navigate = useNavigate();
   const profile = useProfile();
   const { status, recipe, original, isAdapted } = useRecipe(recipeId);
+  const scaling = useServings(recipeId, recipe, isAdapted);
   const shownAt = useRef(0);
 
   useWakeLock();
@@ -202,6 +205,7 @@ export function CookingScreen() {
   if (!recipe || !step) {
     return (
       <Screen title="Modo cocina" background="cork">
+        <h1 className="visually-hidden">Modo cocina</h1>
         <p role={status === 'loading' ? 'status' : 'alert'}>
           {status === 'loading' ? 'Cargando receta…' : 'No encontré esta receta.'}
         </p>
@@ -263,7 +267,10 @@ export function CookingScreen() {
               {nav.isLast ? '✓' : '→'}
             </IconButton>
           </div>
-          <p className={styles.channelHint}>🎙️ voz · ✋ gesto · toque — lo que prefieras</p>
+          <p className={styles.channelHint}>
+            <span aria-hidden="true">🎙️</span> voz · <span aria-hidden="true">✋</span> gesto ·
+            toque — lo que prefieras
+          </p>
         </>
       }
     >
@@ -297,7 +304,11 @@ export function CookingScreen() {
             ))}
           </ul>
         )}
-        {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
+        {scaling.scaledOnly ? (
+          <Chip tone="have">Para {recipe.servings} porciones</Chip>
+        ) : (
+          isAdapted && <Chip tone="have">Receta adaptada</Chip>
+        )}
         {nav.paused && (
           <p role="status" className={styles.paused}>
             ⏸️ En pausa. Los temporizadores esperan hasta que continúes.

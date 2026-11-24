@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { ALLERGEN_LABELS, findAllergens, type AllergenFinding } from '@chef/shared';
 import { AdaptationPanel } from '../assistant/AdaptationPanel';
 import { clearCookingSession, useCookingSession } from '../cooking/session';
+import { MAX_SERVINGS, MIN_SERVINGS, clampServings, useServings } from '../cooking/servings';
 import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { useRecipe } from '../core/recipes';
@@ -29,14 +30,62 @@ function describeFinding(finding: AllergenFinding): string {
   return `${finding.ingredientName}: ${ALLERGEN_LABELS[finding.allergen]} (${who})`;
 }
 
+/** Control de − y + para cambiar las porciones (RF-05); cada botón mide al menos 44 px. */
+function ServingsStepper({
+  servings,
+  onChange,
+}: {
+  servings: number;
+  onChange: (servings: number) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Porciones"
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}
+    >
+      <IconButton
+        aria-label="Quitar una porción"
+        disabled={servings <= MIN_SERVINGS}
+        onClick={() => onChange(servings - 1)}
+      >
+        −
+      </IconButton>
+      <span>
+        {servings} {servings === 1 ? 'porción' : 'porciones'}
+      </span>
+      <IconButton
+        aria-label="Añadir una porción"
+        disabled={servings >= MAX_SERVINGS}
+        onClick={() => onChange(servings + 1)}
+      >
+        +
+      </IconButton>
+    </div>
+  );
+}
+
 export function RecipeScreen() {
   const { recipeId } = useParams();
   const navigate = useNavigate();
   const profile = useProfile();
   const { status, recipe, isAdapted } = useRecipe(recipeId);
+  const scaling = useServings(recipeId, recipe, isAdapted);
   const session = useCookingSession();
   const [riskAccepted, setRiskAccepted] = useState(false);
   useVoiceSubstitution(recipe);
+
+  // Cambia las porciones desde el control o por voz; el anuncio lo oyen también quienes no ven la pantalla.
+  function changeServings(requested: number) {
+    const target = clampServings(requested);
+    if (scaling.servings === undefined || target === scaling.servings) return;
+    const applied = scaling.setServings(target);
+    if (applied === undefined) return;
+    output.announce({
+      text: `Ahora para ${applied} ${applied === 1 ? 'porción' : 'porciones'}`,
+      kind: 'info',
+    });
+  }
 
   const resumeStep = session.recipeId === recipeId ? session.stepIndex : 0;
   const warnings = recipe ? findAllergens(recipe, profile.explicit).map(describeFinding) : [];
@@ -54,11 +103,13 @@ export function RecipeScreen() {
   // Por voz solo vale decir "confirmo": un gesto genérico no alcanza (CA-06.2).
   useCommands(({ command, channel }) => {
     if (blocked && command.type === 'confirm' && channel === 'voice') setRiskAccepted(true);
+    if (command.type === 'setServings') changeServings(command.servings);
   });
 
   if (!recipe) {
     return (
       <Screen title="Receta">
+        <h1 className="visually-hidden">Receta</h1>
         <p role={status === 'loading' ? 'status' : 'alert'}>
           {status === 'loading' ? 'Cargando receta…' : 'No encontré esta receta.'}
         </p>
@@ -85,7 +136,8 @@ export function RecipeScreen() {
         ) : (
           <>
             <Button size="lg" block onClick={() => navigate(`/cocinar/${recipe.id}`)}>
-              {resumeStep > 0 ? `👩‍🍳 Seguir en el paso ${resumeStep + 1}` : '👩‍🍳 Empezar a cocinar'}
+              <span aria-hidden="true">👩‍🍳</span>{' '}
+              {resumeStep > 0 ? `Seguir en el paso ${resumeStep + 1}` : 'Empezar a cocinar'}
             </Button>
             {resumeStep > 0 && (
               <Button
@@ -109,16 +161,20 @@ export function RecipeScreen() {
         </span>
         <h1 className={styles.title}>{recipe.name}</h1>
         <p className={styles.muted}>
-          {recipe.totalMinutes} min · {DIFFICULTY_LABELS[recipe.difficulty]} · {recipe.servings}{' '}
-          porciones
+          {recipe.totalMinutes} min · {DIFFICULTY_LABELS[recipe.difficulty]}
         </p>
-        {isAdapted && <Chip tone="have">Receta adaptada</Chip>}
+        <ServingsStepper servings={recipe.servings} onChange={changeServings} />
+        {scaling.scaledOnly ? (
+          <Chip tone="have">Para {recipe.servings} porciones</Chip>
+        ) : (
+          isAdapted && <Chip tone="have">Receta adaptada</Chip>
+        )}
       </div>
 
       {warnings.length > 0 && (
         <section className={styles.allergenWarning} aria-labelledby="allergen-title">
           <h2 id="allergen-title" className={styles.allergenTitle}>
-            ⚠️ Cuidado: contiene alérgenos de tu perfil
+            <span aria-hidden="true">⚠️</span> Cuidado: contiene alérgenos de tu perfil
           </h2>
           <ul className={styles.allergenList}>
             {warnings.map((warning) => (
@@ -129,7 +185,7 @@ export function RecipeScreen() {
         </section>
       )}
 
-      <AdaptationPanel recipe={recipe} />
+      <AdaptationPanel recipe={recipe} servings={recipe.servings} />
 
       <h2 className={styles.sectionTitle}>Ingredientes</h2>
       <ul className={styles.ingredientList}>
