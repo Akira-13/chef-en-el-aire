@@ -61,7 +61,6 @@ export function ChannelStatus() {
           className={styles.pill}
           data-state={voiceEnabled ? voice : 'off'}
           data-armed={wakeArmed || undefined}
-          aria-pressed={voiceEnabled}
           aria-label={voiceEnabled ? 'Desactivar voz' : 'Activar voz'}
           onClick={() => void toggleVoice()}
         >
@@ -74,7 +73,6 @@ export function ChannelStatus() {
           type="button"
           className={styles.pill}
           data-state={cameraUserOff ? 'off' : camera}
-          aria-pressed={!cameraUserOff}
           aria-label={cameraUserOff ? 'Encender cámara' : `${cameraLabel}. Apagar cámara`}
           onClick={() =>
             commandBus.emit({ type: cameraUserOff ? 'cameraOn' : 'cameraOff' }, 'touch')

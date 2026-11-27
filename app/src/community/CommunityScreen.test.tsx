@@ -167,7 +167,13 @@ describe('CommunityScreen', () => {
     await emit({ type: 'applaud' });
     expect(requests('POST', '/PUB-0001/applause')).toHaveLength(1);
     expect(cards()[1]!.textContent).toContain('1 aplauso');
-    expect(button('Aplaudiste', cards()[1])?.disabled).toBe(true);
+    // Sin `disabled` ni `aria-pressed`: conserva el foco y el estado va en la etiqueta (WCAG 4.1.2).
+    const applauded = button('Aplaudiste', cards()[1])!;
+    expect(applauded.disabled).toBe(false);
+    expect(applauded.getAttribute('aria-disabled')).toBe('true');
+    expect(applauded.hasAttribute('aria-pressed')).toBe(false);
+    await act(async () => applauded.click());
+    expect(requests('POST', '/PUB-0001/applause')).toHaveLength(1);
     expect(announce).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'Ya aplaudiste esta publicación.' }),
     );
