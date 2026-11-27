@@ -46,6 +46,23 @@
 
 /* ---------- Personas ---------- */
 
+.subTitle {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.exampleSelect {
+  min-height: var(--touch-min);
+  padding: 10px 16px;
+  border: 3px solid var(--color-cork);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 400;
+}
+
 .personas {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

@@ -57,14 +57,87 @@ afterEach(() => {
 });
 
 describe('ProfileScreen', () => {
-  it('elige la persona con tarjetas que muestran condición y canal', async () => {
-    await render(<ProfileScreen />);
-    const rosa = button('Rosa')!;
-    expect(rosa.textContent).toContain('artritis');
-    expect(rosa.textContent).toContain('Voz');
-    await click(rosa);
-    expect(profileService.getProfile().name).toBe('Rosa');
-    expect(button('Rosa')!.getAttribute('aria-pressed')).toBe('true');
+  describe('¿Quién cocina?', () => {
+    const select = () => container.querySelector<HTMLSelectElement>('#perfil-ejemplos-select')!;
+    const optionTexts = () => [...select().options].map((o) => o.textContent);
+
+    async function choose(value: string) {
+      await act(async () => {
+        const setValue = Object.getOwnPropertyDescriptor(
+          HTMLSelectElement.prototype,
+          'value',
+        )!.set!;
+        setValue.call(select(), value);
+        select().dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    it('agrupa los perfiles de ejemplo en un selector con etiqueta real, sin tarjetas', async () => {
+      await render(<ProfileScreen />);
+      expect(select().labels?.[0]?.textContent).toBe('Perfiles de ejemplo');
+      expect(select().getAttribute('aria-pressed')).toBeNull();
+      expect(select().disabled).toBe(false);
+      expect([...select().options].some((o) => o.disabled)).toBe(false);
+      expect(optionTexts()).toEqual(
+        expect.arrayContaining([
+          'Elegir un perfil de ejemplo…',
+          expect.stringContaining('Rosa — artritis') as unknown as string,
+        ]),
+      );
+      expect(optionTexts()).toHaveLength(5);
+      expect(button('Rosa')).toBeUndefined();
+      expect(container.textContent).not.toContain('Mis perfiles');
+    });
+
+    it('sin perfiles creados explica que son personas de demostración', async () => {
+      await render(<ProfileScreen />);
+      expect(container.textContent).toContain('personas de demostración');
+      expect(container.textContent).toContain('se guardan en ellas');
+    });
+
+    it('elegir un ejemplo cambia de perfil, lo anuncia y lo deja a la vista', async () => {
+      const announce = vi.spyOn(output, 'announce');
+      await render(<ProfileScreen />);
+      await choose('USR-001');
+      expect(profileService.getProfile().name).toBe('Rosa');
+      expect(announce).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Ahora cocina Rosa.' }),
+      );
+      expect(select().value).toBe('USR-001');
+      expect(container.textContent).toContain('Perfil de ejemplo activo: Rosa');
+      announce.mockRestore();
+    });
+
+    it('la opción inicial no hace nada', async () => {
+      await render(<ProfileScreen />);
+      await choose('');
+      expect(profileService.getProfile().id).toBe('USR-002');
+    });
+
+    it('los perfiles creados siguen como tarjetas y el selector queda en la opción inicial', async () => {
+      await profileService.createProfile('Lucía');
+      await render(<ProfileScreen />);
+      expect(container.textContent).toContain('Mis perfiles');
+      const lucia = button('Lucía')!;
+      expect(lucia.getAttribute('aria-pressed')).toBe('true');
+      expect(lucia.textContent).toContain('Sin condición declarada');
+      expect(select().value).toBe('');
+      expect(container.textContent).not.toContain('Perfil de ejemplo activo');
+      expect(container.textContent).not.toContain('personas de demostración');
+      expect(optionTexts().some((t) => t?.includes('Lucía'))).toBe(false);
+    });
+
+    it('volver desde un ejemplo a un perfil propio con la tarjeta', async () => {
+      const id = await profileService.createProfile('Lucía');
+      await profileService.selectProfile('USR-001');
+      await render(<ProfileScreen />);
+      expect(button('Lucía')!.getAttribute('aria-pressed')).toBe('false');
+      expect(select().value).toBe('USR-001');
+      await click(button('Lucía'));
+      expect(profileService.getProfile().id).toBe(id);
+      expect(button('Lucía')!.getAttribute('aria-pressed')).toBe('true');
+      expect(select().value).toBe('');
+    });
   });
 
   it('permite editar alergias y dieta, y se guardan al instante (RF-28)', async () => {

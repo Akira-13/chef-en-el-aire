@@ -24,6 +24,9 @@ function PersonaPicker() {
   const profile = useProfile();
   // La lista se vuelve a leer en cada render: cambia al terminar de cargar y al borrar.
   const profiles = profileService.listProfiles();
+  const own = profiles.filter((p) => !p.example);
+  const examples = profiles.filter((p) => p.example);
+  const activeExample = examples.find((p) => p.id === profile.id);
 
   function select(id: string, name: string) {
     void profileService.selectProfile(id);
@@ -35,24 +38,61 @@ function PersonaPicker() {
       <h2 id="perfil-elegir" className={styles.sectionTitle}>
         ¿Quién cocina?
       </h2>
-      <div className={styles.personas}>
-        {profiles.map((summary) => {
-          const selected = summary.id === profile.id;
-          return (
-            <button
-              key={summary.id}
-              type="button"
-              className={styles.persona}
-              aria-pressed={selected}
-              onClick={() => select(summary.id, summary.name)}
-            >
-              <span className={styles.personaName}>{summary.name}</span>
-              <span className={styles.muted}>{summary.condition ?? 'Sin condición declarada'}</span>
-              <span className={styles.muted}>Prefiere: {INPUT_LABELS[summary.preferredInput]}</span>
-              {selected && <span className={styles.personaCheck}>✓ Eres tú</span>}
-            </button>
-          );
-        })}
+      {own.length > 0 && (
+        <>
+          <h3 className={styles.subTitle}>Mis perfiles</h3>
+          <div className={styles.personas}>
+            {own.map((summary) => {
+              const selected = summary.id === profile.id;
+              return (
+                <button
+                  key={summary.id}
+                  type="button"
+                  className={styles.persona}
+                  aria-pressed={selected}
+                  onClick={() => select(summary.id, summary.name)}
+                >
+                  <span className={styles.personaName}>{summary.name}</span>
+                  <span className={styles.muted}>
+                    {summary.condition ?? 'Sin condición declarada'}
+                  </span>
+                  <span className={styles.muted}>
+                    Prefiere: {INPUT_LABELS[summary.preferredInput]}
+                  </span>
+                  {selected && <span className={styles.personaCheck}>✓ Eres tú</span>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      <div className={styles.field}>
+        <label htmlFor="perfil-ejemplos-select">Perfiles de ejemplo</label>
+        {own.length === 0 && (
+          <p id="perfil-ejemplos-ayuda" className={styles.muted}>
+            Son personas de demostración. Los cambios que hagas en ellas se guardan en ellas.
+          </p>
+        )}
+        <select
+          id="perfil-ejemplos-select"
+          aria-describedby={own.length === 0 ? 'perfil-ejemplos-ayuda' : undefined}
+          className={styles.exampleSelect}
+          value={activeExample?.id ?? ''}
+          onChange={(event) => {
+            const chosen = examples.find((p) => p.id === event.target.value);
+            if (chosen) select(chosen.id, chosen.name);
+          }}
+        >
+          <option value="">Elegir un perfil de ejemplo…</option>
+          {examples.map((summary) => (
+            <option key={summary.id} value={summary.id}>
+              {summary.name} — {summary.condition ?? 'sin condición declarada'}
+            </option>
+          ))}
+        </select>
+        {activeExample && (
+          <p className={styles.personaCheck}>Perfil de ejemplo activo: {activeExample.name}</p>
+        )}
       </div>
     </section>
   );
