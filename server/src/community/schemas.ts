@@ -20,12 +20,17 @@ const MAX_CHANGES = 50;
 const MAX_RECIPE_NAME = 120;
 const MAX_ID = 100;
 const INVALID_BODY = 'Los datos enviados no son válidos.';
+const NO_LINKS = 'No se admiten enlaces en los textos.';
+
+// El texto libre llega a todos los dispositivos de la Comunidad: se bloquean los enlaces.
+const hasNoLink = (text: string) => !/https?:\/\//i.test(text);
 
 const alias = z
   .string({ error: 'Falta el alias.' })
   .trim()
   .min(1, 'El alias no puede estar vacío.')
-  .max(aliasMaxLength, `El alias admite hasta ${aliasMaxLength} caracteres.`);
+  .max(aliasMaxLength, `El alias admite hasta ${aliasMaxLength} caracteres.`)
+  .refine(hasNoLink, NO_LINKS);
 
 const clientId = z
   .string({ error: 'Falta el identificador del envío.' })
@@ -45,13 +50,15 @@ const optionalText = (label: string) =>
     .string({ error: `${label} no es válido.` })
     .trim()
     .max(textMaxLength, `${label} admite hasta ${textMaxLength} caracteres.`)
+    .refine(hasNoLink, NO_LINKS)
     .optional();
 
 const changeText = (label: string) =>
   z
     .string({ error: `${label} del cambio no es válido.` })
     .trim()
-    .max(textMaxLength, `${label} del cambio admite hasta ${textMaxLength} caracteres.`);
+    .max(textMaxLength, `${label} del cambio admite hasta ${textMaxLength} caracteres.`)
+    .refine(hasNoLink, NO_LINKS);
 
 const changeSchema = z.object({
   kind: z.enum(['ingredient', 'step', 'servings'], { error: 'El tipo de cambio no es válido.' }),
@@ -130,7 +137,8 @@ const newCommentSchema = z.object(
       .string({ error: 'El comentario no es válido.' })
       .trim()
       .min(1, 'El comentario no puede estar vacío.')
-      .max(textMaxLength, `El comentario admite hasta ${textMaxLength} caracteres.`),
+      .max(textMaxLength, `El comentario admite hasta ${textMaxLength} caracteres.`)
+      .refine(hasNoLink, NO_LINKS),
   },
   { error: INVALID_BODY },
 );

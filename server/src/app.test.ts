@@ -1,8 +1,12 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { AssistantUnavailable, LLMProviderId, Recipe } from '@chef/shared';
 import { createApp } from './app';
+import { createCommunityStore } from './community/store';
 import type { LLMProvider } from './llm/LLMProvider';
 
 let server: Server;
@@ -77,5 +81,38 @@ describe('API del asistente', () => {
       expect(res.status).toBe(503);
       expect(((await res.json()) as AssistantUnavailable).status).toBe('unavailable');
     }
+  });
+});
+
+describe('estado del servidor', () => {
+  async function health(file: (dir: string) => string) {
+    const dir = mkdtempSync(join(tmpdir(), 'chef-health-'));
+    writeFileSync(join(dir, 'bloqueado'), '');
+    const communityStore = createCommunityStore({ file: file(dir) });
+    const app = createApp({ communityStore, llmLog: () => {} }).listen(0);
+    await new Promise<void>((resolve) => app.once('listening', resolve));
+    try {
+      const url = `http://localhost:${(app.address() as AddressInfo).port}/api/health`;
+      return (await (await fetch(url)).json()) as {
+        status: string;
+        llm: unknown;
+        community: { writable: boolean };
+      };
+    } finally {
+      app.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('informa que la Comunidad puede escribir su archivo', async () => {
+    const body = await health((dir) => join(dir, 'community.json'));
+    expect(body.status).toBe('ok');
+    expect(body.llm).toBeTruthy();
+    expect(body.community).toEqual({ writable: true });
+  });
+
+  it('informa que la Comunidad no puede escribir si el archivo es inaccesible', async () => {
+    const body = await health((dir) => join(dir, 'bloqueado', 'community.json'));
+    expect(body.community).toEqual({ writable: false });
   });
 });

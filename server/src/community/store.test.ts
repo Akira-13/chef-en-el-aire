@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { COMMUNITY_LIMITS } from '@chef/shared';
-import { createCommunityStore, type NewPostInput } from './store';
+import {
+  createCommunityStore,
+  MAX_POSTS_PER_HOUR,
+  PostRateLimitError,
+  type NewPostInput,
+} from './store';
 
 let dir: string;
 let file: string;
@@ -160,7 +165,7 @@ describe('almacén de la Comunidad', () => {
   });
 
   it('serializa las escrituras simultáneas sin perder ni repetir publicaciones', async () => {
-    const store = createCommunityStore({ file });
+    const store = createCommunityStore({ file, maxPostsPerHour: 100 });
     const results = await Promise.all(
       Array.from({ length: 20 }, (_, i) => store.createPost(post({ clientId: `c-${i}` }))),
     );
@@ -170,7 +175,7 @@ describe('almacén de la Comunidad', () => {
   });
 
   it('guarda como máximo 200 publicaciones y descarta las más antiguas', async () => {
-    const store = createCommunityStore({ file });
+    const store = createCommunityStore({ file, maxPostsPerHour: 1000 });
     for (let i = 0; i < 205; i += 1) {
       await store.createPost(post({ clientId: `c-${i}`, message: `n${i}` }));
     }
@@ -179,6 +184,65 @@ describe('almacén de la Comunidad', () => {
     const { posts } = store.getFeed();
     expect(posts).toHaveLength(COMMUNITY_LIMITS.feedSize);
     expect(posts[0]?.message).toBe('n204');
+  });
+
+  describe('límite de publicaciones por hora', () => {
+    const at = (iso: string) => () => new Date(iso);
+
+    it('rechaza la publicación número 11 de un mismo dispositivo en una hora', async () => {
+      const store = createCommunityStore({ file, now: at('2026-01-01T10:00:00Z') });
+      for (let i = 0; i < MAX_POSTS_PER_HOUR; i += 1) {
+        await store.createPost(post({ clientId: `c-${i}` }));
+      }
+      await expect(store.createPost(post({ clientId: 'c-extra' }))).rejects.toBeInstanceOf(
+        PostRateLimitError,
+      );
+      expect(store.getFeed().posts.some((p) => p.id === 'PUB-0013')).toBe(false);
+    });
+
+    it('otro dispositivo no se ve afectado', async () => {
+      const store = createCommunityStore({ file, now: at('2026-01-01T10:00:00Z') });
+      for (let i = 0; i < MAX_POSTS_PER_HOUR; i += 1) {
+        await store.createPost(post({ clientId: `c-${i}` }));
+      }
+      const other = await store.createPost(post({ clientId: 'otro', deviceKey: 'otro-device-1' }));
+      expect(other.created).toBe(true);
+    });
+
+    it('reenviar un clientId ya publicado no cuenta ni se rechaza', async () => {
+      const store = createCommunityStore({ file, now: at('2026-01-01T10:00:00Z') });
+      for (let i = 0; i < MAX_POSTS_PER_HOUR; i += 1) {
+        await store.createPost(post({ clientId: `c-${i}` }));
+      }
+      expect((await store.createPost(post({ clientId: 'c-0' }))).created).toBe(false);
+    });
+
+    it('vuelve a aceptar pasada la hora y borrar publicaciones no reinicia la cuenta', async () => {
+      let clock = new Date('2026-01-01T10:00:00Z');
+      const store = createCommunityStore({ file, now: () => clock });
+      const ids: string[] = [];
+      for (let i = 0; i < MAX_POSTS_PER_HOUR; i += 1) {
+        ids.push((await store.createPost(post({ clientId: `c-${i}` }))).post.id);
+      }
+      await store.deletePost(ids[0]!, DEVICE);
+      await expect(store.createPost(post({ clientId: 'c-x' }))).rejects.toBeInstanceOf(
+        PostRateLimitError,
+      );
+      clock = new Date('2026-01-01T11:00:01Z');
+      expect((await store.createPost(post({ clientId: 'c-x' }))).created).toBe(true);
+    });
+
+    it('la cuenta sobrevive al reinicio del almacén', async () => {
+      const now = at('2026-01-01T10:00:00Z');
+      const first = createCommunityStore({ file, now });
+      for (let i = 0; i < MAX_POSTS_PER_HOUR; i += 1) {
+        await first.createPost(post({ clientId: `c-${i}` }));
+      }
+      const second = createCommunityStore({ file, now });
+      await expect(second.createPost(post({ clientId: 'c-x' }))).rejects.toBeInstanceOf(
+        PostRateLimitError,
+      );
+    });
   });
 
   it('un archivo dañado se aparta y se vuelve a sembrar', () => {

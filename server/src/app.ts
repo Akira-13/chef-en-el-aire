@@ -29,9 +29,23 @@ export function createApp(options: AppOptions = {}) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
-  app.get('/api/health', (_req, res) => {
+  // Se crea al primer uso: leer o sembrar el archivo no ocurre al importar ni al arrancar.
+  let defaultStore: CommunityStore | undefined;
+  const communityStore = () =>
+    options.communityStore ??
+    (defaultStore ??= createCommunityStore({ file: loadConfig().communityFile }));
+
+  app.get('/api/health', async (_req, res) => {
     const { llm } = loadConfig();
-    res.json({ status: 'ok', llm: { primary: llm.primary, fallback: llm.fallback } });
+    // Una Comunidad que no puede escribir no tumba el estado: solo se informa.
+    const writable = await Promise.resolve()
+      .then(() => communityStore().isWritable())
+      .catch(() => false);
+    res.json({
+      status: 'ok',
+      llm: { primary: llm.primary, fallback: llm.fallback },
+      community: { writable },
+    });
   });
 
   app.get('/api/recipes', (_req, res) => {
@@ -53,16 +67,7 @@ export function createApp(options: AppOptions = {}) {
     createAssistantRouter(() => createSelector(loadConfig(), options.providers, options.llmLog)),
   );
 
-  // Se crea al primer pedido: leer o sembrar el archivo no ocurre al importar ni al arrancar.
-  let defaultStore: CommunityStore | undefined;
-  app.use(
-    '/api/community',
-    createCommunityRouter(
-      () =>
-        options.communityStore ??
-        (defaultStore ??= createCommunityStore({ file: loadConfig().communityFile })),
-    ),
-  );
+  app.use('/api/community', createCommunityRouter(communityStore));
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Ruta no encontrada' });

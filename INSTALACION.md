@@ -75,7 +75,7 @@ Para comprobar el respaldo, deja `DEEPSEEK_API_KEY` vacía (o con una clave inv�
 Con el servidor en marcha (`npm run dev`, o `npm run dev -w @chef/server` si no necesitas la app), en otra terminal:
 
 ```bash
-curl localhost:3001/api/health     # muestra el proveedor principal y el alterno
+curl localhost:3001/api/health     # muestra el proveedor principal, el alterno y si la Comunidad puede escribir
 ```
 
 Adaptar la ocopa (REC-008) para una persona alérgica al maní. Debe responder en unos 8 s como máximo; `status` es `ok` si la receta quedó sin alérgenos o `blocked` (con `findings`) si el validador local encontró alguno:
