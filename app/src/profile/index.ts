@@ -16,12 +16,74 @@ import { commandBus } from '../core/commandBus';
 import { metrics } from '../core/metrics';
 import { addToPantry } from '../personalization/pantry';
 import { applyUsageEvent, createLearningSession } from './learning';
+import { sameProfileName, validateProfileName } from './name';
 import { openProfileStore, type ProfileStore } from './storage';
 
 const DEFAULT_PROFILE_ID = 'USR-002';
 
 function seedProfiles(): Profile[] {
   return (rawProfiles as unknown as RawProfileBook).perfiles.map(toProfile);
+}
+
+// Ids de los perfiles de prueba: lo que no está aquí lo creó la persona.
+const EXAMPLE_IDS: ReadonlySet<string> = new Set(seedProfiles().map((p) => p.id));
+
+// Los ids de perfiles creados parten de aquí para no chocar con perfiles de prueba nuevos.
+const FIRST_CREATED_ID = 100;
+
+/** Perfil neutro: no hereda alergias, despensa, historial ni lo aprendido de ningún otro. */
+function blankProfile(id: string, name: string): Profile {
+  return toProfile({
+    id,
+    nombre: name,
+    edad: 0, // desconocida: ninguna función la usa
+    nivel_habilidad: 'novato',
+    explicito: {
+      alergias: [],
+      restricciones_comensales: [],
+      dieta: 'omnivora',
+    },
+    accesibilidad: {
+      condicion: null,
+      canal_entrada_preferido: 'tactil',
+      canales_entrada_activos: ['voz', 'gestos', 'tactil'],
+      canales_salida: ['visual', 'audio'],
+      gestos_habilitados: [
+        'palma_abierta_pausar',
+        'deslizar_siguiente',
+        'deslizar_anterior',
+        'pulgar_arriba_confirmar',
+        'mano_alzada_ayuda',
+      ],
+      sensibilidad_gestos: 'normal',
+      tiempo_sostener_gesto_ms: 300,
+      tamano_fuente: 'normal',
+      alto_contraste: false,
+      tts_activo: true,
+      verbosidad: 'detallada',
+      subtitulos: true,
+      alerta_temporizador: { sonido: true, visual_pantalla_completa: true },
+    },
+    aprendido: {
+      le_gusta: [],
+      no_le_gusta: [],
+      sustituciones_aceptadas: [],
+      pide_explicacion_frecuente: [],
+    },
+    emocional: {
+      tono_asistente: 'animado y paciente',
+      celebracion: 'completa',
+      musica_ambiente: 'ninguna',
+    },
+    despensa: [],
+    historial: [],
+    salas: [],
+  });
+}
+
+function nextProfileId(profiles: Profile[]): string {
+  const used = profiles.map((p) => Number(/^USR-(\d+)$/.exec(p.id)?.[1] ?? 0));
+  return `USR-${Math.max(FIRST_CREATED_ID - 1, ...used) + 1}`;
 }
 
 function today(): string {
@@ -147,6 +209,7 @@ export function createProfileService(options: ProfileServiceOptions = {}): Profi
         name: p.name,
         condition: p.accessibility.condition,
         preferredInput: p.accessibility.preferredInput,
+        example: EXAMPLE_IDS.has(p.id),
       }));
     },
     async selectProfile(id) {
@@ -156,6 +219,31 @@ export function createProfileService(options: ProfileServiceOptions = {}): Profi
       currentId = id;
       notify();
       await persist((s) => s.saveCurrentId(id));
+    },
+    async createProfile(name) {
+      await ready;
+      const checked = validateProfileName(name);
+      if (!checked.ok) throw new Error(checked.error);
+      // Si la bienvenida se reinicia (recarga a mitad del recorrido), el perfil propio activo
+      // ya está creado: repetir su nombre lo reutiliza en vez de duplicarlo.
+      const active = current();
+      if (!EXAMPLE_IDS.has(active.id) && sameProfileName(active.name, checked.name)) {
+        return active.id;
+      }
+      // Los nombres de los perfiles de ejemplo están permitidos: solo cuentan los propios.
+      const own = profiles.filter((p) => !EXAMPLE_IDS.has(p.id));
+      if (own.some((p) => sameProfileName(p.name, checked.name))) {
+        throw new Error('Ya existe un perfil con ese nombre. Prueba con otro.');
+      }
+      const created = blankProfile(nextProfileId(profiles), checked.name);
+      profiles = [...profiles, created];
+      currentId = created.id;
+      notify();
+      await persist(async (s) => {
+        await s.saveProfile(toRawProfile(created));
+        await s.saveCurrentId(created.id);
+      });
+      return created.id;
     },
     recordEvent,
     onNotice(listener) {

@@ -17,6 +17,33 @@
   font-size: var(--text-sm);
 }
 
+/* ---------- Nombre en la bienvenida ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.nameInput {
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 2px solid var(--color-chip);
+  border-radius: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 400;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
 /* ---------- Personas ---------- */
 
 .personas {

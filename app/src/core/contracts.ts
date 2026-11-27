@@ -77,6 +77,8 @@ export interface ProfileSummary {
   name: string;
   condition: string | null;
   preferredInput: InputChannel;
+  /** Es uno de los perfiles de prueba y no uno creado por la persona. */
+  example: boolean;
 }
 
 export interface ProfileService {
@@ -89,6 +91,11 @@ export interface ProfileService {
   update(updater: (current: Profile) => Profile): Promise<void>;
   listProfiles(): ProfileSummary[];
   selectProfile(id: string): Promise<void>;
+  /**
+   * Crea un perfil nuevo y neutro con ese nombre, lo deja como perfil actual y lo guarda
+   * (CA-22.3). Devuelve su id. Rechaza si el nombre es inválido o ya existe.
+   */
+  createProfile(name: string): Promise<string>;
   recordEvent(event: UsageEvent): Promise<void>;
   /**
    * Avisos que el perfil quiere comunicar al usuario, por ejemplo cuando aprende algo
@@ -97,6 +104,6 @@ export interface ProfileService {
   onNotice(listener: (message: string) => void): () => void;
   /** Perfil actual en el formato de datos/perfiles.json, para exportarlo (RNF-11). */
   exportRaw(): RawProfile;
-  /** Borra lo guardado y vuelve a los perfiles de prueba. */
+  /** Borra lo guardado, incluidos los perfiles creados, y vuelve a los perfiles de prueba. */
   reset(): Promise<void>;
 }

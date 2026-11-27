@@ -250,6 +250,7 @@
 
 - **CA-22.1** · **Dado** que Carmen guarda fuente "extragrande", alto contraste y verbosidad "detallada", **cuando** vuelve a abrir la app, **entonces** el modo cocina se muestra así sin pasos adicionales.
 - **CA-22.2** · **Dado** que un adulto mayor configura su primera vez, **cuando** termina, **entonces** la configuración de accesibilidad se hizo en ≤ 3 pantallas, con valores por defecto generosos (fuente grande, volumen alto).
+- **CA-22.3** · **Dado** un usuario nuevo en el onboarding, **cuando** escribe su nombre, **entonces** se crea un perfil nuevo y su configuración de accesibilidad se guarda ahí, sin modificar los perfiles de prueba.
 
 ---
 

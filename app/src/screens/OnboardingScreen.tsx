@@ -9,6 +9,7 @@ import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { output } from '../core/services';
 import { AccessibilitySetup } from '../profile/AccessibilitySetup';
+import { NameSetup } from '../profile/NameSetup';
 import { Button, Screen } from '../ui';
 import { markOnboarded } from './onboardingState';
 import styles from './screens.module.css';
@@ -53,7 +54,9 @@ const SUCCESS_PAUSE_MS = 900;
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  // Primero la configuración de accesibilidad (CA-22.2) y después el recorrido.
+  // Primero el nombre, que crea el perfil (CA-22.3); luego la configuración de accesibilidad
+  // (CA-22.2) y después el recorrido. Así lo que se configure se guarda en el perfil nuevo.
+  const [named, setNamed] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [index, setIndex] = useState(0);
   const [practiced, setPracticed] = useState(false);
@@ -90,6 +93,14 @@ export function OnboardingScreen() {
     output.announce({ text: '¡Muy bien!', kind: 'success' });
     pause.current = window.setTimeout(advance, SUCCESS_PAUSE_MS);
   });
+
+  if (!named) {
+    return (
+      <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
+        <NameSetup onDone={() => setNamed(true)} />
+      </Screen>
+    );
+  }
 
   if (!configured) {
     return (
