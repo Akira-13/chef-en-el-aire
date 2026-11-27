@@ -33,6 +33,13 @@ export function createOutputService(deps: OutputDeps): OutputService {
     return element;
   }
 
+  // Un lector de pantalla solo anuncia los cambios de una región que ya existía: crearlas aquí,
+  // al iniciar, evita que se pierdan los primeros avisos.
+  if (typeof document !== 'undefined' && document.body) {
+    region('polite');
+    region('assertive');
+  }
+
   function announceAria({ kind }: Announcement, text: string): void {
     const target = region(kind === 'alert' || kind === 'error' ? 'assertive' : 'polite');
     // Vaciar y volver a escribir hace que el lector repita aunque el texto sea el mismo.
