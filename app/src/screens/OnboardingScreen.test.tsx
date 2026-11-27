@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -21,6 +22,46 @@ async function press(name: string) {
   });
 }
 
+const setupHeading = () => container.querySelector('h2')?.textContent;
+
+describe('OnboardingScreen: configuración de accesibilidad (CA-22.2)', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    container = document.createElement('div');
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+            <Route path="/" element={<p>inicio</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+  });
+
+  it('empieza con la configuración en 3 pantallas y luego sigue el recorrido', async () => {
+    expect(setupHeading()).toBe('¿Cómo ves mejor?');
+    expect(container.textContent).toContain('Paso 1 de 3');
+    await press('Siguiente');
+    await press('Siguiente');
+    expect(container.textContent).toContain('Paso 3 de 3');
+    await press('Listo');
+    expect(heading()).toBe('Cocina sin tocar la pantalla');
+  });
+
+  it('se puede dejar para después y pasar directo al recorrido', async () => {
+    await press('Lo configuro después');
+    expect(heading()).toBe('Cocina sin tocar la pantalla');
+    expect(isOnboarded()).toBe(false);
+  });
+});
+
 describe('OnboardingScreen (HU-36)', () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -37,6 +78,7 @@ describe('OnboardingScreen (HU-36)', () => {
         </MemoryRouter>,
       );
     });
+    await press('Lo configuro después');
   });
 
   afterEach(async () => {
