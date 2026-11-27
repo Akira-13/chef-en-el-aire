@@ -34,11 +34,26 @@ async function typeName(name: string) {
   });
 }
 
-// Crear el perfil escribe en IndexedDB: se espera a que la pantalla pase a la configuración.
+// Crear el perfil escribe en IndexedDB: se espera a que la pantalla pase a alergias y dieta.
 async function submitName(name: string) {
   await typeName(name);
   await press('Continuar');
+  await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
+}
+
+// Alergias y dieta: se continúa sin marcar nada y se llega a la configuración de accesibilidad.
+async function submitDietary() {
+  await press('Continuar');
   await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+}
+
+const field = (text: string) =>
+  [...container.querySelectorAll('label')]
+    .find((l) => l.textContent?.includes(text))
+    ?.querySelector('input') as HTMLInputElement;
+
+async function click(element: HTMLElement | undefined | null) {
+  await act(async () => element?.click());
 }
 
 describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
@@ -85,7 +100,7 @@ describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
     await act(async () => {
       container.querySelector('form')!.requestSubmit();
     });
-    await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+    await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
   });
 
   it('el nombre de un perfil de ejemplo está permitido: crea uno propio', async () => {
@@ -122,7 +137,7 @@ describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
     });
     await vi.waitFor(() => expect(container.querySelector('input')!.value).toBe('Lucía'));
     await press('Continuar');
-    await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+    await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
     expect(profileService.getProfile().id).toBe(id);
     expect(profileService.listProfiles()).toHaveLength(total);
   });
@@ -133,6 +148,7 @@ describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
 
     await submitName('Lucía');
     expect(profileService.getProfile().name).toBe('Lucía');
+    await submitDietary();
     // La configuración parte de valores generosos y se guarda al instante en el perfil nuevo.
     await vi.waitFor(() =>
       expect(profileService.getProfile().accessibility.fontSize).toBe('grande'),
@@ -151,6 +167,68 @@ describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
     await profileService.selectProfile('USR-002');
     expect(profileService.getProfile()).toEqual(diego);
     expect(profileService.getProfile().accessibility.fontSize).toBe('normal');
+  });
+});
+
+describe('OnboardingScreen: alergias y dieta (RF-28, RF-07)', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await profileService.reset();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+            <Route path="/" element={<p>inicio</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it('llega después del nombre y antes de la configuración de accesibilidad', async () => {
+    await submitName('Lucía');
+    expect(container.querySelector('fieldset legend')?.textContent).toContain('alergias');
+    await press('Continuar');
+    await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+  });
+
+  it('guarda alergias y dieta en el perfil nuevo y deja a Diego intacto', async () => {
+    await profileService.selectProfile('USR-002');
+    const diego = profileService.getProfile();
+
+    await submitName('Lucía');
+    expect(profileService.getProfile().explicit.allergies).toEqual([]);
+    await click(field('mariscos'));
+    await click(field('huevo'));
+    await click(field('Vegetariana'));
+    await submitDietary();
+
+    const created = profileService.getProfile();
+    expect(created.name).toBe('Lucía');
+    expect(created.explicit.allergies).toEqual(['huevo', 'mariscos']);
+    expect(created.explicit.diet).toBe('vegetariana');
+
+    await profileService.selectProfile('USR-002');
+    expect(profileService.getProfile()).toEqual(diego);
+    expect(profileService.getProfile().explicit.allergies).toEqual(['mani']);
+    expect(profileService.getProfile().explicit.diet).toBe('omnivora');
+  });
+
+  it('quien no tiene alergias continúa sin marcar nada', async () => {
+    await submitName('Lucía');
+    await click(field('No tengo alergias'));
+    await submitDietary();
+    expect(profileService.getProfile().explicit.allergies).toEqual([]);
+    expect(profileService.getProfile().explicit.diet).toBe('omnivora');
   });
 });
 
@@ -181,6 +259,7 @@ describe('OnboardingScreen: configuración de accesibilidad (CA-22.2)', () => {
 
   it('empieza con la configuración en 3 pantallas y luego sigue el recorrido', async () => {
     await submitName('Lucía');
+    await submitDietary();
     expect(setupHeading()).toBe('¿Cómo ves mejor?');
     expect(container.textContent).toContain('Paso 1 de 3');
     await press('Siguiente');
@@ -192,6 +271,7 @@ describe('OnboardingScreen: configuración de accesibilidad (CA-22.2)', () => {
 
   it('se puede dejar para después y pasar directo al recorrido', async () => {
     await submitName('Lucía');
+    await submitDietary();
     await press('Lo configuro después');
     expect(heading()).toBe('Cocina sin tocar la pantalla');
     expect(isOnboarded()).toBe(false);
@@ -217,6 +297,7 @@ describe('OnboardingScreen (HU-36)', () => {
       );
     });
     await submitName('Lucía');
+    await submitDietary();
     await press('Lo configuro después');
     // Los temporizadores falsos van después: IndexedDB necesita los reales para guardar.
     vi.useFakeTimers();

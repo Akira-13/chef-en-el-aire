@@ -9,6 +9,7 @@ import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { output } from '../core/services';
 import { AccessibilitySetup } from '../profile/AccessibilitySetup';
+import { DietarySetup } from '../profile/DietarySetup';
 import { NameSetup } from '../profile/NameSetup';
 import { Button, Screen } from '../ui';
 import { markOnboarded } from './onboardingState';
@@ -54,9 +55,11 @@ const SUCCESS_PAUSE_MS = 900;
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  // Primero el nombre, que crea el perfil (CA-22.3); luego la configuración de accesibilidad
-  // (CA-22.2) y después el recorrido. Así lo que se configure se guarda en el perfil nuevo.
+  // Primero el nombre, que crea el perfil (CA-22.3); luego alergias y dieta (CA-23.3), la
+  // configuración de accesibilidad (CA-22.2) y después el recorrido. Así lo que se configure se
+  // guarda en el perfil nuevo.
   const [named, setNamed] = useState(false);
+  const [fed, setFed] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [index, setIndex] = useState(0);
   const [practiced, setPracticed] = useState(false);
@@ -98,6 +101,14 @@ export function OnboardingScreen() {
     return (
       <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
         <NameSetup onDone={() => setNamed(true)} />
+      </Screen>
+    );
+  }
+
+  if (!fed) {
+    return (
+      <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
+        <DietarySetup onDone={() => setFed(true)} />
       </Screen>
     );
   }

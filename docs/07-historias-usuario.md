@@ -263,6 +263,7 @@
 
 - **CA-23.1** · **Dado** que Rosa registró que su esposo es intolerante a la lactosa, **cuando** abre cualquier receta con leche, **entonces** se le propone la sustitución sin que lo vuelva a indicar.
 - **CA-23.2 (RNF-17)** · **Dado** que el usuario cambia una preferencia, **cuando** cierra y reabre la app, **entonces** hay **100 % de persistencia entre sesiones** y el **guardado tarda ≤ 1 s**.
+- **CA-23.3** · **Dado** un usuario nuevo en el onboarding, **cuando** elige sus alergias y su dieta (o indica que no tiene alergias), **entonces** se guardan en su perfil, se pueden cambiar después desde el perfil y las recetas sugeridas y adaptadas las respetan.
 
 #### HU-24 · Que el sistema aprenda de cómo cocino
 **Cubre:** RF-29 · **Prioridad:** Alta · **Stakeholders:** S01, S02 · **Actividad:** A10

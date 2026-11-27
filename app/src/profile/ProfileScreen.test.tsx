@@ -67,6 +67,37 @@ describe('ProfileScreen', () => {
     expect(button('Rosa')!.getAttribute('aria-pressed')).toBe('true');
   });
 
+  it('permite editar alergias y dieta, y se guardan al instante (RF-28)', async () => {
+    await profileService.selectProfile('USR-002');
+    await render(<ProfileScreen />);
+    expect(checkbox('maní').checked).toBe(true);
+    await click(checkbox('leche'));
+    expect(profileService.getProfile().explicit.allergies).toContain('leche');
+    await click(checkbox('maní'));
+    expect(profileService.getProfile().explicit.allergies).not.toContain('mani');
+    await click(checkbox('Vegetariana'));
+    expect(profileService.getProfile().explicit.diet).toBe('vegetariana');
+  });
+
+  it('«No tengo alergias» sigue al perfil activo al cambiar de perfil', async () => {
+    const id = await profileService.createProfile('Lucía');
+    await profileService.selectProfile('USR-002');
+    await render(<ProfileScreen />);
+    expect(checkbox('No tengo alergias').checked).toBe(false);
+    await act(async () => profileService.selectProfile(id));
+    expect(checkbox('No tengo alergias').checked).toBe(true);
+    await act(async () => profileService.selectProfile('USR-002'));
+    expect(checkbox('No tengo alergias').checked).toBe(false);
+  });
+
+  it('sigue mostrando las restricciones de los comensales', async () => {
+    await profileService.selectProfile('USR-001');
+    await render(<ProfileScreen />);
+    const dinerRestrictions = profileService.getProfile().explicit.dinerRestrictions;
+    expect(dinerRestrictions.length).toBeGreaterThan(0);
+    expect(container.textContent).toContain(`${dinerRestrictions[0]!.diner}: sin `);
+  });
+
   it('la valoración de "Mis platos" es una imagen con etiqueta accesible (RF-27)', async () => {
     await profileService.recordEvent({
       type: 'recipeCompleted',

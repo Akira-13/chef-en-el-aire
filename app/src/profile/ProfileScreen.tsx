@@ -9,6 +9,7 @@ import { enterScreen } from '../core/commandContext';
 import { output, profileService, useProfile } from '../core/services';
 import { Card, IconButton, Screen } from '../ui';
 import { AccessibilitySettings, INPUT_LABELS } from './AccessibilitySettings';
+import { DietaryFields } from './DietarySetup';
 import {
   AssistantSettings,
   CommunitySection,
@@ -58,20 +59,17 @@ function PersonaPicker() {
 }
 
 function Restrictions() {
-  const { explicit } = useProfile();
+  const { id, explicit } = useProfile();
   return (
     <Card>
       <h2 className={styles.sectionTitle}>Restricciones</h2>
-      <p>
-        Alergias:{' '}
-        {explicit.allergies.map((a) => ALLERGEN_LABELS[a]).join(', ') || 'ninguna declarada'}
-      </p>
+      {/* Con `key` los controles se vuelven a montar al cambiar de perfil y no arrastran el estado. */}
+      <DietaryFields key={id} noneOnStart={explicit.allergies.length === 0} />
       {explicit.dinerRestrictions.map((r) => (
         <p key={`${r.diner}-${r.restriction}`}>
           {r.diner}: sin {ALLERGEN_LABELS[r.restriction]} ({r.reason})
         </p>
       ))}
-      <p>Dieta: {explicit.diet}</p>
     </Card>
   );
 }
