@@ -32,7 +32,8 @@
   gap: 4px;
   min-height: var(--touch-min);
   padding: 14px 16px;
-  border: 3px solid transparent;
+  /* Borde visible (≥ 3:1) para delimitar la tarjeta; el elegido lo cambia a color primario. */
+  border: 3px solid var(--color-cork);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);

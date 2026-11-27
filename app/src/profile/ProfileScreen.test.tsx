@@ -1,4 +1,6 @@
 import 'fake-indexeddb/auto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
@@ -63,6 +65,24 @@ describe('ProfileScreen', () => {
     await click(rosa);
     expect(profileService.getProfile().name).toBe('Rosa');
     expect(button('Rosa')!.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('la valoración de "Mis platos" es una imagen con etiqueta accesible (RF-27)', async () => {
+    await profileService.recordEvent({
+      type: 'recipeCompleted',
+      recipeId: 'REC-001',
+      substitutions: [],
+    });
+    await profileService.recordEvent({ type: 'recipeRated', recipeId: 'REC-001', rating: 4 });
+    await render(<ProfileScreen />);
+    const stars = container.querySelector('[role="img"]');
+    expect(stars?.getAttribute('aria-label')).toBe('Valoración: 4 de 5 estrellas');
+  });
+
+  it('las tarjetas de persona tienen un borde visible (CA-22.1)', () => {
+    const css = readFileSync(join(process.cwd(), 'src/profile/profile.module.css'), 'utf8');
+    const rule = /\.persona \{[^}]*\}/.exec(css)?.[0] ?? '';
+    expect(rule).toMatch(/border:\s*3px solid var\(--color-cork\)/);
   });
 
   it('el alto contraste se guarda al instante (CA-22.1)', async () => {
