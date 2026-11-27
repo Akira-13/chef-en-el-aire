@@ -30,6 +30,20 @@ describe('findAllergens', () => {
     expect(findings.some((f) => f.source === 'diner' && f.allergen === 'leche')).toBe(true);
   });
 
+  it('detecta "leche evaporada" sin etiquetas para Rosa (CA-06.3)', () => {
+    const rosa = byId(profiles, 'USR-001');
+    const findings = findAllergens(recipeWith(['leche evaporada']), rosa.explicit);
+    expect(findings.map((f) => f.allergen)).toContain('leche');
+    expect(findings[0]?.ingredientName).toBe('leche evaporada');
+  });
+
+  it('detecta "maní tostado" sin etiquetas para Diego (CA-06.3)', () => {
+    const diego = byId(profiles, 'USR-002');
+    const findings = findAllergens(recipeWith(['maní tostado']), diego.explicit);
+    expect(findings.map((f) => f.allergen)).toContain('mani');
+    expect(findings[0]?.ingredientName).toBe('maní tostado');
+  });
+
   it('no reporta nada si la receta no tiene alérgenos del perfil', () => {
     const diego = byId(profiles, 'USR-002');
     expect(findAllergens(byId(recipes, 'REC-006'), diego.explicit)).toEqual([]);
