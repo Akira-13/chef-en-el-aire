@@ -461,8 +461,7 @@ export function CommunityScreen(): ReactElement {
                 <div className={styles.actions}>
                   <Button
                     variant="secondary"
-                    aria-pressed={applauded.has(post.id)}
-                    disabled={applauded.has(post.id)}
+                    aria-disabled={applauded.has(post.id) || undefined}
                     onClick={() => {
                       setSelectedId(post.id);
                       void applaud(item);

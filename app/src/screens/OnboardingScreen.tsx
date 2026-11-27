@@ -8,6 +8,9 @@ import type { Channel } from '@chef/shared';
 import { useCommands } from '../core/commandBus';
 import { enterScreen } from '../core/commandContext';
 import { output } from '../core/services';
+import { AccessibilitySetup } from '../profile/AccessibilitySetup';
+import { DietarySetup } from '../profile/DietarySetup';
+import { NameSetup } from '../profile/NameSetup';
 import { Button, Screen } from '../ui';
 import { markOnboarded } from './onboardingState';
 import styles from './screens.module.css';
@@ -52,6 +55,12 @@ const SUCCESS_PAUSE_MS = 900;
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
+  // Primero el nombre, que crea el perfil (CA-22.3); luego alergias y dieta (CA-23.3), la
+  // configuración de accesibilidad (CA-22.2) y después el recorrido. Así lo que se configure se
+  // guarda en el perfil nuevo.
+  const [named, setNamed] = useState(false);
+  const [fed, setFed] = useState(false);
+  const [configured, setConfigured] = useState(false);
   const [index, setIndex] = useState(0);
   const [practiced, setPracticed] = useState(false);
   const pause = useRef<number | undefined>(undefined);
@@ -75,9 +84,10 @@ export function OnboardingScreen() {
 
   // Cada paso corta la lectura del anterior: si se acumulan, el usuario termina hablando encima.
   useEffect(() => {
+    if (!configured) return;
     output.stop();
     output.announce({ text: `${step.title}. ${step.text}`, kind: 'info' });
-  }, [step]);
+  }, [step, configured]);
 
   useCommands(({ command, channel }) => {
     if (command.type !== 'next' || channel !== step.channel || practiced) return;
@@ -86,6 +96,30 @@ export function OnboardingScreen() {
     output.announce({ text: '¡Muy bien!', kind: 'success' });
     pause.current = window.setTimeout(advance, SUCCESS_PAUSE_MS);
   });
+
+  if (!named) {
+    return (
+      <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
+        <NameSetup onDone={() => setNamed(true)} />
+      </Screen>
+    );
+  }
+
+  if (!fed) {
+    return (
+      <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
+        <DietarySetup onDone={() => setFed(true)} />
+      </Screen>
+    );
+  }
+
+  if (!configured) {
+    return (
+      <Screen title="Bienvenida" header={<span className={styles.brand}>Chef en el Aire</span>}>
+        <AccessibilitySetup onDone={() => setConfigured(true)} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen

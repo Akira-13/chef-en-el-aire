@@ -55,10 +55,10 @@
 | RF-22 | Gesto de activación y bloqueo de gestos contra terceros | FR | Media | HU-17 | Implementado | CA-17.1, CA-17.2 |
 | RF-23 | Sensibilidad de gestos configurable y aviso si no ve la mano | FR | Media | HU-18 | Implementado | CA-18.1, CA-18.2 |
 | RF-24 | Cada acción esencial por al menos dos canales | FR | Alta | HU-18, HU-21 | Implementado | CA-18.3, CA-21.1 |
-| RF-25 | Perfil de accesibilidad (canal, verbosidad, fuente, contraste, volumen, espera) | FR | Alta | HU-21, HU-22 | Implementado | CA-21.2, CA-22.1, CA-22.2 |
+| RF-25 | Perfil de accesibilidad (canal, verbosidad, fuente, contraste, volumen, espera) | FR | Alta | HU-21, HU-22 | Implementado | CA-21.2, CA-22.1, CA-22.2, CA-22.3 |
 | RF-26 | Equivalente visual de toda respuesta hablada y sonido | FR | Alta | HU-20 | Implementado | CA-20.2, CA-20.3 |
 | RF-27 | Estado accesible por audio y lector de pantalla (ARIA) | FR | Alta | HU-19 | Implementado | CA-19.1, CA-19.2 |
-| RF-28 | Perfil persistente de restricciones, gustos, nivel y preferencias | FR | Alta | HU-23 | Implementado | CA-23.1 |
+| RF-28 | Perfil persistente de restricciones, gustos, nivel y preferencias | FR | Alta | HU-23 | Implementado | CA-23.1, CA-23.3 |
 | RF-29 | Perfil que se actualiza con el uso | FR | Alta | HU-24 | Implementado | CA-24.1, CA-24.2, CA-24.3 |
 | RF-30 | Pantalla "lo que aprendí de ti" para ver, corregir y borrar | FR | Alta | HU-25 | Implementado | CA-25.1, CA-25.2 |
 | RF-31 | Calificar la receta por gesto o voz | FR | Media | HU-26 | Implementado | CA-26.1 |

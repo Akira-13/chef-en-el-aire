@@ -6,7 +6,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { access, constants, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import {
   COMMUNITY_LIMITS,
@@ -27,6 +27,18 @@ export const MAX_POSTS = 200;
 /** Tope de comentarios por publicación, para que el archivo no crezca sin límite. */
 export const MAX_COMMENTS_PER_POST = 200;
 
+/** Publicaciones por hora que admite un mismo dispositivo, contra el spam. */
+export const MAX_POSTS_PER_HOUR = 10;
+const HOUR_MS = 3_600_000;
+
+/** El dispositivo ya publicó el máximo de la hora: la ruta lo traduce a 429. */
+export class PostRateLimitError extends Error {
+  constructor() {
+    super('Se alcanzó el límite de publicaciones por hora.');
+    this.name = 'PostRateLimitError';
+  }
+}
+
 export type AddCommentResult =
   | { status: 'created' | 'existing'; comment: CommunityComment }
   | { status: 'not-found' }
@@ -42,12 +54,16 @@ export interface CommunityStore {
   /** Total de aplausos, o `undefined` si la publicación no existe. */
   applaud(postId: string, deviceKey: string): Promise<number | undefined>;
   deletePost(postId: string, deviceKey: string): Promise<DeleteResult>;
+  /** Si el archivo de la Comunidad se puede escribir ahora; las publicaciones fallarían si no. */
+  isWritable(): Promise<boolean>;
 }
 
 export interface CommunityStoreOptions {
   file: string;
   /** Reloj inyectable para las pruebas. */
   now?: () => Date;
+  /** Tope de publicaciones por dispositivo y hora; por defecto `MAX_POSTS_PER_HOUR`. */
+  maxPostsPerHour?: number;
 }
 
 // Lo que se guarda por publicación: la parte pública más los datos privados.
@@ -65,6 +81,8 @@ interface State {
   nextPost: number;
   nextComment: number;
   posts: StoredPost[];
+  /** Instantes (ms) de las publicaciones recientes por dispositivo; borrar una no los libera. */
+  postTimes?: Record<string, number[]>;
 }
 
 const hashKey = (deviceKey: string) => createHash('sha256').update(deviceKey).digest('hex');
@@ -191,6 +209,7 @@ async function writeState(file: string, state: State): Promise<void> {
 export function createCommunityStore({
   file,
   now = () => new Date(),
+  maxPostsPerHour = MAX_POSTS_PER_HOUR,
 }: CommunityStoreOptions): CommunityStore {
   let state = readState(file);
   if (!state) {
@@ -236,6 +255,18 @@ export function createCommunityStore({
             changed: false,
           };
         }
+        // El reenvío de algo ya publicado no cuenta; lo nuevo sí, aunque luego se borre.
+        const authorHash = hashKey(input.deviceKey);
+        const since = now().getTime() - HOUR_MS;
+        const recent: Record<string, number[]> = {};
+        for (const [hash, times] of Object.entries(draft.postTimes ?? {})) {
+          const inHour = times.filter((time) => time > since);
+          if (inHour.length > 0) recent[hash] = inHour;
+        }
+        if ((recent[authorHash]?.length ?? 0) >= maxPostsPerHour) throw new PostRateLimitError();
+        (recent[authorHash] ??= []).push(now().getTime());
+        draft.postTimes = recent;
+
         const post: CommunityPost = {
           id: makeId('PUB', draft.nextPost++),
           kind: input.kind,
@@ -253,7 +284,7 @@ export function createCommunityStore({
         draft.posts.unshift({
           post,
           clientId: input.clientId,
-          authorHash: hashKey(input.deviceKey),
+          authorHash,
           applauderHashes: [],
           commentClientIds: {},
         });
@@ -301,6 +332,20 @@ export function createCommunityStore({
         stored.post.applause += 1;
         return { result: stored.post.applause, changed: true };
       });
+    },
+
+    async isWritable() {
+      try {
+        await mkdir(dirname(file), { recursive: true });
+        await access(dirname(file), constants.W_OK);
+        // Si el archivo ya existe, el `rename` lo reemplaza, pero conviene que él también sea escribible.
+        await access(file, constants.W_OK).catch((error: NodeJS.ErrnoException) => {
+          if (error.code !== 'ENOENT') throw error;
+        });
+        return true;
+      } catch {
+        return false;
+      }
     },
 
     deletePost(postId, deviceKey) {

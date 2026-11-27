@@ -44,13 +44,13 @@ Código en `app/src/profile/`, `app/src/personalization/` y `app/src/community/`
 
 | HU | Req. | Estado | Evidencia |
 |---|---|---|---|
-| HU-22 Ajustes y configuración inicial | RF-25 | ✅ / 🟡 | [`AccessibilitySettings`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/AccessibilitySettings.tsx#L144): canales, verbosidad, letra, contraste, volumen, tiempo de espera de la voz y gestos; cada cambio se guarda al instante y lo aplican el tema, la voz, los gestos y la salida · CA-22.1 y CA-18.3 (no deja desactivar el último canal) en [`ProfileScreen.test.tsx`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileScreen.test.tsx) · [`AccessibilitySetup`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/AccessibilitySetup.tsx#L31) en 3 pantallas (CA-22.2) · *el componente está listo y probado, pero el onboarding todavía no lo monta* |
+| HU-22 Ajustes y configuración inicial | RF-25 | ✅ / 🟡 | [`AccessibilitySettings`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/AccessibilitySettings.tsx#L144): canales, verbosidad, letra, contraste, volumen, tiempo de espera de la voz y gestos; cada cambio se guarda al instante y lo aplican el tema, la voz, los gestos y la salida · CA-22.1 y CA-18.3 (no deja desactivar el último canal) en [`ProfileScreen.test.tsx`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileScreen.test.tsx) · [`AccessibilitySetup`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/AccessibilitySetup.tsx#L31) en 3 pantallas (CA-22.2) · el onboarding lo monta: nombre (CA-22.3) → alergias y dieta (CA-23.3) → accesibilidad → recorrido |
 
 ### E7 · Personalización continua
 
 | HU | Req. | Estado | Evidencia |
 |---|---|---|---|
-| HU-23 Perfil persistente | RF-28, RNF-17 | ✅ | [`createProfileService`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/index.ts#L41) responde al instante con los perfiles de prueba, carga IndexedDB en paralelo y mide `profile.save` · «conserva los cambios entre dos sesiones» (CA-23.2) y «mide el guardado en menos de 1 s» (RNF-17) en [`index.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/index.test.ts) · [`PersonaPicker`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileScreen.tsx#L22) · [`SubstitutionHints`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/personalization/SubstitutionHints.tsx#L22) propone a Rosa, sin pedirlo, sustituir la leche por su esposo (CA-23.1) |
+| HU-23 Perfil persistente | RF-28, RNF-17 | ✅ | [`createProfileService`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/index.ts#L41) responde al instante con los perfiles de prueba, carga IndexedDB en paralelo y mide `profile.save` · «conserva los cambios entre dos sesiones» (CA-23.2) y «mide el guardado en menos de 1 s» (RNF-17) en [`index.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/index.test.ts) · [`PersonaPicker`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileScreen.tsx#L22) (tarjetas para los perfiles propios; los 4 de prueba, en el selector «Perfiles de ejemplo») · [`SubstitutionHints`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/personalization/SubstitutionHints.tsx#L22) propone a Rosa, sin pedirlo, sustituir la leche por su esposo (CA-23.1) |
 | HU-24 Aprender del uso | RF-29 | ✅ | [`applyUsageEvent`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/learning.ts#L66): lectura saltada 3 veces seguidas → `verbosity: 'breve'` con aviso (CA-24.1); sustituciones aceptadas sin duplicar y rechazadas sin proponer primero (CA-24.2); paso repetido 3 veces o emoción declarada (CA-24.3) · [`learning.test.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/learning.test.ts) |
 | HU-25 «Lo que aprendí de ti» | RF-30, RNF-11 | ✅ | [`LearnedSection`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileSections.tsx#L149) lista cada dato con su origen (CA-25.1) y permite borrarlo sin que vuelva a usarse (CA-25.2); [`DataControls`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileSections.tsx#L261): **exportar en 1 paso, borrar en 2** (CA-25.3), y exportar métricas · [`learned.ts`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/learned.ts) |
 | HU-26 Calificar / cuidador | RF-31, RF-32 | ✅ / ❌ | La valoración queda en el historial (CA-26.1) · [`MyDishes`](https://github.com/Akira-13/chef-en-el-aire/blob/main/app/src/profile/ProfileSections.tsx#L194) · *el rol de cuidador sigue fuera del MVP* |
@@ -102,7 +102,6 @@ Todas son opcionales, tienen su forma en `shared/src/data/raw.ts` y sus converso
 |---|---|---|
 | Registrar el tiempo del envío de la cola sin conexión (≤ 10 s) | RNF-09, CA-28.3 | Repetir la prueba D por el túnel y exportar `community.queueFlush` (CA-28.2 ya se midió: 2 s) |
 | Montar «Compartir mi logro» en la celebración | RF-37, CA-29.1 | Lo monta la parte de la interfaz |
-| Montar la configuración inicial de accesibilidad en el onboarding | CA-22.2 | Lo monta la parte de la interfaz |
 
 | Probar con usuarios | CU-08, CU-13 a CU-16 | Sesiones de usabilidad |
 
@@ -130,7 +129,8 @@ Estado en `main` al corte:
 - ✅ Ruta `/comunidad` en `App.tsx`.
 - ✅ Comando de voz «para N porciones» (`setServings`) y prop `servings` en el panel de adaptación, que se envía a `/adapt` (CA-04.2).
 - ❌ Selector de porciones en la pantalla Receta (RF-05).
-- ❌ `ShareAchievementButton` en la celebración y `AccessibilitySetup` en el onboarding.
+- ❌ `ShareAchievementButton` en la celebración.
+- ✅ `AccessibilitySetup` montado en el onboarding (nombre → alergias y dieta → accesibilidad → recorrido).
 - ❌ Auditorías: Lighthouse, WCAG 2.1 AA y navegadores (`auditorias.md`).
 
 ## 4. Entrada, salida y modo prueba

@@ -212,7 +212,11 @@ export function MyDishes() {
                   <span className={styles.muted}>{formatDate(entry.date)}</span>
                 </span>
                 {entry.rating ? (
-                  <span className={styles.stars} aria-label={`${entry.rating} de 5`}>
+                  <span
+                    className={styles.stars}
+                    role="img"
+                    aria-label={`Valoración: ${entry.rating} de 5 estrellas`}
+                  >
                     {'★'.repeat(entry.rating)}
                     {'☆'.repeat(5 - entry.rating)}
                   </span>

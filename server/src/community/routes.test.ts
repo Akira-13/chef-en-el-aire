@@ -245,6 +245,36 @@ describe('API de la Comunidad', () => {
     }
   });
 
+  it('rechaza con 400 un mensaje o comentario con enlaces', async () => {
+    const link = await send(
+      'POST',
+      COMMUNITY_ROUTES.posts,
+      achievement({ message: 'http://x.io' }),
+    );
+    expect(link.status).toBe(400);
+    expect(((await link.json()) as { error: string }).error).toMatch(/enlaces/i);
+    const { post } = await publish(achievement());
+    const comment = { clientId: 'k-1', deviceKey: 'otro-dispositivo', alias: 'Rosa' };
+    const bad = await send('POST', COMMUNITY_ROUTES.comments(post.id), {
+      ...comment,
+      text: 'mira HTTPS://x.io',
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it('responde 429 en español a la publicación 11 de la hora, sin afectar a las ya enviadas', async () => {
+    for (let i = 0; i < 10; i += 1) {
+      expect(
+        (await send('POST', COMMUNITY_ROUTES.posts, achievement({ clientId: `c-${i}` }))).status,
+      ).toBe(201);
+    }
+    const limited = await send('POST', COMMUNITY_ROUTES.posts, achievement({ clientId: 'c-11' }));
+    expect(limited.status).toBe(429);
+    expect(((await limited.json()) as { error: string }).error).toMatch(/publicaciones/i);
+    const repeated = await send('POST', COMMUNITY_ROUTES.posts, achievement({ clientId: 'c-0' }));
+    expect(repeated.status).toBe(200);
+  });
+
   it('si no se puede guardar responde 503 sin detalles internos', async () => {
     // La carpeta del archivo es en realidad un archivo: crear el JSON es imposible.
     writeFileSync(join(dir, 'bloqueado'), '');

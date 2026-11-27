@@ -1,8 +1,10 @@
+import 'fake-indexeddb/auto';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { commandBus } from '../core/commandBus';
+import { profileService } from '../core/services';
 import { OnboardingScreen } from './OnboardingScreen';
 import { isOnboarded } from './onboardingState';
 
@@ -21,11 +23,46 @@ async function press(name: string) {
   });
 }
 
-describe('OnboardingScreen (HU-36)', () => {
+const setupHeading = () => container.querySelector('h2')?.textContent;
+
+async function typeName(name: string) {
+  const input = container.querySelector('input')!;
+  await act(async () => {
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    setValue.call(input, name);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+// Crear el perfil escribe en IndexedDB: se espera a que la pantalla pase a alergias y dieta.
+async function submitName(name: string) {
+  await typeName(name);
+  await press('Continuar');
+  await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
+}
+
+// Alergias y dieta: se continúa sin marcar nada y se llega a la configuración de accesibilidad.
+async function submitDietary() {
+  await press('Continuar');
+  await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+}
+
+const field = (text: string) =>
+  [...container.querySelectorAll('label')]
+    .find((l) => l.textContent?.includes(text))
+    ?.querySelector('input') as HTMLInputElement;
+
+async function click(element: HTMLElement | undefined | null) {
+  await act(async () => element?.click());
+}
+
+describe('OnboardingScreen: nombre y perfil nuevo (CA-22.3)', () => {
   beforeEach(async () => {
-    vi.useFakeTimers();
     localStorage.clear();
+    await profileService.reset();
     container = document.createElement('div');
+    // Conectado al documento para que enviar el formulario funcione como en el navegador.
+    document.body.append(container);
     root = createRoot(container);
     await act(async () => {
       root.render(
@@ -41,6 +78,234 @@ describe('OnboardingScreen (HU-36)', () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it('pide el nombre antes de la configuración de accesibilidad', () => {
+    expect(setupHeading()).toBe('¿Cómo te llamas?');
+    const input = container.querySelector('input')!;
+    expect(input.closest('label')?.textContent).toContain('Tu nombre');
+  });
+
+  it('con el nombre vacío avisa y no avanza ni crea perfil', async () => {
+    await press('Continuar');
+    expect(setupHeading()).toBe('¿Cómo te llamas?');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('Escribe tu nombre');
+    expect(button('Continuar')?.disabled).toBe(false);
+    expect(profileService.listProfiles()).toHaveLength(4);
+  });
+
+  it('Enter en el campo envía el nombre', async () => {
+    await typeName('Lucía');
+    await act(async () => {
+      container.querySelector('form')!.requestSubmit();
+    });
+    await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
+  });
+
+  it('el nombre de un perfil de ejemplo está permitido: crea uno propio', async () => {
+    await submitName('Diego');
+    expect(profileService.getProfile().id).toMatch(/^USR-1\d\d$/);
+    expect(profileService.listProfiles()).toHaveLength(5);
+  });
+
+  it('un nombre repetido de otro perfil propio muestra el error y se queda en el paso', async () => {
+    await profileService.createProfile('Lucía');
+    await profileService.createProfile('Ana');
+    await typeName('lucía');
+    await press('Continuar');
+    await vi.waitFor(() =>
+      expect(container.querySelector('[role="alert"]')?.textContent).toContain('Ya existe'),
+    );
+    expect(setupHeading()).toBe('¿Cómo te llamas?');
+  });
+
+  it('al reabrir la bienvenida con el perfil ya creado, el nombre se rellena y continúa sin duplicar', async () => {
+    const id = await profileService.createProfile('Lucía');
+    const total = profileService.listProfiles().length;
+    // Se recarga a mitad del recorrido: la pantalla vuelve a montarse con el perfil activo.
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await vi.waitFor(() => expect(container.querySelector('input')!.value).toBe('Lucía'));
+    await press('Continuar');
+    await vi.waitFor(() => expect(setupHeading()).toBe('Tu alimentación'));
+    expect(profileService.getProfile().id).toBe(id);
+    expect(profileService.listProfiles()).toHaveLength(total);
+  });
+
+  it('crea el perfil, guarda ahí la accesibilidad y deja a Diego intacto', async () => {
+    await profileService.selectProfile('USR-002');
+    const diego = profileService.getProfile();
+
+    await submitName('Lucía');
+    expect(profileService.getProfile().name).toBe('Lucía');
+    await submitDietary();
+    // La configuración parte de valores generosos y se guarda al instante en el perfil nuevo.
+    await vi.waitFor(() =>
+      expect(profileService.getProfile().accessibility.fontSize).toBe('grande'),
+    );
+    await act(async () => {
+      [...container.querySelectorAll('label')]
+        .find((l) => l.textContent === 'Muy grande')
+        ?.querySelector('input')
+        ?.click();
+    });
+
+    const created = profileService.getProfile();
+    expect(created.name).toBe('Lucía');
+    expect(created.accessibility.fontSize).toBe('extragrande');
+
+    await profileService.selectProfile('USR-002');
+    expect(profileService.getProfile()).toEqual(diego);
+    expect(profileService.getProfile().accessibility.fontSize).toBe('normal');
+  });
+});
+
+describe('OnboardingScreen: alergias y dieta (RF-28, RF-07)', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await profileService.reset();
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+            <Route path="/" element={<p>inicio</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it('llega después del nombre y antes de la configuración de accesibilidad', async () => {
+    await submitName('Lucía');
+    expect(container.querySelector('fieldset legend')?.textContent).toContain('alergias');
+    await press('Continuar');
+    await vi.waitFor(() => expect(setupHeading()).toBe('¿Cómo ves mejor?'));
+  });
+
+  it('guarda alergias y dieta en el perfil nuevo y deja a Diego intacto', async () => {
+    await profileService.selectProfile('USR-002');
+    const diego = profileService.getProfile();
+
+    await submitName('Lucía');
+    expect(profileService.getProfile().explicit.allergies).toEqual([]);
+    await click(field('mariscos'));
+    await click(field('huevo'));
+    await click(field('Vegetariana'));
+    await submitDietary();
+
+    const created = profileService.getProfile();
+    expect(created.name).toBe('Lucía');
+    expect(created.explicit.allergies).toEqual(['huevo', 'mariscos']);
+    expect(created.explicit.diet).toBe('vegetariana');
+
+    await profileService.selectProfile('USR-002');
+    expect(profileService.getProfile()).toEqual(diego);
+    expect(profileService.getProfile().explicit.allergies).toEqual(['mani']);
+    expect(profileService.getProfile().explicit.diet).toBe('omnivora');
+  });
+
+  it('quien no tiene alergias continúa sin marcar nada', async () => {
+    await submitName('Lucía');
+    await click(field('No tengo alergias'));
+    await submitDietary();
+    expect(profileService.getProfile().explicit.allergies).toEqual([]);
+    expect(profileService.getProfile().explicit.diet).toBe('omnivora');
+  });
+});
+
+describe('OnboardingScreen: configuración de accesibilidad (CA-22.2)', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await profileService.reset();
+    container = document.createElement('div');
+    // Conectado al documento para que enviar el formulario funcione como en el navegador.
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+            <Route path="/" element={<p>inicio</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it('empieza con la configuración en 3 pantallas y luego sigue el recorrido', async () => {
+    await submitName('Lucía');
+    await submitDietary();
+    expect(setupHeading()).toBe('¿Cómo ves mejor?');
+    expect(container.textContent).toContain('Paso 1 de 3');
+    await press('Siguiente');
+    await press('Siguiente');
+    expect(container.textContent).toContain('Paso 3 de 3');
+    await press('Listo');
+    expect(heading()).toBe('Cocina sin tocar la pantalla');
+  });
+
+  it('se puede dejar para después y pasar directo al recorrido', async () => {
+    await submitName('Lucía');
+    await submitDietary();
+    await press('Lo configuro después');
+    expect(heading()).toBe('Cocina sin tocar la pantalla');
+    expect(isOnboarded()).toBe(false);
+  });
+});
+
+describe('OnboardingScreen (HU-36)', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await profileService.reset();
+    container = document.createElement('div');
+    // Conectado al documento para que enviar el formulario funcione como en el navegador.
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/bienvenida']}>
+          <Routes>
+            <Route path="/bienvenida" element={<OnboardingScreen />} />
+            <Route path="/" element={<p>inicio</p>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    await submitName('Lucía');
+    await submitDietary();
+    await press('Lo configuro después');
+    // Los temporizadores falsos van después: IndexedDB necesita los reales para guardar.
+    vi.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
     vi.useRealTimers();
   });
 

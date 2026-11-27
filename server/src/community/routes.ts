@@ -4,9 +4,10 @@
 import { Router, type Response } from 'express';
 import { COMMUNITY_UNAVAILABLE_MESSAGE } from '@chef/shared';
 import { parseDeviceKey, parseNewComment, parseNewPost } from './schemas';
-import type { CommunityStore } from './store';
+import { PostRateLimitError, type CommunityStore } from './store';
 
 const NOT_FOUND = 'La publicación no existe.';
+const POST_LIMIT = 'Alcanzaste el límite de publicaciones por hora. Inténtalo de nuevo más tarde.';
 
 function reject(res: Response, error: string, status = 400): void {
   res.status(status).json({ error });
@@ -24,8 +25,14 @@ export function createCommunityRouter(source: CommunityStore | (() => CommunityS
   router.post('/posts', async (req, res) => {
     const parsed = parseNewPost(req.body);
     if (!parsed.ok) return reject(res, parsed.error);
-    const { post, created } = await store().createPost(parsed.data);
-    res.status(created ? 201 : 200).json(post);
+    try {
+      const { post, created } = await store().createPost(parsed.data);
+      res.status(created ? 201 : 200).json(post);
+    } catch (error) {
+      // El límite por hora es pasajero: el cliente lo trata como reintentable y la cola desiste sola.
+      if (error instanceof PostRateLimitError) return reject(res, POST_LIMIT, 429);
+      throw error;
+    }
   });
 
   router.post('/posts/:id/comments', async (req, res) => {

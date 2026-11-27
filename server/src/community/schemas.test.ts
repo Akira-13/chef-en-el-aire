@@ -57,6 +57,15 @@ describe('validación de publicaciones', () => {
     expect(failure({ ...achievement, message: 'a'.repeat(501) })).toMatch(/500/);
   });
 
+  it('rechaza enlaces http o https en el mensaje, el alias y los cambios', () => {
+    for (const link of ['mira http://malo.example', 'HTTPS://malo.example/x']) {
+      expect(failure({ ...achievement, message: link })).toMatch(/enlaces/i);
+      expect(failure({ ...achievement, alias: link })).toMatch(/enlaces/i);
+      const changes = [{ kind: 'step', before: 'A', after: link }];
+      expect(failure({ ...recipePost(), changes })).toMatch(/enlaces/i);
+    }
+  });
+
   it('rechaza cuerpos que no son objetos sin lanzar error', () => {
     expect(failure(null)).toBeTruthy();
     expect(failure('hola')).toBeTruthy();
@@ -117,6 +126,13 @@ describe('validación de comentarios y aplausos', () => {
     const long = parseNewComment({ ...comment, text: 'a'.repeat(501) });
     expect(!empty.ok && empty.error).toMatch(/comentario/i);
     expect(!long.ok && long.error).toMatch(/500/);
+  });
+
+  it('rechaza un comentario con enlaces http o https', () => {
+    for (const text of ['entra a http://malo.example', 'Mira HTTPS://malo.example']) {
+      const result = parseNewComment({ ...comment, text });
+      expect(!result.ok && result.error).toMatch(/enlaces/i);
+    }
   });
 
   it('exige el deviceKey', () => {

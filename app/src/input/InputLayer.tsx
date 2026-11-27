@@ -10,7 +10,7 @@ import { metrics } from '../core/metrics';
 import { output, profileService, useProfile } from '../core/services';
 import { showGestureNotice, speechAt } from '../output';
 import { setChannels, useChannelStore } from './channelStore';
-import { reportFallback } from './fallback';
+import { reportFallback, reportVoiceSupportAtStart } from './fallback';
 import {
   createGestureInterpreter,
   createHandWatcher,
@@ -31,6 +31,9 @@ import { DEFAULT_SILENCE_MS, startVoice } from './voice/recognizer';
 const MIC_PROMPT_SCREENS: ScreenId[] = ['cooking', 'celebration', 'onboarding'];
 
 const WAKE_TIMEOUT_MS = 5000;
+
+// El aviso de voz no soportada se da una sola vez por carga de la app.
+let voiceSupportChecked = false;
 const DEFAULT_LOCK_SECONDS = 30;
 
 function capitalize(text: string): string {
@@ -61,6 +64,15 @@ export function InputLayer() {
   const gesturesAllowed = prefs.activeInputs.includes('gestos') || gestureTrial;
   const gesturesRun =
     gesturesAllowed && !cameraUserOff && (GESTURE_SCREENS.includes(screen) || gestureTrial);
+
+  // Con el perfil ya cargado, avisa de entrada si el navegador no tiene voz (CA-21.3).
+  useEffect(() => {
+    if (voiceSupportChecked) return;
+    voiceSupportChecked = true;
+    void profileService.ready.then(() =>
+      reportVoiceSupportAtStart(profileService.getProfile().accessibility),
+    );
+  }, []);
 
   // El micrófono se pide al llegar a una pantalla con voz; si ya tenía permiso, se activa sin
   // preguntar. Si el usuario lo rechaza, se avisa una vez y el botón permite reintentar.
